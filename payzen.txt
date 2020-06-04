@@ -1,0 +1,45 @@
+Nossos manuais de integração estão disponíveis no seguinte link: https://payzen.io/pt-BR/
+Temos exemplos de integração publicados em https://payzen.io/en-EN/code/  e no GitHub: https://github.com/payzen.
+ 
+Credenciais de teste para a loja DEMO:
+ 
+·         ShopID: 33015842
+·         Certificado de testes: 6820023378838080
+
+ 
+Usuário Back Office:
+ 
+·         Receberá por e-mail os dados de acesso ao Back Office PayZen. No primeiro acesso será solicitado um código de primeira conexão que é: codePiloto
+ 
+Cartões para testes:
+ 
+Visa
+·         4970 1000 0000 0000 - Pagamento aceito com autenticação 3-D Secure
+·         4970 1000 0000 0009 - Pagamento com autenticação 3-D Secure interactiva
+·         4970 1000 0000 0003 - Pagamento aceito, comerciante não matriculado no 3-D Secure
+·         4970 1000 0000 0001 - Pagamento aceito, internauta não matriculado 3-D Secure
+·         4970 1000 0000 0007 - Pagamento aceito, autenticação de pagamento = NÃO
+·         4970 1000 0000 0097 - Pagamento recusado devido à falha na autenticação 3-D Secure, o cliente não conseguiu se autenticar
+·         4970 1000 0000 0098 - Pagamento recusado, autorização negada devido ao limite excedido
+·         4970 1000 0000 0099 - Pagamento recusado, autorização negada devido a um erro no criptograma visual digitado
+ 
+Mastercard
+·         5970 1003 0000 0000 - Pagamento aceito com autenticação 3-D Secure
+·         5970 1003 0000 0009 - Pagamento com autenticação 3-D Secure interactiva
+·         5970 1003 0000 0003 - Pagamento aceito, comerciante não matriculado 3-D Secure
+·         5970 1003 0000 0001 - Pagamento aceito, internauta não matriculado 3-D Secure
+·         5970 1003 0000 0002 - Pagamento recusado, transação à forçar, contacte o emissor do cartão
+·         5970 1003 0002 3006 - Pagamento aceito, autenticação de pagamento = NÃO
+·         5970 1003 0000 0097 - Pagamento recusado devido à falha na autenticação 3-D Secure, o cliente não conseguiu se autenticar
+·         5970 1003 0000 0098 - Pagamento recusado, autorização negada devido ao limite excedido
+·         5970 1003 0000 0099 - Pagamento recusado, autorização negada devido a um erro no criptograma visual digitado
+ 
+Amex
+·         378 2820 0000 0008 - Pagamento AMEX aceito
+·         378 2820 0000 0024 - Pagamento AMEX recusado, não honrar
+ 
+       Diners
+·         3600 0000 0000 08 - Diners pagamento aceito
+·         3600 0000 0000 57 - Diners pagamento recusado, não honrado
+ 
+*Por ser cartões de teste, quaisquer valores válidos para o CVV e data de validade são aceitos.
