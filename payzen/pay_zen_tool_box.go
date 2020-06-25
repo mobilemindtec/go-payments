@@ -1529,7 +1529,7 @@ func switchStatus(transactionStatusLabel string) (*PayZenResult, error) {
 			break				
 		default:
 			//result.TransactionStatusLabel = transactionStatusLabel
-			fmt.Sprintf("Problemas na transação. Status %v não reconhecido.", transactionStatusLabel)
+			fmt.Println("Problemas na transação. Status %v não reconhecido.", transactionStatusLabel)
 			return result, errors.New(fmt.Sprintf("Problemas na trasanção. Status %v não reconhecido.", transactionStatusLabel))				
 	}		
 
