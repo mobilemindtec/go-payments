@@ -12,9 +12,9 @@ import (
 )
 
 const(
-  ShopId = "33015842"
   Mode = "TEST"
-  Cert = "6820023378838080"
+  ShopId = ""
+  Cert = ""
 
   KeyCardTransactionId = "CardTransactionId"
   KeyCardTransactionUuid = "CardTransactionUuid"

@@ -4,6 +4,7 @@ import (
 	"github.com/mobilemindtec/go-utils/beego/validator"
 	"github.com/astaxie/beego/validation"
 	"github.com/beego/i18n"
+	"github.com/mobilemindtec/go-payments/pagarme"
 	"strconv"
 	"strings"
 	"errors"
@@ -21,12 +22,15 @@ type PayZenCard struct {
 	CardHolderName string `valid:""`
 	Token string`valid:""`
 
-	BoletoOnline BoletoOnlineTipo `valid:""`
+	BoletoOnline BoletoOnlineTipo `valid:""`	
 	BoletoOnlineDaysDalay int // Obs.: Não suportado para boletos online Bradesco.
 
-	BoletoOnlineTexto string `valid:"MaxSize(255)"`
-	BoletoOnlineTexto2 string `valid:"MaxSize(255)"`
-	BoletoOnlineTexto3 string `valid:"MaxSize(255)"`
+	BoletoOnlineTexto string 
+	BoletoOnlineTexto2 string
+	BoletoOnlineTexto3 string
+
+	BoletoInstructions string `valid:""` 
+	BoletoExpirationDate string // 2006-01-02
 }
 
 type PayZenCustomer struct {
@@ -86,7 +90,12 @@ type PayZenPayment struct{
 	TokenOperation bool
 	TransactionUuid string
 	VadsTransId string
-	ValidationType PayZenPaymentValidationType
+	ValidationType PayZenPaymentValidationType	
+
+	// pagarme
+	PostbackUrl string `valid:""` 
+	SoftDescriptor string `valid:""` 	
+	Metadata map[string]string `valid:""` 
 }
 
 type PayZenCapturePayment struct {
@@ -181,6 +190,7 @@ type PayZenTransactionItemResult struct {
 	TransactionUuid string
 	TransactionId string
 	TransactionStatus PayZenTransactionStatus
+	PagarmeStatus pagarme.PagarmeStatus
 	TransactionStatusLabel string
 	ExternalTransactionId string
 	Amount float64
@@ -196,6 +206,8 @@ type PayZenResult struct {
 
 	//RequestObject interface{}
 	//ResponseObject interface{}
+
+	PagarmeStatus pagarme.PagarmeStatus
 
 	TransactionStatus PayZenTransactionStatus
 	TransactionStatusLabel string
@@ -224,6 +236,9 @@ type PayZenResult struct {
 	SubscriptionInfo *PayZenSubscriptionResult
 
 	ValidationErrors map[string]string
+
+	Platform string
+	Nsu string
 }
 
 func NewPayZenResult() *PayZenResult {
@@ -232,6 +247,7 @@ func NewPayZenResult() *PayZenResult {
 	result.Transactions = []*PayZenTransactionItemResult{}
 	result.SubscriptionInfo = new(PayZenSubscriptionResult)
 	result.ValidationErrors = make(map[string]string)
+	result.Platform = "PayZen"
 	return result
 }
 

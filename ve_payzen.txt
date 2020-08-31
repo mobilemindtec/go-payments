@@ -1,0 +1,30 @@
+
+export GOPATH=`pwd`
+export GOROOT=/usr/local/opt/go/libexec
+
+go test  github.com/mobilemindtec/go-payments/tests -v
+
+go test  github.com/mobilemindtec/go-payments/tests -run TestPayZenPaymentCreateBoletoOnline
+
+
+
+
+manualValidation deve ser = 0
+O que faz validatePayment?? - depende da adquirente, o número de dias máximo que uma autorização fica esperando a validação.
+
+o que faz o ExpectedCaptureDate? - Ver de acordo com a data máxima da adquirente
+
+
+cancelPayment - Ainda não capturado
+refundPayment (reembolsar) - Depois de capturado (ver com a adquirente)
+
+
+- recorrência pular o mês - quando não consegue cobrar, o que acontece? - usar duplicatePayment
+- Buscar por OrderId as transações relacionadas a uma recorrência.
+
+
+
+
+
+
+
