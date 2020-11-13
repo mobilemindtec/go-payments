@@ -3,8 +3,11 @@ package gopayments
 import (
   "github.com/mobilemindtec/go-payments/payzen"
   "github.com/mobilemindtec/go-utils/app/util"
+  "github.com/mobilemindtec/go-utils/support"
 	"github.com/satori/go.uuid"
 	"github.com/go-redis/redis"
+  "encoding/json"
+  "io/ioutil"
 	"testing"
 	"time"
 	"fmt"
@@ -12,9 +15,6 @@ import (
 )
 
 const(
-  Mode = "TEST"
-  ShopId = ""
-  Cert = ""
 
   KeyCardTransactionId = "CardTransactionId"
   KeyCardTransactionUuid = "CardTransactionUuid"
@@ -29,11 +29,44 @@ const(
   KeyCardTokenActive = "CardTokenActive"
 
   KeySubscriptionId = "SubscriptionId"
+
+  ClientName = "stargym_conventos"
 )
 
 var (
 	client *redis.Client
+  Mode = "TEST"
+  ShopId = ""
+  Cert = ""  
 )
+
+func init(){
+  file, err := ioutil.ReadFile("../certs.json")
+  if err != nil {
+      fmt.Printf("error on open file ../certs.json: %v\n", err)
+      return
+  }
+
+  data := make(map[string]interface{})
+  
+  err = json.Unmarshal(file, &data)
+  if err != nil {
+      fmt.Printf("JSON error: %v\n", err)
+      return
+  }  
+
+  jsonParser := new(support.JsonParser)
+
+  clienteData := jsonParser.GetJsonObject(data, ClientName)
+  payzenData := jsonParser.GetJsonObject(clienteData, "payzen")
+  certData := jsonParser.GetJsonObject(payzenData, "cert")
+
+  Mode, _ = payzenData["mode"].(string)
+  ShopId, _ = payzenData["shop_id"].(string)
+  Cert, _ = certData["prod"].(string)
+
+  fmt.Printf("init payzen data: Mode = %v, ShopId = %v, Cert = %v", Mode, ShopId, Cert)
+}
 
 
 func fillCard(card *payzen.PayZenCard) {
@@ -166,7 +199,7 @@ func TestPayZenPaymentCreateBoleto(t *testing.T) {
 	}
 }
 
-func TestPayZenPaymentCreateBoletoOnline(t *testing.T) {
+func TestPayZenPaymentCreateBoletoOnlineItau(t *testing.T) {
 
   time.Sleep(1 * time.Second)
 
@@ -192,6 +225,60 @@ func TestPayZenPaymentCreateBoletoOnline(t *testing.T) {
   fillCustomer(payment.Customer)
 
   result, err := PayZen.PaymentCreateBoletoOnline(payment)
+
+  if err != nil {
+    t.Errorf("Erro ao criar autorização: %v", err)
+    return
+  }
+
+  if result.Error {
+    t.Errorf("Erro ao criar autorização: %v", result.Message)
+  }else{
+
+    //t.Errorf("URL Boleto: %v", result.BoletoUrl)
+
+    if len(result.TransactionId) == 0 {
+      t.Errorf("Erro ao criar autorização: %v", "TransactionId não informada")
+    } else if len(result.TransactionUuid) == 0 {
+      t.Errorf("Erro ao criar autorização: %v", "TransactionUuid não informada")
+    } else {
+      client.Set(KeyBoletoTransactionUuid, result.TransactionUuid, 0)
+      client.Set(KeyBoletoTransactionId, result.TransactionId, 0)
+      client.Set(KeyBoletoOrderId, payment.OrderId, 0)
+    }
+
+  }
+}
+
+func TestPayZenPaymentCreateBoletoOnlineBradesco(t *testing.T) {
+
+  time.Sleep(1 * time.Second)
+
+  PayZen := payzen.NewPayZen("pt-BR")
+  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+
+  PayZen.OnDebug()
+
+
+  payment.OrderId = "6"//genUUID()
+  payment.Installments = 1
+  payment.Amount = 10.0
+
+  //client.Set(KeyBoletoOrderId, payment.OrderId, 0)
+
+
+
+  payment.VadsTransId = fmt.Sprintf("00000%v", payment.OrderId) // deve ser um valor númerico de 6 digitos que não pode repetir no mesmo dia
+  payment.Card.Scheme = payzen.SchemeBoleto
+  payment.Card.BoletoOnline = payzen.BoletoOnlineBradescoBoleto
+  payment.Card.BoletoOnlineDaysDalay = 3
+  payment.SaveBoletoAtPath = "/Users/ricardo/Downloads"
+
+  fillCustomer(payment.Customer)
+
+  result, err := PayZen.PaymentCreateBoletoOnline(payment)
+
+  t.Errorf("Erro fake")
 
   if err != nil {
     t.Errorf("Erro ao criar autorização: %v", err)

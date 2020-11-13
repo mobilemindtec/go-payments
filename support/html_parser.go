@@ -7,10 +7,19 @@ import (
     "bytes"
     _ "fmt"
     "io"
+    "regexp"
 )
 
 func HtmlParse(htmlContent string) (*html.Node, error){
     return html.Parse(strings.NewReader(htmlContent))
+}
+
+func IsValidHtml(htmlContent string) bool {
+    reHtml := regexp.MustCompile(`<[/]?([html]+).*?>`)
+    reBody := regexp.MustCompile(`<[/]?([body]+).*?>`)
+    reHead := regexp.MustCompile(`<[/]?([head]+).*?>`)
+    content := []byte(htmlContent)
+    return reHtml.Match(content) && reBody.Match(content) && reHead.Match(content)
 }
 
 func HtmlParseFindByName(doc *html.Node, elementName string) *html.Node {

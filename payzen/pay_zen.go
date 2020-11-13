@@ -96,6 +96,7 @@ type PayZenPayment struct{
 	PostbackUrl string `valid:""` 
 	SoftDescriptor string `valid:""` 	
 	Metadata map[string]string `valid:""` 
+	SaveBoletoAtPath string
 }
 
 type PayZenCapturePayment struct {
@@ -238,7 +239,9 @@ type PayZenResult struct {
 	ValidationErrors map[string]string
 
 	Platform string
-	Nsu string
+	Nsu string	
+	BoletoOutputContent []byte	
+	BoletoFileName string
 }
 
 func NewPayZenResult() *PayZenResult {
@@ -784,8 +787,12 @@ func (this *PayZen) onValid(payment *PayZenPayment) bool {
 	        break
 
 	      case BoletoOnlineBradescoBoleto:
-	      	validator.SetError(this.getMessage("Pagarme.BoletoOnline"), fmt.Sprintf("Boleto On-Line %v não implementado", payment.Card.BoletoOnline))
+					if _, err := strconv.Atoi(payment.VadsTransId); err != nil {
+						validator.SetError(this.getMessage("Pagarme.VadsTransId"), "vads_trans_id deve ser um valor númerico de 6 digitos que não pode repetir no mesmo dia.")
+					}	        
+	      	//validator.SetError(this.getMessage("Pagarme.BoletoOnline"), fmt.Sprintf("Boleto On-Line %v não implementado", payment.Card.BoletoOnline))
 	        break
+	        
 	    }  		
   	}
 

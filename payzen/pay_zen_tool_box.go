@@ -869,6 +869,16 @@ func (this *PayZenToolBox) CreatePaymentBoletoOnline(paymentData *PayZenPayment)
 		fmt.Println("BoletoUrl = %v", result.BoletoUrl)
 	}
 
+	if len(paymentData.SaveBoletoAtPath) > 0 {
+		result.BoletoFileName = fmt.Sprintf("Boleto_%v_%v.pdf", payload["vads_order_id"], util.DateNow().Format("20060102150405"))
+		result.BoletoUrl = fmt.Sprintf("%v/%v", paymentData.SaveBoletoAtPath, result.BoletoFileName)
+		ioutil.WriteFile(result.BoletoUrl, result.BoletoOutputContent, 0666)		
+
+		if this.Debug {
+			fmt.Println("BoletoUrl = %v", result.BoletoUrl)
+		}
+	}
+
 
 	result.TransactionId = paymentData.VadsTransId //createPaymentResponse.CreatePaymentResult.PaymentResponse.TransactionId
 	result.TransactionUuid = paymentData.VadsTransId //createPaymentResponse.CreatePaymentResult.PaymentResponse.TransactionUuid
@@ -1350,6 +1360,8 @@ func (this *PayZenToolBox) MakeFormRequest(payload map[string]string) (*PayZenRe
 	}
 
 	r, err := http.PostForm(PAYZEN_FORM_URL, form)
+	r.Header.Set("Accept-Language", "pt-BR")
+	r.Header.Set("Content-Language", "pt-BR")
 
 	if err != nil {
 		return result, errors.New(fmt.Sprintf("http.Post: %v", err.Error()))
@@ -1367,14 +1379,17 @@ func (this *PayZenToolBox) MakeFormRequest(payload map[string]string) (*PayZenRe
 	fmt.Println("***** PAYZEN START RESPONSE ******")	
 	fmt.Println("***** STATUS CODE: %v", r.StatusCode)
 	if this.Debug {
-		//fmt.Println("***** RESPONSE: %v", result.Response)		
+		fmt.Println("***** RESPONSE: %v", result.Response)		
 	}
 	fmt.Println("***** PAYZEN END RESPONSE *********")
 	fmt.Println("***********************************")
 
 
 	d1 := []byte(result.Response)
-	ioutil.WriteFile(fmt.Sprintf("/tmp/payzen_boleto_result_%v_%v.html", payload["vads_order_id"], util.DateNow().Format("20060102150405")), d1, 0644)
+
+	if payload["vads_payment_cards"] == string(BoletoOnlineItauBoleto) {		
+		ioutil.WriteFile(fmt.Sprintf("/tmp/payzen_boleto_result_%v_%v.html", payload["vads_order_id"], util.DateNow().Format("20060102150405")), d1, 0644)
+	}
 
 
 	switch r.StatusCode {
@@ -1397,16 +1412,41 @@ func (this *PayZenToolBox) MakeFormRequest(payload map[string]string) (*PayZenRe
 					}		  
 
 			  	if boletoError == "" {
-			  		return result, errors.New(fmt.Sprintf("HtmlParse: %v", "Erro ao processar PayZen retorno: Nenhum resultado esperado foi encontrado."))		
+			  		return result, errors.New("Erro ao processar retorno PayZen: Nenhum resultado esperado foi encontrado.")		
 			  	} else {
-			  		return result, errors.New(fmt.Sprintf("HtmlParse: %v", boletoError))		
+			  		return result, errors.New(boletoError)		
 			  	}
 
 			  } else {
 					result.BoletoUrl = fmt.Sprintf("https://shopline.itau.com.br/shopline/impressao.aspx?DC=%v", itauCode)
 			  }
 
-			}
+			} else if payload["vads_payment_cards"] == string(BoletoOnlineBradescoBoleto) {
+
+				result.BoletoOutputContent = d1
+
+				if support.IsValidHtml(result.Response) {
+
+					ioutil.WriteFile(fmt.Sprintf("/tmp/payzen_boleto_result_%v_%v.html", payload["vads_order_id"], util.DateNow().Format("20060102150405")), d1, 0644)
+
+			  	boletoError, err := getBoletoError(result.Response)
+
+					if err != nil {
+						return result, errors.New(fmt.Sprintf("getBoletoError - %v", err.Error()))		
+					}		  
+
+			  	if boletoError == "" {
+			  		return result, errors.New("Erro ao processar retorno PayZen: Nenhum resultado esperado foi encontrado.")		
+			  	} else {
+			  		return result, errors.New(boletoError)		
+			  	}
+
+					
+				} else{
+					fmt.Println("is not valid html")
+				}
+
+		  } 
 
 			return result, nil
 
@@ -1446,7 +1486,7 @@ func getBoletoError(html string) (string, error){
  doc, err := support.HtmlParse(html)
 
   if err != nil {
-		return "", errors.New(fmt.Sprintf("HtmlParse: %v", err.Error()))		
+		return "", errors.New(fmt.Sprintf("HtmlParse: cannot parse %v", err.Error()))		
 	}
 
 	paymentResult := support.HtmlParseFindById(doc, "paymentResult")
@@ -1463,23 +1503,27 @@ func getBoletoError(html string) (string, error){
 		return "", nil
 	}	
 
-	div := support.HtmlParseFindByType(span, "div")
+	divParent := support.HtmlParseFindByType(span, "div")
 
-	if span == nil {
+	if divParent == nil {
 		fmt.Println("HtmlParse: div1 is nil")
 		return "", nil
 	}	
 
-	div = support.HtmlParseFindByType(div, "div")
+	divChild := support.HtmlParseFindByType(divParent, "div")
 	
-	if span == nil {
+	if divChild == nil {
+
+		if divParent != nil {
+			return divParent.FirstChild.Data, nil
+		}
+
 		fmt.Println("HtmlParse: div2 is nil")
 		return "", nil
 	}	
-	
 
+	return divChild.FirstChild.Data, nil
 
-	return div.FirstChild.Data, nil
 }
 
 
