@@ -2,7 +2,7 @@ package payzen
 
 import (
 	"github.com/mobilemindtec/go-utils/beego/validator"
-	"github.com/astaxie/beego/validation"
+	"github.com/astaxie/beego/core/validation"
 	"github.com/beego/i18n"
 	"github.com/mobilemindtec/go-payments/pagarme"
 	"strconv"
@@ -240,8 +240,8 @@ type PayZenResult struct {
 
 	Platform string
 	Nsu string	
-	BoletoOutputContent []byte	
-	BoletoFileName string
+	BoletoOutputContent []byte	`json:"-"`
+	BoletoFileName string `json:"-"`
 }
 
 func NewPayZenResult() *PayZenResult {

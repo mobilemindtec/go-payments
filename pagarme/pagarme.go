@@ -4,7 +4,7 @@ package pagarme
 import (
 	"github.com/mobilemindtec/go-utils/beego/validator"  
 	"github.com/mobilemindtec/go-payments/support"  
-  "github.com/astaxie/beego/validation"
+  "github.com/astaxie/beego/core/validation"
   "github.com/leekchan/accounting"
   "github.com/beego/i18n"
   "encoding/base64"

@@ -865,23 +865,33 @@ func (this *PayZenToolBox) CreatePaymentBoletoOnline(paymentData *PayZenPayment)
 		return result, err
 	}
 
-	if this.Debug {
-		fmt.Println("BoletoUrl = %v", result.BoletoUrl)
-	}
 
 	if len(paymentData.SaveBoletoAtPath) > 0 {
+		
 		result.BoletoFileName = fmt.Sprintf("Boleto_%v_%v.pdf", payload["vads_order_id"], util.DateNow().Format("20060102150405"))
 		result.BoletoUrl = fmt.Sprintf("%v/%v", paymentData.SaveBoletoAtPath, result.BoletoFileName)
-		ioutil.WriteFile(result.BoletoUrl, result.BoletoOutputContent, 0666)		
+		
 
-		if this.Debug {
-			fmt.Println("BoletoUrl = %v", result.BoletoUrl)
+		fmt.Println("save boleto at %v, size = %v", result.BoletoUrl, len(result.BoletoOutputContent))
+
+		if err := ioutil.WriteFile(result.BoletoUrl, result.BoletoOutputContent, 0644); err != nil {
+			return result, errors.New(fmt.Sprintf("error on create local file: %v", err))
 		}
+
+		//if this.Debug {
+			fmt.Println("saved boleto = %v", result.BoletoUrl)
+		//}
 	}
 
 
 	result.TransactionId = paymentData.VadsTransId //createPaymentResponse.CreatePaymentResult.PaymentResponse.TransactionId
 	result.TransactionUuid = paymentData.VadsTransId //createPaymentResponse.CreatePaymentResult.PaymentResponse.TransactionUuid
+	
+	result.TransactionStatus = WaitingAuthorisation
+	result.TransactionStatusLabel = "Boleto criado"
+	result.ResponseCode = "200"
+	result.ResponseCodeDetail  = "Boleto criado"
+
 	
 	return result, nil	
 
@@ -1373,6 +1383,9 @@ func (this *PayZenToolBox) MakeFormRequest(payload map[string]string) (*PayZenRe
 		return result, errors.New(fmt.Sprintf("ioutil.ReadAll: %v", err.Error()))		
 	}
 
+	payzenBoletoItau := payload["vads_payment_cards"] == string(BoletoOnlineItauBoleto) 
+	payzenBoletoBradesco := payload["vads_payment_cards"] == string(BoletoOnlineBradescoBoleto)
+	
 	result.Response = string(response)
 
 	fmt.Println("***********************************")
@@ -1387,15 +1400,16 @@ func (this *PayZenToolBox) MakeFormRequest(payload map[string]string) (*PayZenRe
 
 	d1 := []byte(result.Response)
 
-	if payload["vads_payment_cards"] == string(BoletoOnlineItauBoleto) {		
-		ioutil.WriteFile(fmt.Sprintf("/tmp/payzen_boleto_result_%v_%v.html", payload["vads_order_id"], util.DateNow().Format("20060102150405")), d1, 0644)
+	if payzenBoletoItau {		
+		if err := ioutil.WriteFile(fmt.Sprintf("/tmp/payzen_boleto_result_%v_%v.html", payload["vads_order_id"], util.DateNow().Format("20060102150405")), d1, 0644); err != nil {
+			fmt.Println("Error on save file %v", err)
+		}
 	}
-
 
 	switch r.StatusCode {
 		case 200:
 
-			if payload["vads_payment_cards"] == string(BoletoOnlineItauBoleto) {
+			if payzenBoletoItau {
 
 			  itauCode, err := getItauCode(result.Response)
 
@@ -1421,13 +1435,16 @@ func (this *PayZenToolBox) MakeFormRequest(payload map[string]string) (*PayZenRe
 					result.BoletoUrl = fmt.Sprintf("https://shopline.itau.com.br/shopline/impressao.aspx?DC=%v", itauCode)
 			  }
 
-			} else if payload["vads_payment_cards"] == string(BoletoOnlineBradescoBoleto) {
-
-				result.BoletoOutputContent = d1
+			} else if payzenBoletoBradesco {
+				
 
 				if support.IsValidHtml(result.Response) {
 
-					ioutil.WriteFile(fmt.Sprintf("/tmp/payzen_boleto_result_%v_%v.html", payload["vads_order_id"], util.DateNow().Format("20060102150405")), d1, 0644)
+					//fmt.Println("is valid html %v", len(d1))
+
+					if err := ioutil.WriteFile(fmt.Sprintf("/tmp/payzen_boleto_result_%v_%v.html", payload["vads_order_id"], util.DateNow().Format("20060102150405")), d1, 0644); err != nil {
+						fmt.Println("Error on save file %v", err)
+					}
 
 			  	boletoError, err := getBoletoError(result.Response)
 
@@ -1442,12 +1459,14 @@ func (this *PayZenToolBox) MakeFormRequest(payload map[string]string) (*PayZenRe
 			  	}
 
 					
-				} else{
-					fmt.Println("is not valid html")
+				} else{					
+					result.BoletoOutputContent = d1
+					//fmt.Println("is not valid html")
 				}
 
 		  } 
 
+		  result.Response = ""
 			return result, nil
 
 		default:
