@@ -286,13 +286,13 @@ type PagarmeService struct {
 
 type CaptureData struct {
 	ApiKey string `json:"api_key" valid:"Required"`	
-	TransactionId int64 `json:"-" valid:"Required"` 
+	TransactionId string `json:"-" valid:"Required"` // id or token
 	Amount int64 `json:"amount" valid:"Required"` 
 	SplitRules []*PagarmeSplitRule `json:"split_rules,omitempty"`
 	Metadata map[string]string `json:"metadata"`
 }
 
-func NewCaptureData(transactionId int64, amount float64) *CaptureData {	
+func NewCaptureData(transactionId string, amount float64) *CaptureData {	
 	return &CaptureData{ TransactionId: transactionId, Amount:  FormatAmount(amount) }
 }
 
@@ -626,8 +626,8 @@ func (this *PagarmeService) CreatePayment(payment *PagarmePayment) (*PagarmeResp
 
 func (this *PagarmeService) Capture(captureData *CaptureData) (*PagarmeResponse, error) {
 
-		this.EntityValidatorResult = new(validator.EntityValidatorResult)
-		this.EntityValidatorResult.Errors = map[string]string{}
+	this.EntityValidatorResult = new(validator.EntityValidatorResult)
+	this.EntityValidatorResult.Errors = map[string]string{}
 
 	captureData.ApiKey = this.ApiKey
 
