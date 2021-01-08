@@ -2,7 +2,7 @@ package payzen
 
 import (
 	"github.com/mobilemindtec/go-utils/beego/validator"
-	"github.com/astaxie/beego/core/validation"
+	"github.com/beego/beego/v2/core/validation"
 	"github.com/beego/i18n"
 	"github.com/mobilemindtec/go-payments/pagarme"
 	"strconv"
