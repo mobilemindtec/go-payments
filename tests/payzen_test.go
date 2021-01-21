@@ -93,7 +93,7 @@ func fillCustomer(customer *payzen.PayZenCustomer) {
 }
 
 func genUUID() string {
-	id, _ := uuid.NewV4()
+	id := uuid.NewV4()
 	return id.String()
 }
 

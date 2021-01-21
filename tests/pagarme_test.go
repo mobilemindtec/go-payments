@@ -150,7 +150,7 @@ func TestPagarmeCreatePaymentCard(t *testing.T) {
       return
     }
 
-    captureData := pagarme.NewCaptureData(fmt.Sprintf("%v"), result.TransactionId, 1)
+    captureData := pagarme.NewCaptureData(fmt.Sprintf("%v", result.TransactionId), 1)
 
     captureResult, err := Pagarme.Capture(captureData)
 
