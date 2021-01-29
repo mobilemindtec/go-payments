@@ -5,6 +5,7 @@ import (
 	"github.com/beego/beego/v2/core/validation"
 	"github.com/beego/i18n"
 	"github.com/mobilemindtec/go-payments/pagarme"
+	"github.com/mobilemindtec/go-payments/pickpay"
 	"strconv"
 	"strings"
 	"errors"
@@ -97,6 +98,13 @@ type PayZenPayment struct{
 	SoftDescriptor string `valid:""` 	
 	Metadata map[string]string `valid:""` 
 	SaveBoletoAtPath string
+
+	//PickPay
+  CallbackUrl string `json:""`
+  ReturnUrl string `json:""`
+  Plugin string `json:""`
+  AdditionalInfo map[string]interface{} `json:""`
+  ExpiresAt time.Time `json:""`
 }
 
 type PayZenCapturePayment struct {
@@ -150,6 +158,13 @@ func NewPayZenPayment(shopId string, mode string, cert string) *PayZenPayment {
 	payment.Customer = new(PayZenCustomer)
 	payment.Card = new(PayZenCard)
 	payment.ValidationType = Automatica
+	return payment
+}
+
+func NewEmptyPayZenPayment() *PayZenPayment {
+	payment := new(PayZenPayment)
+	payment.Customer = new(PayZenCustomer)
+	payment.Card = new(PayZenCard)
 	return payment
 }
 
@@ -209,8 +224,9 @@ type PayZenResult struct {
 	//ResponseObject interface{}
 
 	PagarmeStatus pagarme.PagarmeStatus
-
+	PickPayStatus pickpay.PickPayStatus
 	TransactionStatus PayZenTransactionStatus
+
 	TransactionStatusLabel string
 
 	TransactionId string
@@ -242,6 +258,12 @@ type PayZenResult struct {
 	Nsu string	
 	BoletoOutputContent []byte	`json:"-"`
 	BoletoFileName string `json:"-"`
+
+	QrCode string
+	QrCodeUrl string
+	PaymentUrl string
+  AuthorizationId string
+  CancellationId string
 }
 
 func NewPayZenResult() *PayZenResult {

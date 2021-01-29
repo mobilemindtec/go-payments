@@ -68,6 +68,7 @@ type PickPayResult struct {
   Error bool `json:"error"`  
   Message string `json:"message"`
   Response string
+  Request string
 }
 
 func (this *PickPayTransaction) HasError() bool {
@@ -103,7 +104,6 @@ type PickPayTransactionRequest struct {
   Buyer *PickPayBuyer `json:"buyer" valid:"Required"`
   ExpiresAt time.Time `json:"" valid:"Required"`
   ExpiresAtFormatted string `json:"expiresAt" valid:""`
-
   AuthorizationId string `json:"authorizationId,omitempty" valid:""`
 }
 
@@ -148,6 +148,8 @@ func (this *PickPay) CreateTransaction(request *PickPayTransactionRequest) (*Pic
   }
 
   postData := bytes.NewBuffer(jsonData)
+
+  result.Request = string(jsonData)
 
 	method := "POST"
 
