@@ -7,7 +7,7 @@ import (
 	_ "github.com/satori/go.uuid"
 	_ "github.com/go-redis/redis"
 	"testing"
-	_ "time"
+	"time"
 	"fmt"
 	_ "os"
   "encoding/json"
@@ -51,7 +51,7 @@ func init(){
 
 func TestPickPayCreateTransaction(t *testing.T) {
 		
-	Pickpay := pickpay.NewPickPay(Token, SallerToken)
+	Pickpay := pickpay.NewPickPay("pt-BR", Token, SallerToken)
 	Pickpay.Debug = true
 
 	request := pickpay.NewPickPayTransactionRequest()
@@ -68,7 +68,7 @@ func TestPickPayCreateTransaction(t *testing.T) {
 	request.Value = "5"
 	//request.Plugin = 
 	//request.AdditionalInfo = 
-	//request.ExpiresAt	 = 
+	request.ExpiresAt	 = time.Now().Add(time.Duration(time.Hour * 48))
 	
 
 	result, err := Pickpay.CreateTransaction(request)
@@ -80,4 +80,58 @@ func TestPickPayCreateTransaction(t *testing.T) {
 
   	t.Log(fmt.Sprintf("result = %v", result))
   }
+}
+
+func TestPickPayCheckStatus(t *testing.T) {
+		
+	Pickpay := pickpay.NewPickPay("pt-BR", Token, SallerToken)
+	Pickpay.Debug = true
+
+	result, err := Pickpay.CheckStatus("000001")
+	
+
+  if err != nil {
+  	t.Errorf("Erro ao verificar status: %v", err)
+  }else{
+
+  	if result.Transaction.StatusText != "created" {
+  		t.Errorf("Status esperado: created, encontrado %v", result.Transaction.StatusText)
+  		return
+  	}
+
+  	if result.Transaction.PickPayStatus != pickpay.PickPayCreated {
+  		t.Errorf("Status esperado: PickPayCreated, encontrado %v", result.Transaction.PickPayStatus)
+  		return
+  	}
+
+  	t.Log(fmt.Sprintf("result = %v", result))
+  }
+}
+
+func TestPickPayCheckCancel(t *testing.T) {
+		
+	Pickpay := pickpay.NewPickPay("pt-BR", Token, SallerToken)
+	Pickpay.Debug = true
+
+	result, err := Pickpay.Cancel("000001", "")
+	
+
+  if err != nil {
+  	t.Errorf("Erro ao verificar status: %v", err)
+  }else{
+
+  	if result.Transaction.StatusText != "created" {
+  		t.Errorf("Status esperado: created, encontrado %v", result.Transaction.StatusText)
+  		return
+  	}
+
+  	if result.Transaction.PickPayStatus != pickpay.PickPayCreated {
+  		t.Errorf("Status esperado: PickPayCreated, encontrado %v", result.Transaction.PickPayStatus)
+  		return
+  	}
+
+  	t.Log(fmt.Sprintf("result = %v", result))
+  }
+
+
 }
