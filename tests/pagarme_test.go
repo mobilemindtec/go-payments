@@ -8,7 +8,9 @@ import (
 	"testing"
 	_ "time"
 	"fmt"
+  "encoding/json"
 	_ "os"
+
 )
 
 
@@ -18,8 +20,6 @@ const (
 	CryptoKey = ""
 
 )
-
-
 
 func pagarmeFillCard(card *pagarme.PagarmeCard) {
   card.Number = "4901720080344448"
@@ -70,6 +70,17 @@ func pagarmefillCustomer(customer *pagarme.PagarmeCustomer) {
   customer.Address.ZipCode = "95700540"
   customer.Address.City = "Bento Goncalves"
   customer.Address.State = "RS"
+}
+
+func TestJsonResult(t *testing.T){
+  data := []byte(``)
+
+  result := &pagarme.PagarmeResponse{  }
+  //values := make(map[string]interface{})
+
+  if err := json.Unmarshal(data, &result); err != nil {    
+    t.Errorf("Pagarme: Error on converte response to json - %v", err.Error())
+  }
 }
 
 func TestPagarmeGetCardHashKey(t *testing.T) {
