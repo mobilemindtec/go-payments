@@ -207,6 +207,7 @@ type PayZenTransactionItemResult struct {
 	TransactionId string
 	TransactionStatus PayZenTransactionStatus
 	PagarmeStatus pagarme.PagarmeStatus
+	PickPayStatus pickpay.PickPayStatus
 	TransactionStatusLabel string
 	ExternalTransactionId string
 	Amount float64
