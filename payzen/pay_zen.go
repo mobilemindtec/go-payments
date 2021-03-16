@@ -140,7 +140,7 @@ func NewPayZenPaymentFind(shopId string, mode string, cert string) *PayZenPaymen
 	return find
 }
 
-func NewEmptyPayZenPaymentFind(s) *PayZenPaymentFind {
+func NewEmptyPayZenPaymentFind() *PayZenPaymentFind {
 	find := new(PayZenPaymentFind)
 	find.Account = &PayZenAccount{ }
 	return find
