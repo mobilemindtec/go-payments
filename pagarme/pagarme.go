@@ -227,7 +227,7 @@ type PagarmeResponse struct {
 	AcquirerResponseCode string `json:"acquirer_response_code"`
 	AuthorizationCode string `json:"authorization_code"`
 	SoftDescriptor string `json:"soft_descriptor"`
-	Tid int64 `json:"tid"`
+	Tid interface{} `json:"tid"`
 	Nsu int64 `json:"nsu"`
 	DateCreated string `json:"date_created"`
 	DateUpdated string `json:"date_updated"`
