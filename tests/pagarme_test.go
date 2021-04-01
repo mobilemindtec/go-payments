@@ -7,19 +7,47 @@ import (
 	_ "github.com/go-redis/redis"
 	"testing"
 	_ "time"
+  "io/ioutil"
 	"fmt"
   "encoding/json"
+  "github.com/mobilemindtec/go-utils/support" 
 	_ "os"
 
 )
 
 
-const (
+var (
 
 	ApiKey = ""
 	CryptoKey = ""
 
 )
+
+func init(){
+  file, err := ioutil.ReadFile("../certs.json")
+  if err != nil {
+      fmt.Printf("error on open file ../certs.json: %v\n", err)
+      return
+  }
+
+  data := make(map[string]interface{})
+  
+  err = json.Unmarshal(file, &data)
+  if err != nil {
+      fmt.Printf("JSON error: %v\n", err)
+      return
+  }  
+
+  jsonParser := new(support.JsonParser)
+
+  clienteData := jsonParser.GetJsonObject(data, "mobilemind")
+  pdata := jsonParser.GetJsonObject(clienteData, "pagarme")
+  
+  ApiKey = jsonParser.GetJsonString(pdata, "ApiKey")
+  CryptoKey = jsonParser.GetJsonString(pdata, "CryptoKey")
+
+  fmt.Printf("init pickpay toApiKey = %v, CryptoKey = %v", Token, CryptoKey)
+}
 
 func pagarmeFillCard(card *pagarme.PagarmeCard) {
   card.Number = "4901720080344448"
@@ -115,12 +143,16 @@ func TestPagarmeCreateCard(t *testing.T) {
 	
 	Card := new(pagarme.PagarmeCard)
 	Pagarme := pagarme.NewPagarmeServiceWithCert("pt-BR", ApiKey, CryptoKey)
-
+  Pagarme.Debug = true
 	pagarmeFillCard(Card)
 
-  Card.CustomerId = "123456"
+  result, err := Pagarme.CreateCard(Card)
 
-  Pagarme.CreateCard(Card)
+  if err != nil {
+    t.Errorf("Erro ao criar card cartão: %v", err)
+  }else{
+    t.Log(fmt.Sprintf("result = %v", result))   
+  }
 
 }
 

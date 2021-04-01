@@ -19,6 +19,7 @@ import (
 	"net/url"
   "errors"
 	"bytes"
+	"time"
 	"fmt"	
 )
 
@@ -187,13 +188,13 @@ type PagarmePayment struct {
 }
 
 type PagarmeCard struct {
-	Id string `json:"card_id" valid:""`
+	Id string `json:"card_id,omitempty" valid:""`
 	HolderName string `json:"card_holder_name" valid:""`
 	ExpirationDate string `json:"card_expiration_date" valid:""`
 	Number	string `json:"card_number" valid:""`
-	Cvv string `json:"card_cvv" valid:""`
-	CustomerId string `json:"customer_id" valid:""`
-	Hash string `json:"card_hash" valid:""`
+	Cvv string `json:"card_cvv,omitempty" valid:""`
+	CustomerId string `json:"customer_id,omitempty" valid:""`
+	Hash string `json:"card_hash,omitempty" valid:""`
 	ApiKey string `json:"api_key" valid:"Required"`	
 }
 
@@ -201,6 +202,22 @@ type CardHashKey struct {
 	Id int64 `json:"id"`
 	PublicKey string `json:"public_key"`
 	Hash string
+}
+
+type CardResult struct {
+  Object string `json:"card"`
+  Id string `json:"id"`
+  DateCreated time.Time `json:"date_created"` 
+  DateUpdated time.Time `json:"date_updated"`
+  Brand string `json:"brand"`
+  HolderName string `json:"holder_name"`
+  FirstDigits string `json:"first_digits"`
+  LastDigits string `json:"last_digits"`
+  Country string `json:"country"`
+  Fingerprint string `json:"fingerprint"`
+  Customer string `json:"customer"`
+  ExpirationDate string  `json:"expiration_date"`
+  Valid bool `json:"valid"`
 }
 
 /*
@@ -324,8 +341,9 @@ func (this *PagarmeService) GetCardHashKey() (*CardHashKey, error) {
 		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
 	}
 
-	fmt.Println(string(response))	
-
+	if this.Debug {
+		fmt.Println(string(response))	
+	}
 
 	result := new(CardHashKey)
 
@@ -357,8 +375,10 @@ func (this *PagarmeService) EncryptCard(card *PagarmeCard)(*CardHashKey, error){
 
 	encodedCard := params.Encode()
 
-	fmt.Println("encodedCard = %v", encodedCard)	
-	//fmt.Println("hasKeyInfo.PublicKey = %v", CardHashKey.PublicKey)
+	if this.Debug {
+		fmt.Println("encodedCard = %v", encodedCard)	
+		fmt.Println("hasKeyInfo.PublicKey = %v", CardHashKey.PublicKey)
+	}
 
 	encryptedData, err := support.RsaEncrypt([]byte(encodedCard), []byte(CardHashKey.PublicKey))
 
@@ -370,7 +390,9 @@ func (this *PagarmeService) EncryptCard(card *PagarmeCard)(*CardHashKey, error){
 
 	encryptedText := base64.StdEncoding.EncodeToString(encryptedData)
 
-	fmt.Println("encryptedText = %v", encryptedText)
+	if this.Debug {
+		fmt.Println("encryptedText = %v", encryptedText)
+	}
 
 	CardHashKey.Hash =  fmt.Sprintf("%v_%v", CardHashKey.Id, encryptedText)
 	
@@ -379,7 +401,7 @@ func (this *PagarmeService) EncryptCard(card *PagarmeCard)(*CardHashKey, error){
 }
 
 
-func (this *PagarmeService) CreateCard(card *PagarmeCard) (map[string]string, error) {
+func (this *PagarmeService) CreateCard(card *PagarmeCard) (*CardResult, error) {
 
 	//if !this.onValid(card) {
 	//	return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
@@ -403,6 +425,14 @@ func (this *PagarmeService) CreateCard(card *PagarmeCard) (map[string]string, er
 		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
 	}
 
+	if this.Debug {
+		x, _ := json.MarshalIndent(card, "", "    ")	
+		fmt.Println("##################################################################")
+		fmt.Println(string(x))
+		fmt.Println("##################################################################")
+	}
+
+
 	data := bytes.NewBuffer(jsonData)
 
 	r, err := http.Post(fmt.Sprintf("%v/cards", PAGARME_URL), "application/json", data)
@@ -419,9 +449,21 @@ func (this *PagarmeService) CreateCard(card *PagarmeCard) (map[string]string, er
 		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
 	}
 
-	fmt.Println(string(response))	
+	result := new(CardResult)
 
-	return nil, nil
+	err = json.Unmarshal(response, result)
+
+	if err != nil {
+		fmt.Println("error json.Unmarshal ", err.Error())
+		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
+	}
+
+
+	if this.Debug {
+		fmt.Println(string(response))	
+	}
+
+	return result, nil
 
 }
 
@@ -458,7 +500,9 @@ func (this *PagarmeService) CreateCustomer(customer *PagarmeCustomer) (error) {
 		return errors.New(this.getMessage("Pagarme.Error", err.Error()))
 	}
 
-	fmt.Println(string(response))	
+	if this.Debug {
+		fmt.Println(string(response))	
+	}
 
 	
 	err = json.Unmarshal(response, customer)
@@ -480,7 +524,7 @@ func (this *PagarmeService) CreatePayment(payment *PagarmePayment) (*PagarmeResp
 
 	if payment.PaymentMethod == PAYMENT_METHOD_CREDIT_CARD {
 
-		if len(payment.CardHash) == 0 {
+		if len(payment.CardId) == 0 {
 
 			card := new(PagarmeCard)
 			card.Number = payment.CardNumber
@@ -496,7 +540,7 @@ func (this *PagarmeService) CreatePayment(payment *PagarmePayment) (*PagarmeResp
 
 			payment.CardHash = cardInfo.Hash
 
-		}
+		} 
 
 	}
 
@@ -505,8 +549,6 @@ func (this *PagarmeService) CreatePayment(payment *PagarmePayment) (*PagarmeResp
 	if !this.onValid(payment) {
 		return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
 	}
-
-
 
 
 	jsonData, err := json.Marshal(payment)

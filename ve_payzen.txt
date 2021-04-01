@@ -4,7 +4,7 @@ export GOROOT=/usr/local/opt/go/libexec
 
 go test  github.com/mobilemindtec/go-payments/tests -v
 
-go test  github.com/mobilemindtec/go-payments/tests -run TestPayZenPaymentCreateBoletoOnline
+go test  github.com/mobilemindtec/go-payments/tests -run TestPagarmeCreateCard
 
 
 
