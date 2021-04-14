@@ -124,6 +124,7 @@ type PayZenPaymentFind struct {
 	OrderId string
 	SubscriptionId string
 	Token string
+	AuthorizationId string
 	Account *PayZenAccount `valid:"Required"`
 }
 
