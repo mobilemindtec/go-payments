@@ -324,21 +324,21 @@ func (this *PickPay) Cancel(referenceId string, authorizationId string) (*PickPa
   }
 
   result := new(PickPayResult)
-  var postData *bytes.Buffer = nil
+
+  payload := map[string]string{}
 
   if len(authorizationId) > 0 {
-    payload := map[string]string{}
     payload["authorizationId"] = authorizationId
-
-    jsonData, err := json.Marshal(payload)
-
-    if err != nil {
-      fmt.Println("error json.Marshal ", err.Error())    
-      return result, err
-    }
-
-    postData = bytes.NewBuffer(jsonData)
   } 
+
+  jsonData, err := json.Marshal(payload)
+
+  if err != nil {
+    fmt.Println("error json.Marshal ", err.Error())    
+    return result, err
+  }
+
+  postData := bytes.NewBuffer(jsonData)
 
   method := "POST"
 
