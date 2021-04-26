@@ -5,7 +5,7 @@ import (
 	"github.com/beego/beego/v2/core/validation"
 	"github.com/beego/i18n"
 	"github.com/mobilemindtec/go-payments/pagarme"
-	"github.com/mobilemindtec/go-payments/pickpay"
+	"github.com/mobilemindtec/go-payments/picpay"
 	"strconv"
 	"strings"
 	"errors"
@@ -99,7 +99,7 @@ type PayZenPayment struct{
 	Metadata map[string]string `valid:""` 
 	SaveBoletoAtPath string
 
-	//PickPay
+	//PicPay
   CallbackUrl string `json:""`
   ReturnUrl string `json:""`
   Plugin string `json:""`
@@ -214,7 +214,7 @@ type PayZenTransactionItemResult struct {
 	TransactionId string
 	TransactionStatus PayZenTransactionStatus
 	PagarmeStatus pagarme.PagarmeStatus
-	PickPayStatus pickpay.PickPayStatus
+	PicPayStatus picpay.PicPayStatus
 	TransactionStatusLabel string
 	ExternalTransactionId string
 	Amount float64
@@ -232,7 +232,7 @@ type PayZenResult struct {
 	//ResponseObject interface{}
 
 	PagarmeStatus pagarme.PagarmeStatus
-	PickPayStatus pickpay.PickPayStatus
+	PicPayStatus picpay.PicPayStatus
 	TransactionStatus PayZenTransactionStatus
 
 	TransactionStatusLabel string
