@@ -4,6 +4,7 @@ package payzen
 import (	
 	"github.com/mobilemindtec/go-payments/support"
 	"github.com/mobilemindtec/go-utils/app/util"
+	"github.com/mobilemindtec/go-payments/api"
 	"github.com/leekchan/accounting"
 	"github.com/satori/go.uuid"
 	"encoding/base64"
@@ -34,6 +35,7 @@ const (
   hns = "http://v5.ws.vads.lyra.com/Header" //Namespace ot the service header	
   CurrencyCode = "986"
   CountryBR = "BR"
+  Currency = "BRL"
 )
 
 const (
@@ -48,29 +50,12 @@ const (
 	DateWithZeroTimeLayout = "2006-01-02T00:00:00Z"
 )
 
-type BoletoOnlineTipo string
-
-const (
-	BoletoOnline BoletoOnlineTipo = "BOLETO"
-	BoletoOnlineItauIb BoletoOnlineTipo = "ITAU_IB"
-	BoletoOnlineItauBoleto BoletoOnlineTipo = "ITAU_BOLETO"
-	BoletoOnlineBradescoBoleto BoletoOnlineTipo = "BRADESCO_BOLETO"
-	BoletoOnlineNenhum BoletoOnlineTipo = "NENHUM"
-)
-
-
-type PayZenAccount struct {
-	ShopId string `valid:"Required"`
-	Mode string `valid:"Required"`
-	Cert string `valid:"Required"`
-}
-
 type PayZenToolBox struct {
-	Account *PayZenAccount
+	Account *api.PayZenAccount
 	Debug bool
 }
 
-func NewPayZenToolBox(account *PayZenAccount) *PayZenToolBox{
+func NewPayZenToolBox(account *api.PayZenAccount) *PayZenToolBox{
 	return &PayZenToolBox{ Account: account }
 }
 
@@ -148,7 +133,7 @@ func (this *PayZenToolBox) FillRequestHeader(header *SOAPHeader){
 }
 
 
-func (this *PayZenToolBox) FillCardInfo(cardRequest *SOAPCardRequest, card *PayZenCard) {
+func (this *PayZenToolBox) FillCardInfo(cardRequest *SOAPCardRequest, card *api.Card) {
 	cardRequest.Number = card.Number //"4970100000000007"
 	cardRequest.Scheme = card.Scheme //"VISA"
 	cardRequest.ExpiryMonth = card.ExpiryMonth //12
@@ -158,7 +143,7 @@ func (this *PayZenToolBox) FillCardInfo(cardRequest *SOAPCardRequest, card *PayZ
 	cardRequest.PaymentToken = card.Token
 }
 
-func (this *PayZenToolBox) FillCustomerInfo(billingDetails *SOAPBillingDetails, customer *PayZenCustomer) {	
+func (this *PayZenToolBox) FillCustomerInfo(billingDetails *SOAPBillingDetails, customer *api.Customer) {	
 	billingDetails.FirstName = customer.FirstName
 	billingDetails.LastName = customer.LastName
 	billingDetails.PhoneNumber = customer.PhoneNumber
@@ -177,7 +162,7 @@ func (this *PayZenToolBox) FillCustomerInfo(billingDetails *SOAPBillingDetails, 
 /*
 	Cria um token para compra com um click
 */
-func (this *PayZenToolBox) CreatePaymentToken(paymentData *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZenToolBox) CreatePaymentToken(paymentData *api.Payment) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run CreatePaymentToken: %v", paymentData)
@@ -207,6 +192,12 @@ func (this *PayZenToolBox) CreatePaymentToken(paymentData *PayZenPayment) (*PayZ
 		return result, err
 	}
 
+	switch result.ResponseCodeDetail {
+		case "Action successfully completed":
+			result.TransactionStatus = api.Success
+			break
+	}
+
 	result.TokenInfo.Token = createTokenResponse.CreateTokenResult.CommonResponse.PaymentToken
 
 	return result, err
@@ -216,7 +207,7 @@ func (this *PayZenToolBox) CreatePaymentToken(paymentData *PayZenPayment) (*PayZ
 	Atualiza um token para compra com um click
 */
 
-func (this *PayZenToolBox) UpdatePaymentToken(paymentData *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZenToolBox) UpdatePaymentToken(paymentData *api.Payment) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run UpdatePaymentToken: %v", paymentData)
@@ -244,14 +235,17 @@ func (this *PayZenToolBox) UpdatePaymentToken(paymentData *PayZenPayment) (*PayZ
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
-	switch result.ResponseCodeDetail {
-		case "PaymentToken not found":
-			result.TokenInfo.NotFound = true
-			break
-	}	
+	result.TokenInfo.NotFound = strings.Contains(result.ResponseCodeDetail, "PaymentToken not found")
 
 	if err != nil || result.Error {
 		return result, err
+	}
+
+
+	switch result.ResponseCodeDetail {
+		case "Action successfully completed":
+			result.TransactionStatus = api.Success
+			break
 	}
 
 	result.TokenInfo.Token = updateTokenResponse.UpdateTokenResult.CommonResponse.PaymentToken
@@ -262,7 +256,7 @@ func (this *PayZenToolBox) UpdatePaymentToken(paymentData *PayZenPayment) (*PayZ
 /*
 	Cancela um token para compra com um click
 */
-func (this *PayZenToolBox) CancelPaymentToken(paymentToken string) (*PayZenResult, error) {
+func (this *PayZenToolBox) CancelPaymentToken(paymentToken string) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run CancelPaymentToken: %v", paymentToken)
@@ -287,11 +281,17 @@ func (this *PayZenToolBox) CancelPaymentToken(paymentToken string) (*PayZenResul
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
+	if err != nil || result.Error {
+		return result, err
+	}
+
 	switch result.ResponseCodeDetail {
-		case "PaymentToken not found":
-			result.TokenInfo.NotFound = true
+		case "Action successfully completed":
+			result.TransactionStatus = api.Success
 			break
-	}	
+	}
+
+	result.TokenInfo.NotFound = strings.Contains(result.ResponseCodeDetail, "PaymentToken not found")
 
 	return result, err
 }
@@ -299,7 +299,7 @@ func (this *PayZenToolBox) CancelPaymentToken(paymentToken string) (*PayZenResul
 /*
 	Reativa um token para compra com um click
 */
-func (this *PayZenToolBox) ReactivePaymentToken(paymentToken string) (*PayZenResult, error) {
+func (this *PayZenToolBox) ReactivePaymentToken(paymentToken string) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run ReactivePaymentToken: %v", paymentToken)
@@ -324,11 +324,17 @@ func (this *PayZenToolBox) ReactivePaymentToken(paymentToken string) (*PayZenRes
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
+	if err != nil || result.Error {
+		return result, err
+	}
+
 	switch result.ResponseCodeDetail {
-		case "PaymentToken not found":
-			result.TokenInfo.NotFound = true
+		case "Action successfully completed":
+			result.TransactionStatus = api.Success
 			break
-	}	
+	}
+
+	result.TokenInfo.NotFound = strings.Contains(result.ResponseCodeDetail, "PaymentToken not found")
 
 	return result, err
 }
@@ -336,7 +342,7 @@ func (this *PayZenToolBox) ReactivePaymentToken(paymentToken string) (*PayZenRes
 /*
 	Consulta um token para compra com um click
 */
-func (this *PayZenToolBox) GetDetailsPaymentToken(paymentToken string) (*PayZenResult, error) {
+func (this *PayZenToolBox) GetDetailsPaymentToken(paymentToken string) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run GetDetailsPaymentToken: %v", paymentToken)
@@ -361,11 +367,13 @@ func (this *PayZenToolBox) GetDetailsPaymentToken(paymentToken string) (*PayZenR
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
+	result.TokenInfo.NotFound = strings.Contains(result.ResponseCodeDetail, "PaymentToken not found")
+
 	switch result.ResponseCodeDetail {
-		case "PaymentToken not found":
-			result.TokenInfo.NotFound = true
+		case "Action successfully completed":
+			result.TransactionStatus = api.Success
 			break
-	}	
+	}
 
 	if !result.TokenInfo.NotFound {
 
@@ -387,7 +395,7 @@ func (this *PayZenToolBox) GetDetailsPaymentToken(paymentToken string) (*PayZenR
 /*
 	Retorna o status de um pagamento
 */
-func (this *PayZenToolBox) FindPayment(orderId string) (*PayZenResult, error){
+func (this *PayZenToolBox) FindPayment(orderId string) (*api.PaymentResult, error){
 
 	if this.Debug {
 		fmt.Println("** run FindPayment: %v", orderId)
@@ -407,10 +415,7 @@ func (this *PayZenToolBox) FindPayment(orderId string) (*PayZenResult, error){
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
-	switch result.ResponseCodeDetail {
-		case "Transaction was not found":
-			result.PaymentNotFound = true
-	}
+	result.PaymentNotFound = strings.Contains(result.ResponseCodeDetail, "Transaction was not found")
 
 	if !result.PaymentNotFound {				
 		items := soapResponse.Body.FindPaymentsResponse.FindPaymentsResult.TransactionItem			
@@ -418,7 +423,9 @@ func (this *PayZenToolBox) FindPayment(orderId string) (*PayZenResult, error){
 
 			res, _ := switchStatus(item.TransactionStatusLabel)
 
-			trans := new(PayZenTransactionItemResult)
+			result.TransactionStatus = res.TransactionStatus
+			
+			trans := new(api.TransactionItemResult)
 			trans.TransactionUuid = item.TransactionUuid
 			trans.TransactionStatus = res.TransactionStatus
 			trans.TransactionStatusLabel = item.TransactionStatusLabel
@@ -444,15 +451,15 @@ func (this *PayZenToolBox) FindPayment(orderId string) (*PayZenResult, error){
 	Retorna os detalhes de um pagamento
 */
 
-func (this *PayZenToolBox) GetPaymentDetails(transactionUuid string) (*PayZenResult, error){
+func (this *PayZenToolBox) GetPaymentDetails(transactionUuid string) (*api.PaymentResult, error){
 	return this.getPaymentDetails(transactionUuid, false)
 }
 
-func (this *PayZenToolBox) GetPaymentDetailsWithNsu(transactionUuid string) (*PayZenResult, error){
+func (this *PayZenToolBox) GetPaymentDetailsWithNsu(transactionUuid string) (*api.PaymentResult, error){
 	return this.getPaymentDetails(transactionUuid, true)
 }
 
-func (this *PayZenToolBox) getPaymentDetails(transactionUuid string, withNsu bool) (*PayZenResult, error){
+func (this *PayZenToolBox) getPaymentDetails(transactionUuid string, withNsu bool) (*api.PaymentResult, error){
 
 	if this.Debug {
 		fmt.Println("** run GetPaymentDetails: %v", transactionUuid)
@@ -480,11 +487,7 @@ func (this *PayZenToolBox) getPaymentDetails(transactionUuid string, withNsu boo
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
-
-	switch result.ResponseCodeDetail {
-		case "Transaction was not found":
-			result.PaymentNotFound = true
-	}
+	result.PaymentNotFound = strings.Contains(result.ResponseCodeDetail, "Transaction was not found")
 
 	if !result.PaymentNotFound {		
 		res, erro := switchStatus(result.TransactionStatusLabel)
@@ -493,9 +496,11 @@ func (this *PayZenToolBox) getPaymentDetails(transactionUuid string, withNsu boo
 			return result, errors.New(fmt.Sprintf("%v. Código de erro %v: %v", erro.Error(), result.ResponseCode, result.ResponseCodeDetail))
 		}
 
+		result.TransactionStatus = res.TransactionStatus
+
 		paymentResponse := getPaymentDetailsResponse.GetPaymentDetailsResult.PaymentResponse
 
-		trans := new(PayZenTransactionItemResult)
+		trans := new(api.TransactionItemResult)
 		trans.TransactionUuid = paymentResponse.TransactionUuid
 		trans.TransactionId = paymentResponse.TransactionId
 		trans.TransactionStatus = res.TransactionStatus
@@ -514,10 +519,10 @@ func (this *PayZenToolBox) getPaymentDetails(transactionUuid string, withNsu boo
 /*
 	Retorna os detalhes de um pagamento
 */
-func (this *PayZenToolBox) ValidatePayment(transactionUuid string) (*PayZenResult, error){
+func (this *PayZenToolBox) ValidatePayment(transactionUuid string) (*api.PaymentResult, error){
 
 	if this.Debug {
-		fmt.Println("** run GetPaymentDetails: %v", transactionUuid)
+		fmt.Println("** run validatePaymentResponse: %v", transactionUuid)
 	}
 
 	// cria request
@@ -535,10 +540,7 @@ func (this *PayZenToolBox) ValidatePayment(transactionUuid string) (*PayZenResul
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
-	switch result.ResponseCodeDetail {
-		case "Transaction was not found":
-			result.PaymentNotFound = true
-	}
+	result.PaymentNotFound = strings.Contains(result.ResponseCodeDetail, "Transaction was not found")
 
 	res, erro := switchStatus(result.TransactionStatusLabel)
 	
@@ -553,7 +555,7 @@ func (this *PayZenToolBox) ValidatePayment(transactionUuid string) (*PayZenResul
 	return result, err
 }
 
-func (this *PayZenToolBox) DuplicatePayment(paymentData *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZenToolBox) DuplicatePayment(paymentData *api.Payment) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run DuplicatePayment: %v", paymentData)
@@ -583,10 +585,7 @@ func (this *PayZenToolBox) DuplicatePayment(paymentData *PayZenPayment) (*PayZen
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
-	switch result.ResponseCodeDetail {
-		case "Transaction was not found":
-			result.PaymentNotFound = true
-	}
+	result.PaymentNotFound = strings.Contains(result.ResponseCodeDetail, "Transaction was not found")
 
 	res, erro := switchStatus(result.TransactionStatusLabel)
 	
@@ -616,7 +615,7 @@ func (this *PayZenToolBox) DuplicatePayment(paymentData *PayZenPayment) (*PayZen
 	return result, err	
 }
 
-func (this *PayZenToolBox) RefundPayment(paymentData *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZenToolBox) RefundPayment(paymentData *api.Payment) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run RefundPayment: %v", paymentData)
@@ -644,10 +643,7 @@ func (this *PayZenToolBox) RefundPayment(paymentData *PayZenPayment) (*PayZenRes
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
-	switch result.ResponseCodeDetail {
-		case "Transaction was not found":
-			result.PaymentNotFound = true
-	}
+	result.PaymentNotFound = strings.Contains(result.ResponseCodeDetail, "Transaction was not found")
 
 	res, erro := switchStatus(result.TransactionStatusLabel)
 	
@@ -673,7 +669,7 @@ func (this *PayZenToolBox) RefundPayment(paymentData *PayZenPayment) (*PayZenRes
 /*
 	Captura uma transação
 */
-func (this *PayZenToolBox) CapturePayment(captureObject *PayZenCapturePayment) (*PayZenResult, error) {
+func (this *PayZenToolBox) CapturePayment(captureObject *api.PaymentCapture) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run CapturePayment: %v", captureObject.TransactionUuids)
@@ -696,9 +692,12 @@ func (this *PayZenToolBox) CapturePayment(captureObject *PayZenCapturePayment) (
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
+	result.PaymentNotFound = strings.Contains(result.ResponseCodeDetail, "Transaction was not found")
+
 	switch result.ResponseCodeDetail {
-		case "Transaction was not found":
-			result.PaymentNotFound = true
+		case "Action successfully completed":
+			result.TransactionStatus = api.Captured
+			break
 	}
 
 
@@ -708,7 +707,7 @@ func (this *PayZenToolBox) CapturePayment(captureObject *PayZenCapturePayment) (
 /*
 	Autoriza um pagamento
 */
-func (this *PayZenToolBox) CreatePayment(paymentData *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZenToolBox) CreatePayment(paymentData *api.Payment) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run CreatePayment: %v", paymentData)
@@ -722,7 +721,7 @@ func (this *PayZenToolBox) CreatePayment(paymentData *PayZenPayment) (*PayZenRes
 	
 	opCreatePayment.CommonRequest.SubmissionDate = soap.Header.Timestamp
 
-	opCreatePayment.PaymentRequest.PaymentOptionCode = paymentData.Installments //parcelas
+	opCreatePayment.PaymentRequest.PaymentOptionCode = int(paymentData.Installments) //parcelas
 		
 	opCreatePayment.PaymentRequest.Amount = formatAmount(paymentData.Amount)
 	opCreatePayment.PaymentRequest.Currency = CurrencyCode
@@ -769,7 +768,7 @@ func (this *PayZenToolBox) CreatePayment(paymentData *PayZenPayment) (*PayZenRes
 
 }
 
-func (this *PayZenToolBox) CreatePaymentBoletoOnline(paymentData *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZenToolBox) CreatePaymentBoletoOnline(paymentData *api.Payment) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run CreatePaymentBoletoItau: %v", paymentData)
@@ -887,7 +886,7 @@ func (this *PayZenToolBox) CreatePaymentBoletoOnline(paymentData *PayZenPayment)
 	result.TransactionId = paymentData.VadsTransId //createPaymentResponse.CreatePaymentResult.PaymentResponse.TransactionId
 	result.TransactionUuid = paymentData.VadsTransId //createPaymentResponse.CreatePaymentResult.PaymentResponse.TransactionUuid
 	
-	result.TransactionStatus = WaitingAuthorisation
+	result.TransactionStatus = api.WaitingAuthorisation
 	result.TransactionStatusLabel = "Boleto criado"
 	result.ResponseCode = "200"
 	result.ResponseCodeDetail  = "Boleto criado"
@@ -900,7 +899,7 @@ func (this *PayZenToolBox) CreatePaymentBoletoOnline(paymentData *PayZenPayment)
 /*
 	update payment
 */
-func (this *PayZenToolBox) UpdatePayment(paymentData *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZenToolBox) UpdatePayment(paymentData *api.Payment) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run UpdatePayment: %v", paymentData)
@@ -928,9 +927,12 @@ func (this *PayZenToolBox) UpdatePayment(paymentData *PayZenPayment) (*PayZenRes
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
+	result.PaymentNotFound = strings.Contains(result.ResponseCodeDetail, "Transaction was not found")
+
 	switch result.ResponseCodeDetail {
-		case "Transaction was not found":
-			result.PaymentNotFound = true
+		case "Action successfully completed":
+			result.TransactionStatus = api.Authorised
+			break
 	}
 
 	res, erro := switchStatus(result.TransactionStatusLabel)
@@ -964,7 +966,7 @@ func (this *PayZenToolBox) UpdatePayment(paymentData *PayZenPayment) (*PayZenRes
 
 /* cancela um pagamento */
 
-func (this *PayZenToolBox) CancelPayment(transactionUuid string) (*PayZenResult, error) {
+func (this *PayZenToolBox) CancelPayment(transactionUuid string) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run CancelPayment: %v", transactionUuid)
@@ -985,10 +987,7 @@ func (this *PayZenToolBox) CancelPayment(transactionUuid string) (*PayZenResult,
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
-	switch result.ResponseCodeDetail {
-		case "Transaction was not found":
-			result.PaymentNotFound = true
-	}
+	result.PaymentNotFound = strings.Contains(result.ResponseCodeDetail, "Transaction was not found")
 
 	res, erro := switchStatus(result.TransactionStatusLabel)
 
@@ -1007,7 +1006,7 @@ func (this *PayZenToolBox) CancelPayment(transactionUuid string) (*PayZenResult,
 	Cria uma recorrência
 */
 
-func (this *PayZenToolBox) CreateSubscription(subscription *PayZenSubscription) (*PayZenResult, error) {
+func (this *PayZenToolBox) CreateSubscription(subscription *api.Subscription) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run CreateSubscription: %v", subscription)
@@ -1032,20 +1031,12 @@ func (this *PayZenToolBox) CreateSubscription(subscription *PayZenSubscription) 
 	operation.SubscriptionRequest.SubscriptionId = subscription.SubscriptionId
 	operation.SubscriptionRequest.Description = subscription.Description
 
-	var rule string
+	rule, err := this.buildSubscriptionRule(subscription)
 	
-	if len(subscription.Rule) > 0 {
-		rule = subscription.Rule
-	} else {
-		if subscription.LastDayOfMonth {
-			rule = fmt.Sprintf("RRULE:FREQ=MONTHLY;COUNT=%v;BYMONTHDAY=-1", subscription.Count)
-		} else if subscription.FrequencyByDay > 0 { 
-			rule = fmt.Sprintf("RRULE:FREQ=DAILY;COUNT=%v", subscription.Count)
-		} else {
-			rule = fmt.Sprintf("RRULE:FREQ=MONTHLY;COUNT=%v;BYMONTHDAY=%v", subscription.Count, subscription.MonthDay)
-		}
+	if err != nil {
+		return nil, err
 	}
-
+	
 	operation.SubscriptionRequest.Rrule = rule
 
 	operation.CardRequest.PaymentToken = subscription.Token
@@ -1063,13 +1054,19 @@ func (this *PayZenToolBox) CreateSubscription(subscription *PayZenSubscription) 
 		return result, err
 	}
 
+	switch result.ResponseCodeDetail {
+		case "Action successfully completed":
+			result.TransactionStatus = api.Success
+			break
+	}
+
 	result.SubscriptionInfo.SubscriptionId = operationResponse.CreateSubscriptionResult.SubscriptionResponse.SubscriptionId
 	
 	return result, err	
 
 }	
 
-func (this *PayZenToolBox) GetSubscriptionDetails(subscriptionId string, paymentToken string) (*PayZenResult, error){
+func (this *PayZenToolBox) GetSubscriptionDetails(subscriptionId string, paymentToken string) (*api.PaymentResult, error){
 
 	if this.Debug {
 		fmt.Println("** run GetSubscriptionDetails: %v", subscriptionId)
@@ -1092,14 +1089,9 @@ func (this *PayZenToolBox) GetSubscriptionDetails(subscriptionId string, payment
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
-	switch result.ResponseCodeDetail {
-		case "PaymentToken not found":
-			result.PaymentTokenNotFound = true
-		case "SubscriptionID was not found":
-			result.SubscriptionIdNotFound = true
-		case "Invalid Subscription":
-			result.SubscriptionInvalid = true
-	}
+	result.PaymentTokenNotFound = strings.Contains(result.ResponseCodeDetail, "PaymentToken not found")
+	result.SubscriptionIdNotFound = strings.Contains(result.ResponseCodeDetail, "SubscriptionID was not found")
+	result.SubscriptionInvalid = strings.Contains(result.ResponseCodeDetail, "Invalid Subscription")
 
 
 	if err != nil {
@@ -1108,6 +1100,12 @@ func (this *PayZenToolBox) GetSubscriptionDetails(subscriptionId string, payment
 
 	if result.Error {
 		return result, err
+	}
+
+	switch result.ResponseCodeDetail {
+		case "Action successfully completed":
+			result.TransactionStatus = api.Success
+			break
 	}
 
 	getSubscriptionDetailsResult := getSubscriptionDetailsResponse.GetSubscriptionDetailsResult
@@ -1130,7 +1128,7 @@ func (this *PayZenToolBox) GetSubscriptionDetails(subscriptionId string, payment
 	return result, err
 }
 
-func (this *PayZenToolBox) CancelSubscription(subscriptionId string, paymentToken string) (*PayZenResult, error) {
+func (this *PayZenToolBox) CancelSubscription(subscriptionId string, paymentToken string) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run CancelSubscription: %v", subscriptionId)
@@ -1156,19 +1154,20 @@ func (this *PayZenToolBox) CancelSubscription(subscriptionId string, paymentToke
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
+	result.PaymentTokenNotFound = strings.Contains(result.ResponseCodeDetail, "PaymentToken not found")
+	result.SubscriptionIdNotFound = strings.Contains(result.ResponseCodeDetail, "SubscriptionID was not found")
+	result.SubscriptionInvalid = strings.Contains(result.ResponseCodeDetail, "Invalid Subscription")
+
 	switch result.ResponseCodeDetail {
-		case "PaymentToken not found":
-			result.PaymentTokenNotFound = true
-		case "SubscriptionID was not found":
-			result.SubscriptionIdNotFound = true
-		case "Invalid Subscription":
-			result.SubscriptionInvalid = true
+		case "Action successfully completed":
+			result.TransactionStatus = api.Success
+			break
 	}
 
 	return result, err
 }
 
-func (this *PayZenToolBox) UpdateSubscription(subscription *PayZenSubscription) (*PayZenResult, error) {
+func (this *PayZenToolBox) UpdateSubscription(subscription *api.Subscription) (*api.PaymentResult, error) {
 
 	if this.Debug {
 		fmt.Println("** run UpdateSubscription: %v", subscription)
@@ -1196,18 +1195,12 @@ func (this *PayZenToolBox) UpdateSubscription(subscription *PayZenSubscription) 
 
 	//operation.PaymentRequest.ManualValidation = fmt.Sprintf("%v", subscription.ValidationType)
 
-	var rule string
+	rule, err := this.buildSubscriptionRule(subscription)
 	
-	if len(subscription.Rule) > 0 {
-		rule = subscription.Rule
-	} else {
-		if subscription.LastDayOfMonth {
-			rule = fmt.Sprintf("RRULE:FREQ=MONTHLY;COUNT=%v;BYMONTHDAY=-1", subscription.Count)
-		} else {
-			rule = fmt.Sprintf("RRULE:FREQ=MONTHLY;COUNT=%v;BYMONTHDAY=%v", subscription.Count, subscription.MonthDay)
-		}
+	if err != nil {
+		return nil, err
 	}
-
+	
 	operation.SubscriptionRequest.Rrule = rule
 			 
 	soap.Body.OperationRequest = operation
@@ -1218,14 +1211,9 @@ func (this *PayZenToolBox) UpdateSubscription(subscription *PayZenSubscription) 
 
 	result, err := this.MakeRequest(soap, soapResponse)
 
-	switch result.ResponseCodeDetail {
-		case "PaymentToken not found":
-			result.PaymentTokenNotFound = true
-		case "SubscriptionID was not found":
-			result.SubscriptionIdNotFound = true
-		case "Invalid Subscription":
-			result.SubscriptionInvalid = true
-	}
+	result.PaymentTokenNotFound = strings.Contains(result.ResponseCodeDetail, "PaymentToken not found")
+	result.SubscriptionIdNotFound = strings.Contains(result.ResponseCodeDetail, "SubscriptionID was not found")
+	result.SubscriptionInvalid = strings.Contains(result.ResponseCodeDetail, "Invalid Subscription")
 
 	if err != nil || result.Error {
 		return result, err
@@ -1233,13 +1221,90 @@ func (this *PayZenToolBox) UpdateSubscription(subscription *PayZenSubscription) 
 
 	result.SubscriptionInfo.Token = operationResponse.UpdateSubscriptionResult.CommonResponse.PaymentToken
 	
+		switch result.ResponseCodeDetail {
+		case "Action successfully completed":
+			result.TransactionStatus = api.Success
+			break
+	}
+
 	return result, err	
 
 }	
 
-func (this *PayZenToolBox) MakeRequest(soap *SOAPEnvelope, soapResponse *SOAPResponseEnvelop) (*PayZenResult, error) {
+func (this *PayZenToolBox) buildSubscriptionRule(subscription *api.Subscription) (string, error) {
+	var rule string
 
-	result := NewPayZenResult()
+	if len(subscription.Rule) > 0 {
+		rule = subscription.Rule
+	} else {
+		
+		rules := []string{}
+		
+		if subscription.Count > 0 {
+			rules = append(rules, fmt.Sprintf("COUNT=%v", subscription.Count))
+		}	
+
+		switch subscription.Cycle {
+			case api.Weekly: // semanal
+				rules = append(rules, "FREQ=WEEKLY")
+				break
+			case api.Biweekly: // quinzenal
+				rules = append(rules, "FREQ=WEEKLY")
+				rules = append(rules, "INTERVAL=2")
+				break
+			case api.Monthly: // mensal
+				rules = append(rules, "FREQ=MONTHLY")
+				break
+			case api.Quarterly: // trimestral
+				rules = append(rules, "FREQ=MONTHLY")
+				rules = append(rules, "INTERVAL=4")
+				break
+			case api.Semiannually: // semestral
+				rules = append(rules, "FREQ=MONTHLY")
+				rules = append(rules, "INTERVAL=6")
+				break				
+			case api.Yearly:
+				rules = append(rules, "FREQ=YEARLY")
+				break
+			default:
+		    return "", errors.New("cycle is required")
+		}
+
+		if subscription.PaymentAtLastDayOfMonth && subscription.PaymentAtDayOfMonth > 0 {
+	    return "", errors.New("use PaymentAtLastDayOfMonth or PaymentAtDayOfMonth")
+		}
+
+		if subscription.PaymentAtDayOfMonth > 0 {
+			rules = append(rules, fmt.Sprintf("BYMONTHDAY=%v", subscription.PaymentAtDayOfMonth))
+		}
+
+		if subscription.PaymentAtLastDayOfMonth {
+			rules = append(rules, "BYMONTHDAY=28,29,30,31")	
+			rules = append(rules, "BYSETPOS=-1")	
+		}
+
+		if len(rules) == 0 {
+	    return "", errors.New("is required")
+		}
+
+		rule = "RRULE"
+
+		for i, it := range rules {
+			if i  == 0 {
+				rule = fmt.Sprintf("%v:%v", rule, it)
+			} else {
+				rule = fmt.Sprintf("%v;%v", rule, it)
+			}
+		}
+
+	}	
+
+	return rule, nil
+}
+
+func (this *PayZenToolBox) MakeRequest(soap *SOAPEnvelope, soapResponse *SOAPResponseEnvelop) (*api.PaymentResult, error) {
+
+	result := api.NewPaymentResult()
 	//result.RequestObject = soap
 
 	xmlContent, err := xml.MarshalIndent(soap, "", "")
@@ -1355,9 +1420,9 @@ func (this *PayZenToolBox) MakeRequest(soap *SOAPEnvelope, soapResponse *SOAPRes
 	}
 }
 
-func (this *PayZenToolBox) MakeFormRequest(payload map[string]string) (*PayZenResult, error) {
+func (this *PayZenToolBox) MakeFormRequest(payload map[string]string) (*api.PaymentResult, error) {
 
-	result := NewPayZenResult()
+	result := api.NewPaymentResult()
 
 	form := url.Values{}
 
@@ -1383,8 +1448,8 @@ func (this *PayZenToolBox) MakeFormRequest(payload map[string]string) (*PayZenRe
 		return result, errors.New(fmt.Sprintf("ioutil.ReadAll: %v", err.Error()))		
 	}
 
-	payzenBoletoItau := payload["vads_payment_cards"] == string(BoletoOnlineItauBoleto) 
-	payzenBoletoBradesco := payload["vads_payment_cards"] == string(BoletoOnlineBradescoBoleto)
+	payzenBoletoItau := payload["vads_payment_cards"] == string(api.BoletoOnlineItauBoleto) 
+	payzenBoletoBradesco := payload["vads_payment_cards"] == string(api.BoletoOnlineBradescoBoleto)
 	
 	result.Response = string(response)
 
@@ -1546,49 +1611,49 @@ func getBoletoError(html string) (string, error){
 }
 
 
-func switchStatus(transactionStatusLabel string) (*PayZenResult, error) {
+func switchStatus(transactionStatusLabel string) (*api.PaymentResult, error) {
 
-	result := new(PayZenResult)
+	result := new(api.PaymentResult)
 
 	fmt.Sprintf("switch transaction status: %v", transactionStatusLabel)
 
 	switch transactionStatusLabel {
 		case "INITIAL":
-			result.TransactionStatus = Initial
+			result.TransactionStatus = api.Initial
 			break
 		case "NOT_CREATED":
 			result.Error = true
 			result.Message = "Não foi possível criar a transação"
-			result.TransactionStatus = NotCreated
+			result.TransactionStatus = api.NotCreated
 			break
 		case "AUTHORISED":
-			result.TransactionStatus = Authorised
+			result.TransactionStatus = api.Authorised
 			break
 		case "AUTHORISED_TO_VALIDATE":					
-			result.TransactionStatus = AuthorisedToValidate
+			result.TransactionStatus = api.AuthorisedToValidate
 			break
 		case "WAITING_AUTHORISATION":
-			result.TransactionStatus = WaitingAuthorisation
+			result.TransactionStatus = api.WaitingAuthorisation
 			break
 		case "WAITING_AUTHORISATION_TO_VALIDATE":
-			result.TransactionStatus = WaitingAuthorisationToValidate
+			result.TransactionStatus = api.WaitingAuthorisationToValidate
 			break
 		case "REFUSED":
 			result.Error = true
 			result.Message = "A transação foi recusada, verifique os dados cartão"
-			result.TransactionStatus = Refused
+			result.TransactionStatus = api.Refused
 			break
 		case "CAPTURED":			
-			result.TransactionStatus = Captured
+			result.TransactionStatus = api.Captured
 			break
 		case "CANCELLED":			
-			result.TransactionStatus = Cancelled
+			result.TransactionStatus = api.Cancelled
 			break
 		case "EXPIRED":		
-			result.TransactionStatus = Expired
+			result.TransactionStatus = api.Expired
 			break
 		case "UNDER_VERIFICATION":
-			result.TransactionStatus = UnderVerification
+			result.TransactionStatus = api.UnderVerification
 			break				
 		default:
 			//result.TransactionStatusLabel = transactionStatusLabel

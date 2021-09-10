@@ -2,53 +2,14 @@ package gopayments
 
 import (
   "github.com/mobilemindtec/go-payments/picpay"
-  _ "github.com/mobilemindtec/go-utils/app/util"
-  "github.com/mobilemindtec/go-utils/support"
-	_ "github.com/satori/go.uuid"
-	_ "github.com/go-redis/redis"
+  "github.com/mobilemindtec/go-payments/api"
 	"testing"
 	"time"
 	"fmt"
-	_ "os"
-  "encoding/json"
-  "io/ioutil"	
 )
 
-var (
 
-	Token = ""
-	SallerToken = ""
-
-)
-
-func init(){
-  file, err := ioutil.ReadFile("../certs.json")
-  if err != nil {
-      fmt.Printf("error on open file ../certs.json: %v\n", err)
-      return
-  }
-
-  data := make(map[string]interface{})
-  
-  err = json.Unmarshal(file, &data)
-  if err != nil {
-      fmt.Printf("JSON error: %v\n", err)
-      return
-  }  
-
-  jsonParser := new(support.JsonParser)
-
-  clienteData := jsonParser.GetJsonObject(data, "mobilemind")
-  picpayData := jsonParser.GetJsonObject(clienteData, "picpay")
-  
-  Token = jsonParser.GetJsonString(picpayData, "token")
-  SallerToken = jsonParser.GetJsonString(picpayData, "sallerToken")
-
-  fmt.Printf("init picpay token = %v, sallerToken = %v", Token, SallerToken)
-}
-
-//go test  github.com/mobilemindtec/go-payments/tests -run TestPicPayCreateTransaction
-
+//go test -v  github.com/mobilemindtec/go-payments/tests -run TestPicPayCreateTransaction
 func TestPicPayCreateTransaction(t *testing.T) {
 		
 	Picpay := picpay.NewPicPay("pt-BR", Token, SallerToken)
@@ -62,7 +23,7 @@ func TestPicPayCreateTransaction(t *testing.T) {
 	request.Buyer.Email = "ricardobocchi@gmail.com"
 	request.Buyer.Phone = "+5554999767081"
 
-	request.ReferenceId = "000001"
+	request.ReferenceId = GenUUID()
 	request.CallbackUrl = fmt.Sprintf("https://portal.appmobloja.com.br/gateway/picpay/postback/%v", request.ReferenceId)
 	request.ReturnUrl = fmt.Sprintf("https://portal.appmobloja.com.br/gateway/picpay/success/%v", request.ReferenceId)
 	request.Value = "5"
@@ -80,14 +41,18 @@ func TestPicPayCreateTransaction(t *testing.T) {
 
   	t.Log(fmt.Sprintf("result = %v", result))
   }
+
+  client.Set("ReferenceId", request.ReferenceId, 0)
 }
 
+//go test -v  github.com/mobilemindtec/go-payments/tests -run TestPicPayCheckStatus
 func TestPicPayCheckStatus(t *testing.T) {
 		
 	Picpay := picpay.NewPicPay("pt-BR", Token, SallerToken)
 	Picpay.Debug = true
 
-	result, err := Picpay.CheckStatus("000001")
+	referenceId, _ := client.Get("ReferenceId").Result()
+	result, err := Picpay.CheckStatus(referenceId)
 	
 
   if err != nil {
@@ -99,7 +64,7 @@ func TestPicPayCheckStatus(t *testing.T) {
   		return
   	}
 
-  	if result.Transaction.PicPayStatus != picpay.PicPayCreated {
+  	if result.Transaction.PicPayStatus != api.PicPayCreated {
   		t.Errorf("Status esperado: PicPayCreated, encontrado %v", result.Transaction.PicPayStatus)
   		return
   	}
@@ -108,12 +73,14 @@ func TestPicPayCheckStatus(t *testing.T) {
   }
 }
 
+//go test -v  github.com/mobilemindtec/go-payments/tests -run TestPicPayCheckCancel
 func TestPicPayCheckCancel(t *testing.T) {
 		
 	Picpay := picpay.NewPicPay("pt-BR", Token, SallerToken)
 	Picpay.Debug = true
 
-	result, err := Picpay.Cancel("000001", "")
+	referenceId, _ := client.Get("ReferenceId").Result()
+	result, err := Picpay.Cancel(referenceId, "")
 	
 
   if err != nil {
@@ -125,7 +92,7 @@ func TestPicPayCheckCancel(t *testing.T) {
   		return
   	}
 
-  	if result.Transaction.PicPayStatus != picpay.PicPayCreated {
+  	if result.Transaction.PicPayStatus != api.PicPayCreated {
   		t.Errorf("Status esperado: PicPayCreated, encontrado %v", result.Transaction.PicPayStatus)
   		return
   	}

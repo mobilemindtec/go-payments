@@ -5,359 +5,69 @@ import (
 	"github.com/mobilemindtec/go-utils/beego/validator"  
 	"github.com/mobilemindtec/go-payments/support"  
   "github.com/beego/beego/v2/core/validation"
-  "github.com/leekchan/accounting"
+  "github.com/mobilemindtec/go-payments/api"
   "github.com/beego/i18n"
-  "encoding/base64"
+	"encoding/base64"
 	"encoding/json"
-  "encoding/hex"
-  "crypto/sha1"
-  "crypto/hmac"	
 	"io/ioutil"
 	"net/http"
-	"strings"
-	"strconv"
 	"net/url"
+	"strings"
   "errors"
 	"bytes"
-	"time"
 	"fmt"	
 )
+
+type ResultProcessor func(data []byte, response *Response) error
 
 const (
 
 	PAGARME_URL = "https://api.pagar.me/1"
-	PAGARME_TRANSACTION_URL = "https://api.pagar.me/1/transactions"
-	PAGARME_TRANSACTION_CAPTURE_URL = "https://api.pagar.me/1/transactions/%v/capture"
-	PAYMENT_METHOD_BOLETO = "boleto"
-	PAYMENT_METHOD_CREDIT_CARD = "credit_card"
-
 	PagarmeContry = "Brasil"
 	PagarmeTypeIndividual = "individual"
 	PagarmeTypeCorporation = "corporation"	
 
 )
 
-type PagarmeStatus int
-
-/*
-
-processing	Transação está processo de autorização.
-authorized	Transação foi autorizada. Cliente possui saldo na conta e este valor foi reservado para futura captura, que deve acontecer em até 5 dias para transações criadas com api_key. Caso não seja capturada, a autorização é cancelada automaticamente pelo banco emissor, e o status da transação permanece authorized.
-paid	Transação paga. Foi autorizada e capturada com sucesso, e para boleto, significa que nossa API já identificou o pagamento de seu cliente.
-refunded	Transação estornada completamente.
-waiting_payment	Transação aguardando pagamento (status válido para boleto bancário).
-pending_refund	Transação do tipo boleto e que está aguardando para confirmação do estorno solicitado.
-refused	Transação recusada, não autorizada.
-chargedback	Transação sofreu chargeback. Mais em nossa central de ajuda
-analyzing	Transação encaminhada para a análise manual feita por um especialista em prevenção a fraude.
-pending_review	Transação pendente de revisão manual por parte do lojista. Uma transação ficar
-
-*/
-
-const (
-  PagarmeProcessing PagarmeStatus = 1 + iota
-  PagarmeAuthorized         
-  PagarmePaid 
-  PagarmeRefunded
-  PagarmeWaitingPayment 
-  PagarmePendingRefund 
-  PagarmeRefused
-	PagarmeChargedback
-	PagarmeAnalyzing
-	PagarmePendingReview
-)
-
-type PagarmeError struct {
-	Message string `json:"message"`
-	ParameterName string `json:"parameter_name"`
-	Type string `json:"type"`
-}
-
-type PagarmeResultError struct {
-	Method string `json:"method"`
-	Url string `json:"url"`
-	Errors []*PagarmeError `json:"errors"`	
-}
-
-func NewPagarmeResultError() *PagarmeResultError{
-	return &PagarmeResultError{ Errors: []*PagarmeError{} }
-}
-
-type PagarmeAddress struct {
-	
-	Neighborhood string ` json:"neighborhood" valid:"Required" `
-	Street string `json:"street" valid:"Required" `
-	StreetNumber string `json:"street_number" valid:"Required" `
-	ZipCode string `json:"zipcode" valid:"Required" `
-	City string `json:"city" valid:"Required" `
-	State string `json:"state" valid:"Required" `
-
-}
-
-type PagarmePhone struct {
-
-	Ddd string `json:"ddd" valid:"Required;MaxSize(2)" `
-	Number string `json:"number" valid:"Required;MaxSize(9);MinSize(9)" `
-
-}
-
-type PagarmeCustomerDocument struct {
-	Type string `json:"type"`
-	Number string `json:"number"`
-}
-
-type PagarmeCustomer struct {
-
-	DocumentNumber string `json:"document_number" valid:"Required;MaxSize(11);MinSize(11)"`
-	Email string `json:"email" valid:"Required;Email"`
-	Name string `json:"name" valid:"Required"`
-
-	Address *PagarmeAddress `json:"address" valid:"Required"`
-	Phone *PagarmePhone `json:"phone" valid:"Required"`
-	ApiKey string `json:"api_key" valid:"Required"`	
-
-	Id int64 `json:"id"` //
-
-}
-
-func NewPagarmeCustomer() *PagarmeCustomer {
-	entity := new(PagarmeCustomer)
-	return entity
-}
-
-/*
-
-	Exemplo de uma transação de R$ 100, onde 99 vai para o cliente e 1 real vai para a mobile mind
-
-	cliente := new(PagarmeSplitRule)
-	cliente.Liable = true
-	cliente.ChargeProcessingFee = true
-	//cliente.Percentage = 100 // apenas no caso de percentual
-	cliente.ChargeRemainderFee = true
-	cliente.RecipientId = id do recebedor no pagarme
-	cliente.Amount = 99 // 99 reais
-
-	mobilemind := new(PagarmeSplitRule)
-	mobilemind.Liable = false
-	mobilemind.ChargeProcessingFee = false
-	//mobilemind.Percentage = 0 // apenas no caso de percentual
-	mobilemind.ChargeRemainderFee = false
-	mobilemind.RecipientId = id do recebedor mobile mind no pagarme
-	mobilemind.Amount = 1 // 1 real
-
-
-*/
-
-type PagarmeSplitRule struct {
-	Liable bool `json:"liable"` // Se o recebedor é responsável ou não pelo chargeback. Default true para todos os recebedores da transação.
-	ChargeProcessingFee bool `json:"charge_processing_fee"` // Se o recebedor será cobrado das taxas da criação da transação. Default true para todos os recebedores da transação.
-	Percentage int64 `json:"percentage"` // Qual a porcentagem que o recebedor receberá. Deve estar entre 0 e 100. Se amount já está preenchido, não é obrigatório
-	Amount int64 `json:"amount"` // Qual o valor da transação o recebedor receberá. Se percentage já está preenchido, não é obrigatório
-
-	ChargeRemainderFee bool `json:"charge_remainder_fee"` //Se o recebedor deverá pagar os eventuais restos das taxas, calculadas em porcentagem. Sendo que o default vai para o primeiro recebedor definido na regra.
-	RecipientId string `json:"recipient_id"` // Id do recebedor
-}
-
-type PagarmePayment struct {
-
-	Amount int64 `json:"amount" valid:"Required"`
-	ApiKey string `json:"api_key" valid:"Required"`	
- 	Installments int `json:"Installments,omitempty" valid:"Required"`	// parcelas
-	Customer *PagarmeCustomer `json:"customer" valid:"Required"`
-	PaymentMethod string `json:"payment_method" valid:"Required"`
-
-	
-	PostbackUrl string `json:"postback_url,omitempty" valid:""`
-	SoftDescriptor string `json:"soft_descriptor,omitempty" valid:"Required"` // nome que aparece na fatura do cliente
-	Metadata map[string]string `json:"metadata,omitempty"`
-
-	Capture bool `json:"capture"`
-
-	BoletoExpirationDate string `json:"boleto_expiration_date,omitempty" valid:""`
-	BoletoInstructions string `json:"boleto_instructions,omitempty" valid:""`
-
-	CardId string `json:"card_id,omitempty" valid:""`
-	CardHolderName string `json:"card_holder_name,omitempty" valid:""`
-	CardExpirationDate string `json:"card_expiration_date,omitempty" valid:""`
-	CardNumber	string `json:"card_number,omitempty" valid:""`
-	CardCvv string `json:"card_cvv,omitempty" valid:""`	
-	CardHash string `json:"card_hash,omitempty" valid:""`
-
-	SplitRules []*PagarmeSplitRule `json:"split_rules,omitempty"`
-
-}
-
-type PagarmeCard struct {
-	Id string `json:"card_id,omitempty" valid:""`
-	HolderName string `json:"card_holder_name" valid:""`
-	ExpirationDate string `json:"card_expiration_date" valid:""`
-	Number	string `json:"card_number" valid:""`
-	Cvv string `json:"card_cvv,omitempty" valid:""`
-	CustomerId string `json:"customer_id,omitempty" valid:""`
-	Hash string `json:"card_hash,omitempty" valid:""`
-	ApiKey string `json:"api_key" valid:"Required"`	
-}
-
-type CardHashKey struct {
-	Id int64 `json:"id"`
-	PublicKey string `json:"public_key"`
-	Hash string
-}
-
-type CardResult struct {
-  Object string `json:"card"`
-  Id string `json:"id"`
-  DateCreated time.Time `json:"date_created"` 
-  DateUpdated time.Time `json:"date_updated"`
-  Brand string `json:"brand"`
-  HolderName string `json:"holder_name"`
-  FirstDigits string `json:"first_digits"`
-  LastDigits string `json:"last_digits"`
-  Country string `json:"country"`
-  Fingerprint string `json:"fingerprint"`
-  Customer string `json:"customer"`
-  ExpirationDate string  `json:"expiration_date"`
-  Valid bool `json:"valid"`
-}
-
-/*
-processing	Transação está processo de autorização.
-authorized	Transação foi autorizada. Cliente possui saldo na conta e este valor foi reservado para futura captura, que deve acontecer em até 5 dias para transações criadas com api_key. Caso não seja capturada, a autorização é cancelada automaticamente pelo banco emissor, e o status da transação permanece authorized.
-paid	Transação paga. Foi autorizada e capturada com sucesso, e para boleto, significa que nossa API já identificou o pagamento de seu cliente.
-refunded	Transação estornada completamente.
-waiting_payment	Transação aguardando pagamento (status válido para boleto bancário).
-pending_refund	Transação do tipo boleto e que está aguardando para confirmação do estorno solicitado.
-refused	Transação recusada, não autorizada.
-chargedback	Transação sofreu chargeback. Mais em nossa central de ajuda
-analyzing	Transação encaminhada para a análise manual feita por um especialista em prevenção a fraude.
-pending_review	Transação pendente de revisão manual por parte do lojista. Uma transação ficará com esse status por até 48 horas corridas.
-*/
-
-type PagarmeResponse struct {
-
-	Object string `json:"object"`
-	StatusStr string `json:"status"` // processing, authorized, paid, refunded, waiting_payment, pending_refund, refused
-	RefuseReason string `json:"refuse_reason"` // acquirer, antifraud, internal_error, no_acquirer, acquirer_timeout
-	StatusReason string `json:"status_reason"` // acquirer, antifraud, internal_error, no_acquirer, acquirer_timeout
-	AcquirerName string `json:"acquirer_name"` // tone, cielo, rede	
-	AcquirerId string `json:"acquirer_id"`
-	AcquirerResponseCode string `json:"acquirer_response_code"`
-	AuthorizationCode string `json:"authorization_code"`
-	SoftDescriptor string `json:"soft_descriptor"`
-	Tid interface{} `json:"tid"`
-	Nsu int64 `json:"nsu"`
-	DateCreated string `json:"date_created"`
-	DateUpdated string `json:"date_updated"`
-	Amount int64 `json:"amount"`
-	AuthorizedAmount int64 `json:"authorized_amount"`
-	PaidAmount int64 `json:"paid_amount"`
-	RefundedAmount int64 `json:"refunded_amount"`
-	Installments int64 `json:"installments"`
-	TransactionId int64 `json:"id"`
-	Cost float64 `json:"cost"`
-	CardHolderName string `json:"card_holder_name"`
-	CardLastDigits string `json:"card_last_digits"`
-	CardFirstDigits string `json:"card_first_digits"`
-	CardBrand string `json:"card_brand"`
-	CardPinMode string `json:"card_pin_mode"`
-	PostbackUrl string `json:"postback_url"`
-	PaymentMethod string `json:"payment_method"`
-	CaptureMethod string `json:"capture_method"`
-	AntifraudScore string `json:"antifraud_score"`
-	BoletoUrl string `json:"boleto_url"`
-	BoletoBarcode string `json:"boleto_barcode"`
-	BoletoExpirationDate string `json:"boleto_expiration_date"`
-	Referer string `json:"referer"`
-	Ip string `json:"ip"`
-	ReferenceKey string `json:"reference_key"`
-
-	Errors []*PagarmeError `json:"errors"`
-	ResponseValues map[string]interface{}
-	Response string	
-	Request string	
-	Message string	
-	Error bool
-
-	Status PagarmeStatus
-
-
-}
-
-func NewPagarmePaymentCard(amount float64) *PagarmePayment {
-	return &PagarmePayment{ Amount: FormatAmount(amount), Installments: 1, PaymentMethod: PAYMENT_METHOD_CREDIT_CARD }
-}
-
-
-func NewPagarmePaymentBoleto(amount float64) *PagarmePayment {
-	return &PagarmePayment{ PaymentMethod: PAYMENT_METHOD_BOLETO, Amount: FormatAmount(amount)  }
-}
-
-type PagarmeService struct {
+type Pagarme struct {
   Lang string  
   ApiKey string
   CryptoKey string
   EntityValidator *validator.EntityValidator
   EntityValidatorResult *validator.EntityValidatorResult
+  ValidationErrors map[string]string
+  HasValidationError bool    
   Debug bool
 }
 
-type CaptureData struct {
-	ApiKey string `json:"api_key" valid:"Required"`	
-	TransactionId string `json:"-" valid:"Required"` // id or token
-	Amount int64 `json:"amount" valid:"Required"` 
-	SplitRules []*PagarmeSplitRule `json:"split_rules,omitempty"`
-	Metadata map[string]string `json:"metadata"`
-}
-
-func NewCaptureData(transactionId string, amount float64) *CaptureData {	
-	return &CaptureData{ TransactionId: transactionId, Amount:  FormatAmount(amount) }
-}
-
-
-func NewPagarmeService(lang string) *PagarmeService{
+func NewPagarme(lang string, apiKey string, cryptoKey string) *Pagarme{
 	entityValidator := validator.NewEntityValidator(lang, "Pagarme")
-  return &PagarmeService{ Lang: lang, EntityValidator: entityValidator }
+	entityValidatorResult := new(validator.EntityValidatorResult)
+	entityValidatorResult.Errors = map[string]string{}
+  return &Pagarme{ Lang: lang, ApiKey: apiKey, CryptoKey: cryptoKey, EntityValidator: entityValidator, EntityValidatorResult: entityValidatorResult }
 }
 
-func NewPagarmeServiceWithCert(lang string, apiKey string, cryptoKey string) *PagarmeService{
-	entityValidator := validator.NewEntityValidator(lang, "Pagarme")
-  return &PagarmeService{ Lang: lang, EntityValidator: entityValidator, ApiKey: apiKey, CryptoKey: cryptoKey }
+func (this *Pagarme) SetDebug() {
+	this.Debug = true
 }
 
-func (this *PagarmeService) GetCardHashKey() (*CardHashKey, error) {
+func (this *Pagarme) GetCardHashKey() (*CardHashKey, error) {
 
+  resultProcessor := func(data []byte, response *Response) error {    
+  	response.CardHashKey = new(CardHashKey)
+    return json.Unmarshal(data, response.CardHashKey)
+  }
 
-	r, err := http.Get(fmt.Sprintf("%v/transactions/card_hash_key?encryption_key=%v", PAGARME_URL, this.CryptoKey))
-
-	if err != nil {
-		fmt.Println("error http.Get ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	response, err := ioutil.ReadAll(r.Body)
+	result, err := this.get(fmt.Sprintf("transactions/card_hash_key?encryption_key=%v", this.CryptoKey), resultProcessor)
 
 	if err != nil {
-		fmt.Println("error ioutil.ReadAll ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
+		return nil, err
 	}
 
-	if this.Debug {
-		fmt.Println(string(response))	
-	}
-
-	result := new(CardHashKey)
-
-	err = json.Unmarshal(response, result)
-
-	if err != nil {
-		fmt.Println("error json.Unmarshal ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	return result, nil
+	return result.CardHashKey, nil
 }
 
-func (this *PagarmeService) EncryptCard(card *PagarmeCard)(*CardHashKey, error){
+func (this *Pagarme) EncryptCard(card *Card)(*CardHashKey, error){
 
 	CardHashKey, err := this.GetCardHashKey()
 
@@ -401,12 +111,7 @@ func (this *PagarmeService) EncryptCard(card *PagarmeCard)(*CardHashKey, error){
 }
 
 
-func (this *PagarmeService) CreateCard(card *PagarmeCard) (*CardResult, error) {
-
-	//if !this.onValid(card) {
-	//	return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
-	//}
-
+func (this *Pagarme) TokenCreate(card *Card) (*Response, error) {
 	
 	cardHash, err := this.EncryptCard(card)
 
@@ -418,119 +123,44 @@ func (this *PagarmeService) CreateCard(card *PagarmeCard) (*CardResult, error) {
 	card.ApiKey = this.ApiKey
 	card.Hash = cardHash.Hash
 
-	jsonData, err := json.Marshal(card)
-
-	if err != nil {
-		fmt.Println("error json.Marshal ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
+	if !this.onValidEntity(card) {
+		return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
 	}
 
-	if this.Debug {
-		x, _ := json.MarshalIndent(card, "", "    ")	
-		fmt.Println("##################################################################")
-		fmt.Println(string(x))
-		fmt.Println("##################################################################")
-	}
+  resultProcessor := func(data []byte, response *Response) error {    
+  	response.CardResult = new(CardResult)
+    return json.Unmarshal(data, response.CardResult)
+  }
 
+	response, err := this.post(card, "cards", resultProcessor)
 
-	data := bytes.NewBuffer(jsonData)
+  if err != nil || response.Error {
+    return response, err
+  }
 
-	r, err := http.Post(fmt.Sprintf("%v/cards", PAGARME_URL), "application/json", data)
+  response.Status = api.PagarmeSuccess
 
-	if err != nil {
-		fmt.Println("error http.Post ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	response, err := ioutil.ReadAll(r.Body)
-
-	if err != nil {
-		fmt.Println("error ioutil.ReadAll ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	result := new(CardResult)
-
-	err = json.Unmarshal(response, result)
-
-	if err != nil {
-		fmt.Println("error json.Unmarshal ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-
-	if this.Debug {
-		fmt.Println(string(response))	
-	}
-
-	return result, nil
+  return response, err
 
 }
 
-
-func (this *PagarmeService) CreateCustomer(customer *PagarmeCustomer) (error) {
-
-	//if !this.onValid(card) {
-	//	return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
-	//}
-
-	customer.ApiKey = this.ApiKey
+func (this *Pagarme) PaymentCreate(payment *Payment) (*Response, error) {
 	
 
-	jsonData, err := json.Marshal(customer)
-
-	if err != nil {
-		fmt.Println("error json.Marshal ", err.Error())
-		return errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	data := bytes.NewBuffer(jsonData)
-
-	r, err := http.Post(fmt.Sprintf("%v/customers", PAGARME_URL), "application/json", data)
-
-	if err != nil {
-		fmt.Println("error http.Post ", err.Error())
-		return errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	response, err := ioutil.ReadAll(r.Body)
-
-	if err != nil {
-		fmt.Println("error ioutil.ReadAll ", err.Error())
-		return errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	if this.Debug {
-		fmt.Println(string(response))	
-	}
-
-	
-	err = json.Unmarshal(response, customer)
-
-	if err != nil {
-		fmt.Println("error json.Unmarshal ", err.Error())
-		return errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	return nil
-
-}
-
-func (this *PagarmeService) CreatePayment(payment *PagarmePayment) (*PagarmeResponse, error) {
-	
-
-	this.EntityValidatorResult = new(validator.EntityValidatorResult)
-	this.EntityValidatorResult.Errors = map[string]string{}
-
-	if payment.PaymentMethod == PAYMENT_METHOD_CREDIT_CARD {
+	if payment.PaymentMethod == api.PaymentMethodCreditCard {
 
 		if len(payment.CardId) == 0 {
 
-			card := new(PagarmeCard)
+			card := new(Card)
 			card.Number = payment.CardNumber
 			card.HolderName = payment.CardHolderName
 			card.ExpirationDate = payment.CardExpirationDate
 			card.Cvv = payment.CardCvv
+
+			if !this.onValidEntity(card) {
+				return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
+			}
+
 			cardInfo, err := this.EncryptCard(card)
 
 			if err != nil {
@@ -546,580 +176,607 @@ func (this *PagarmeService) CreatePayment(payment *PagarmePayment) (*PagarmeResp
 
 	payment.ApiKey = this.ApiKey
 
-	if !this.onValid(payment) {
+	if !this.onValidPayment(payment) {
 		return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
 	}
 
-
-	jsonData, err := json.Marshal(payment)
-
-	if err != nil {
-		fmt.Println("error json.Marshal ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	reqtestString := string(jsonData)
-
-	if this.Debug {
-		x, _ := json.MarshalIndent(payment, "", "    ")	
-		fmt.Println("##################################################################")
-		fmt.Println(string(x))
-		fmt.Println("##################################################################")
-	}
-
-	data := bytes.NewBuffer(jsonData)
-
-	r, err := http.Post(PAGARME_TRANSACTION_URL, "application/json", data)
-
-	if err != nil {
-		fmt.Println("error http.Post ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	response, err := ioutil.ReadAll(r.Body)
-
-	if err != nil {
-		fmt.Println("error ioutil.ReadAll ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	fmt.Println("------------------------------------------------------------------------------------")
-	fmt.Println("***** PAGARME PAYMENT START RESPONSE ****** ")	
-	fmt.Println("***** STATUS CODE: %v", r.StatusCode)	
-	fmt.Println("***** RESPONSE: %v", string(response))	
-	fmt.Println("***** PAGARME PAYMENT END RESPONSE ****** ")
-	fmt.Println("------------------------------------------------------------------------------------")
-
-	switch r.StatusCode {
-		case 200:
-
-			result := &PagarmeResponse{ Response: string(response), Request: reqtestString  }
-			//values := make(map[string]interface{})
-
-			if err := json.Unmarshal(response, &result); err != nil {
-				fmt.Println("error json.Unmarshal: %v", err)
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}
-
-			//result.ResponseValues = values
-
-
-			switch result.StatusStr {
-			  case "processing":
-			  	result.Status = PagarmeProcessing
-			  case "authorized":
-			  	result.Status = PagarmeAuthorized
-			  case "paid":
-			  	result.Status = PagarmePaid
-			  case "refunded":
-			  	result.Status = PagarmeRefunded
-			  case "waiting_payment":
-			  	result.Status = PagarmeWaitingPayment
-			  case "pending_refund":
-			  	result.Status = PagarmeRefunded
-			  case "chargedback":
-			  	result.Status = PagarmeChargedback
-			  case "analyzing":
-			  	result.Status = PagarmeAnalyzing
-			  case "pending_review":
-			  	result.Status = PagarmePendingReview
-			  case "refused":
-			  	result.Message = "A transação foi recusada, verifique os dados cartão"
-			  	result.Error = true
-			  	result.Status = PagarmeRefused
-			  default:
-			  	return result, errors.New(fmt.Sprintf("Problemas na trasanção. Status %v não reconhecido.", result.StatusStr))				
-			}		
-
-			
-			return result, nil
-
-		case 400:
-			
-
-			result := &PagarmeResponse{ Response: string(response), Request: reqtestString  }
-			
-			if err := json.Unmarshal(response, result); err != nil {
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}
-		
-			
-			for _, it := range result.Errors {
-				 this.EntityValidatorResult.Errors[it.ParameterName] = fmt.Sprintf("%v -  %v", it.Type, it.Message)
-			}
-			this.EntityValidatorResult.HasError = true
-
-			if(len(result.Errors) > 0){				
-				return nil, errors.New(fmt.Sprintf("Pagarme %v: %v, %v", result.Errors[0].ParameterName, result.Errors[0].Type, result.Errors[0].Message))				
-			}
-
-			return nil, errors.New("Pagarme: Erro de validação")
-
-		case 401:
-			return nil, errors.New("Pagarme: Access Denied")
-		case 404:
-			return nil, errors.New("Pagarme: Not Found")
-		case 500:
-			return nil, errors.New("Pagarme: Unknow error")
-		default:
-			return nil, errors.New(fmt.Sprintf("Pagarme: API error - %v", r.StatusCode))
-	}
+	return this.post(payment, "transactions", nil)
 }
 
-func (this *PagarmeService) Capture(captureData *CaptureData) (*PagarmeResponse, error) {
-
-	this.EntityValidatorResult = new(validator.EntityValidatorResult)
-	this.EntityValidatorResult.Errors = map[string]string{}
+func (this *Pagarme) PaymentCapture(captureData *CaptureData) (*Response, error) {
 
 	captureData.ApiKey = this.ApiKey
 
-	if !this.onValidCapture(captureData) {
+	if !this.onValidEntity(captureData) {
 		return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
 	}
 
-	jsonData, err := json.Marshal(captureData)
-
-	if err != nil {
-		fmt.Println("error json.Marshal ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	reqtestString := string(jsonData)
-
-	if this.Debug {
-		fmt.Println("##################################################################")
-		fmt.Println(reqtestString)	
-		fmt.Println("##################################################################")
-	}
-
-	data := bytes.NewBuffer(jsonData)
-
-	url := fmt.Sprintf(PAGARME_TRANSACTION_CAPTURE_URL, captureData.TransactionId) 
-
-	r, err := http.Post(url, "application/json", data)
-
-	if err != nil {
-		fmt.Println("error http.Post ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	response, err := ioutil.ReadAll(r.Body)
-
-	if err != nil {
-		fmt.Println("error ioutil.ReadAll ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	fmt.Println("***** PAGARME CAPTURE START RESPONSE ****** ")	
-	fmt.Println("***** STATUS CODE: %v", r.StatusCode)	
-	fmt.Println("***** RESPONSE: %v", string(response))	
-	fmt.Println("***** PAGARME CAPTURE END RESPONSE ****** ")
-
-	switch r.StatusCode {
-		case 200:
-
-			result := &PagarmeResponse{ Response: string(response), Request: reqtestString  }
-			/*
-			values := make(map[string]interface{})
-
-			if err := json.Unmarshal(response, &values); err != nil {
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}*/
-
-			if err := json.Unmarshal(response, &result); err != nil {
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}
-
-			//result.ResponseValues = values
-
-			switch result.StatusStr {
-			  case "processing":
-			  	result.Status = PagarmeProcessing
-			  case "authorized":
-			  	result.Status = PagarmeAuthorized
-			  case "paid":
-			  	result.Status = PagarmePaid
-			  case "refunded":
-			  	result.Status = PagarmeRefunded
-			  case "waiting_payment":
-			  	result.Status = PagarmeWaitingPayment
-			  case "pending_refund":
-			  	result.Status = PagarmeRefunded
-			  case "chargedback":
-			  	result.Status = PagarmeChargedback
-			  case "analyzing":
-			  	result.Status = PagarmeAnalyzing
-			  case "pending_review":
-			  	result.Status = PagarmePendingReview
-			  case "refused":
-			  	result.Message = "A transação foi recusada, verifique os dados cartão"
-			  	result.Error = true
-			  	result.Status = PagarmeRefused
-			  default:
-			  	return result, errors.New(fmt.Sprintf("Problemas na trasanção. Status %v não reconhecido.", result.StatusStr))				
-			}			
-
-			
-			return result, nil
-		case 400:
-			
-			result := &PagarmeResponse{ Response: string(response), Request: reqtestString  }
-			
-			if err := json.Unmarshal(response, result); err != nil {
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}
-		
-			for _, it := range result.Errors {
-				 this.EntityValidatorResult.Errors[it.ParameterName] = fmt.Sprintf("%v -  %v", it.Type, it.Message)
-			}
-			this.EntityValidatorResult.HasError = true
-
-			if(len(result.Errors) > 0){				
-				return nil, errors.New(fmt.Sprintf("Pagarme %v: %v, %v", result.Errors[0].ParameterName, result.Errors[0].Type, result.Errors[0].Message))				
-			}
-
-			return nil, errors.New("Pagarme: Erro de validação")
-
-		case 401:
-			return nil, errors.New("Pagarme: Access Denied")
-		case 404:
-			return nil, errors.New("Pagarme: Not Found")
-		case 500:
-			return nil, errors.New("Pagarme: Unknow error")
-		default:
-			return nil, errors.New(fmt.Sprintf("Pagarme: API error - %v", r.StatusCode))
-	}
-
+	return this.post(captureData, fmt.Sprintf("transactions/%v/capture", captureData.TransactionId), nil)
 }
 
-func (this *PagarmeService) FindPayment(id string) (*PagarmeResponse, error) {
+func (this *Pagarme) PaymentGet(id string) (*Response, error) {
 	
+  if len(id) == 0 {
+    this.SetValidationError("id", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
 
-	this.EntityValidatorResult = new(validator.EntityValidatorResult)
-	this.EntityValidatorResult.Errors = map[string]string{}
-
-	if this.Debug {
-		fmt.Println("##################################################################")
-		fmt.Println("Transaction Id = %v", id)	
-		fmt.Println("##################################################################")
-	}
-
-	url := fmt.Sprintf("%v/transactions/%v?api_key=%v", PAGARME_URL, id, this.ApiKey) 
-
-	r, err := http.Get(url)
-
-	if err != nil {
-		fmt.Println("error http.Get ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	response, err := ioutil.ReadAll(r.Body)
-
-	if err != nil {
-		fmt.Println("error ioutil.ReadAll ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	fmt.Println("***** PAGARME CAPTURE START RESPONSE ****** ")	
-	fmt.Println("***** STATUS CODE: %v", r.StatusCode)	
-	fmt.Println("***** RESPONSE: %v", string(response))	
-	fmt.Println("***** PAGARME CAPTURE END RESPONSE ****** ")
-
-	switch r.StatusCode {
-		case 200:
-
-			result := &PagarmeResponse{ Response: string(response)  }
-			/*
-			values := make(map[string]interface{})
-
-			if err := json.Unmarshal(response, &values); err != nil {
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}
-			*/
-
-			if err := json.Unmarshal(response, &result); err != nil {
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}
-
-			//result.ResponseValues = values
-
-			switch result.StatusStr {
-			  case "processing":
-			  	result.Status = PagarmeProcessing
-			  case "authorized":
-			  	result.Status = PagarmeAuthorized
-			  case "paid":
-			  	result.Status = PagarmePaid
-			  case "refunded":
-			  	result.Status = PagarmeRefunded
-			  case "waiting_payment":
-			  	result.Status = PagarmeWaitingPayment
-			  case "pending_refund":
-			  	result.Status = PagarmeRefunded
-			  case "chargedback":
-			  	result.Status = PagarmeChargedback
-			  case "analyzing":
-			  	result.Status = PagarmeAnalyzing
-			  case "pending_review":
-			  	result.Status = PagarmePendingReview
-			  case "refused":
-			  	result.Message = "A transação foi recusada, verifique os dados cartão"
-			  	result.Error = true
-			  	result.Status = PagarmeRefused
-			  default:
-			  	return result, errors.New(fmt.Sprintf("Problemas na trasanção. Status %v não reconhecido.", result.StatusStr))				
-			}			
-
-			
-			return result, nil
-		case 400:
-			
-			result := &PagarmeResponse{ Response: string(response)  }
-			
-			if err := json.Unmarshal(response, result); err != nil {
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}
-		
-			for _, it := range result.Errors {
-				 this.EntityValidatorResult.Errors[it.ParameterName] = fmt.Sprintf("%v -  %v", it.Type, it.Message)
-			}
-			this.EntityValidatorResult.HasError = true
-
-			if(len(result.Errors) > 0){				
-				return nil, errors.New(fmt.Sprintf("Pagarme %v: %v, %v", result.Errors[0].ParameterName, result.Errors[0].Type, result.Errors[0].Message))				
-			}
-
-			return nil, errors.New("Pagarme: Erro de validação")
-
-		case 401:
-			return nil, errors.New("Pagarme: Access Denied")
-		case 404:
-			return nil, errors.New("Pagarme: Not Found")
-		case 500:
-			return nil, errors.New("Pagarme: Unknow error")
-		default:
-			return nil, errors.New(fmt.Sprintf("Pagarme: API error - %v", r.StatusCode))
-	}
-
+  return this.get(fmt.Sprintf("transactions/%v?api_key=%v", id, this.ApiKey), nil)
 }
 
-func (this *PagarmeService) RefundPayment(id string) (*PagarmeResponse, error) {
+func (this *Pagarme) PaymentRefund(id string, amount float64) (*Response, error) {
+
+  if len(id) == 0 {
+    this.SetValidationError("id", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
+
+  val := FormatAmount(amount)
+
+  if val <= 0 {
+    this.SetValidationError("Amount", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
+
+	data := make(map[string]interface{})
+  data["amount"] = val
+
+  response, err := this.post(data, fmt.Sprintf("transactions/%v/refund?api_key=%v", id, this.ApiKey), nil)	
+
+  if err != nil || response.Error {
+    return response, err
+  }
+
+  response.Status = api.PagarmeRefunded
+
+  return response, err
+}
+
+func (this *Pagarme) PlanoCreate(plano *Plano) (*Response, error) {
+
+	plano.ApiKey = this.ApiKey
+
+	if !this.onValidEntity(plano) {
+		return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
+	}
+
+  if plano.Days <= 0 {
+    this.SetValidationError("Days", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }	
+
+  if plano.InvoiceReminder <= 0 {
+    this.SetValidationError("InvoiceReminder", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }	
+
+  resultProcessor := func(data []byte, response *Response) error {      	
+    return json.Unmarshal(data, response.Plano)
+  }
+
+	return this.post(plano, "plans", resultProcessor)
+}
+
+func (this *Pagarme) PlanoUpdate(plano *Plano) (*Response, error) {
+
+	plano.ApiKey = this.ApiKey
+
+	if !this.onValidEntity(plano) {
+		return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
+	}
+
+  if plano.Id <= 0 {
+    this.SetValidationError("id", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }	
+
+  resultProcessor := func(data []byte, response *Response) error {      	
+    return json.Unmarshal(data, response.Plano)
+  }
+
+	return this.put(plano, fmt.Sprintf("plans/%v", plano.Id), resultProcessor)
+}
+
+func (this *Pagarme) PlanoGet(id int64) (*Response, error) {
 	
+  if id <= 0 {
+    this.SetValidationError("id", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
+
+  resultProcessor := func(data []byte, response *Response) error {      	
+    return json.Unmarshal(data, response.Plano)
+  }  
+
+  return this.get(fmt.Sprintf("plans/%v?api_key=%v", id, this.ApiKey), resultProcessor)
+}
+
+func (this *Pagarme) SubscriptionCreate(subscription *Subscription) (*Response, error) {
+
+	subscription.ApiKey = this.ApiKey
+
+	if !this.onValidSubscription(subscription) {
+		return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
+	}
+
+  if subscription.PaymentMethod == api.PaymentMethodCreditCard {
+
+    if len(subscription.CardId) == 0 {
+
+      card := new(Card)
+      card.Number = subscription.CardNumber
+      card.HolderName = subscription.CardHolderName
+      card.ExpirationDate = subscription.CardExpirationDate
+      card.Cvv = subscription.CardCvv
+
+      if !this.onValidEntity(card) {
+        return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
+      }
+
+      cardInfo, err := this.EncryptCard(card)
+
+      if err != nil {
+        fmt.Println("error EncryptCard ", err.Error())
+        return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))     
+      }
+
+      subscription.CardHash = cardInfo.Hash
+
+    } 
+
+  }  
+
+
+	return this.post(subscription, "subscriptions", nil)
+}
+
+func (this *Pagarme) SubscriptionUpdate(subscription *Subscription) (*Response, error) {
+
+	subscription.ApiKey = this.ApiKey
+
+	if !this.onValidSubscription(subscription) {
+		return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
+	}
+
+  if subscription.Id <= 0 {
+    this.SetValidationError("id", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }	
+
+  if subscription.PaymentMethod == api.PaymentMethodCreditCard {
+
+    if len(subscription.CardId) == 0 {
+
+      card := new(Card)
+      card.Number = subscription.CardNumber
+      card.HolderName = subscription.CardHolderName
+      card.ExpirationDate = subscription.CardExpirationDate
+      card.Cvv = subscription.CardCvv
+
+      if !this.onValidEntity(card) {
+        return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
+      }
+
+      cardInfo, err := this.EncryptCard(card)
+
+      if err != nil {
+        fmt.Println("error EncryptCard ", err.Error())
+        return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))     
+      }
+
+      subscription.CardHash = cardInfo.Hash
+
+    } 
+
+  }  
+
+	return this.put(subscription, fmt.Sprintf("subscriptions/%v", subscription.Id), nil)
+}
+
+func (this *Pagarme) SubscriptionCancel(id string) (*Response, error) {
 	
+  if len(id) == 0 {
+    this.SetValidationError("id", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
 
-	this.EntityValidatorResult = new(validator.EntityValidatorResult)
-	this.EntityValidatorResult.Errors = map[string]string{}
+	data := map[string]string{}
+	data["api_key"] = this.ApiKey
 
-	payload := map[string]string{}
-	payload["api_key"] = this.ApiKey
+  response, err := this.post(data, fmt.Sprintf("subscriptions/%v/cancel", id), nil)
 
-	jsonData, err := json.Marshal(payload)
+  if err != nil || response.Error {
+    return response, err
+  }
 
-	if err != nil {
-		fmt.Println("error json.Marshal ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
+  response.Status = api.PagarmeCancelled
 
-	data := bytes.NewBuffer(jsonData)
+  return response, err  
+}
 
-	url := fmt.Sprintf("%v/transactions/%v/refund", PAGARME_URL, id)
+func (this *Pagarme) SubscriptionGet(id string) (*Response, error) {
+	
+  if len(id) == 0 {
+    this.SetValidationError("id", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
 
-	r, err := http.Post(url, "application/json", data)
+  return this.get(fmt.Sprintf("subscriptions/%v?api_key=%v", id, this.ApiKey), nil)
+}
 
-	if err != nil {
-		fmt.Println("error http.Post ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
+func (this *Pagarme) SubscriptionTransactionsGet(id string) (*Response, error) {
+	
+  if len(id) <= 0 {
+    this.SetValidationError("id", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
 
-	response, err := ioutil.ReadAll(r.Body)
+  resultProcessor := func(data []byte, response *Response) error {      	
+    return json.Unmarshal(data, &response.Transactions)
+  }   
 
-	if err != nil {
-		fmt.Println("error ioutil.ReadAll ", err.Error())
-		return nil, errors.New(this.getMessage("Pagarme.Error", err.Error()))
-	}
-
-	fmt.Println("***** PAGARME CAPTURE START RESPONSE ****** ")	
-	fmt.Println("***** STATUS CODE: %v", r.StatusCode)	
-	fmt.Println("***** RESPONSE: %v", string(response))	
-	fmt.Println("***** PAGARME CAPTURE END RESPONSE ****** ")
-
-	switch r.StatusCode {
-		case 200:
-
-			result := &PagarmeResponse{ Response: string(response)  }
-			/*
-			values := make(map[string]interface{})
-
-			if err := json.Unmarshal(response, &values); err != nil {
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}*/
-
-			if err := json.Unmarshal(response, &result); err != nil {
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}
-
-			//result.ResponseValues = values
-
-			switch result.StatusStr {
-			  case "processing":
-			  	result.Status = PagarmeProcessing
-			  case "authorized":
-			  	result.Status = PagarmeAuthorized
-			  case "paid":
-			  	result.Status = PagarmePaid
-			  case "refunded":
-			  	result.Status = PagarmeRefunded
-			  case "waiting_payment":
-			  	result.Status = PagarmeWaitingPayment
-			  case "pending_refund":
-			  	result.Status = PagarmeRefunded
-			  case "chargedback":
-			  	result.Status = PagarmeChargedback
-			  case "analyzing":
-			  	result.Status = PagarmeAnalyzing
-			  case "pending_review":
-			  	result.Status = PagarmePendingReview
-			  case "refused":
-			  	result.Message = "A transação foi recusada, verifique os dados cartão"
-			  	result.Error = true
-			  	result.Status = PagarmeRefused
-			  default:
-			  	return result, errors.New(fmt.Sprintf("Problemas na trasanção. Status %v não reconhecido.", result.StatusStr))				
-			}			
-
-			
-			return result, nil
-		case 400:
-			
-			result := &PagarmeResponse{ Response: string(response)  }
-			
-			if err := json.Unmarshal(response, result); err != nil {
-				return nil, errors.New(fmt.Sprintf("Pagarme: Error on converte response to json - %v", err.Error()))
-			}
-		
-			for _, it := range result.Errors {
-				 this.EntityValidatorResult.Errors[it.ParameterName] = fmt.Sprintf("%v -  %v", it.Type, it.Message)
-			}
-			this.EntityValidatorResult.HasError = true
-
-			if(len(result.Errors) > 0){				
-				return nil, errors.New(fmt.Sprintf("Pagarme %v: %v, %v", result.Errors[0].ParameterName, result.Errors[0].Type, result.Errors[0].Message))				
-			}
-
-			return nil, errors.New("Pagarme: Erro de validação")
-
-		case 401:
-			return nil, errors.New("Pagarme: Access Denied")
-		case 404:
-			return nil, errors.New("Pagarme: Not Found")
-		case 500:
-			return nil, errors.New("Pagarme: Unknow error")
-		default:
-			return nil, errors.New(fmt.Sprintf("Pagarme: API error - %v", r.StatusCode))
-	}
-
+  return this.get(fmt.Sprintf("subscriptions/%v/transactions?api_key=%v", id, this.ApiKey), resultProcessor)
 }
 
 
+func (this *Pagarme) SubscriptionSkip(id string, charges int64) (*Response, error) {
+	
+  if len(id) == 0 {
+    this.SetValidationError("id", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
 
-func (this *PagarmeService) onValid(payment *PagarmePayment) bool {
+  if charges <= 0 {
+    this.SetValidationError("charges", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
+
+	data := make(map[string]interface{})
+	data["api_key"] = this.ApiKey
+	data["charges"] = charges
+
+  response, err := this.post(data, fmt.Sprintf("subscriptions/%v/settle_charge", id), nil)
+
+  if err != nil || response.Error {
+    return response, err
+  }
+
+  response.Status = api.PagarmeSuccess
+
+  return response, err    
+}
+
+func (this *Pagarme) CurrentBalance(recebedorId string) (*Response, error) {
+	
+  if len(recebedorId) == 0 {
+    this.SetValidationError("recebedorId", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
+
+  return this.get(fmt.Sprintf("balance?recipient_id=%v&api_key=%v", recebedorId, this.ApiKey), nil)
+}
+
+func (this *Pagarme) Movements(filter *Filter) (*Response, error) {
+	
+
+  resultProcessor := func(data []byte, response *Response) error {      	
+    return json.Unmarshal(data, &response.Movements)
+  }   
+
+  filter.ApiKey = this.ApiKey
+
+  url := fmt.Sprintf("balance/operations%v", this.urlQuery(filter.ToMap()))
+
+  return this.get(url, resultProcessor)
+}
+
+func (this *Pagarme) TransferCreate(transfer *Transfer) (*Response, error) {
+	
+
+  resultProcessor := func(data []byte, response *Response) error {      	
+    return json.Unmarshal(data, &response.TransferResult)
+  }   
+
+  transfer.ApiKey = this.ApiKey
+
+  return this.post(transfer, "transfers", resultProcessor)
+}
+
+func (this *Pagarme) TransferList(filter *Filter) (*Response, error) {
+	
+
+  resultProcessor := func(data []byte, response *Response) error {      	
+    return json.Unmarshal(data, &response.TransferResults)
+  }   
+
+  filter.ApiKey = this.ApiKey
+
+  url := fmt.Sprintf("transfers%v", this.urlQuery(filter.ToMap()))
+
+  return this.get(url, resultProcessor)
+}
+
+func (this *Pagarme) TransferGet(id string) (*Response, error) {
+	
+  if len(id) == 0 {
+    this.SetValidationError("id", "is required")
+    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  }
+
+  resultProcessor := func(data []byte, response *Response) error {      	
+    return json.Unmarshal(data, &response.TransferResult)
+  }   
+
+
+  return this.get(fmt.Sprintf("transfers/%v?api_key=%v", id, this.ApiKey), resultProcessor)
+}
+
+func (this *Pagarme) get(action string, resultProcessor ResultProcessor) (*Response, error) {
+  return this.request(nil, action, "GET", resultProcessor)
+}
+
+func (this *Pagarme) delete(action string) (*Response, error) {
+  return this.request(nil, action, "DELETE", nil)
+}
+
+func (this *Pagarme) post(data interface{}, action string, resultProcessor ResultProcessor) (*Response, error) {
+  return this.request(data, action, "POST", resultProcessor)
+}
+
+func (this *Pagarme) put(data interface{}, action string, resultProcessor ResultProcessor) (*Response, error) {
+  return this.request(data, action, "PUT", resultProcessor)
+}
+
+func (this *Pagarme) request(data interface{}, action string, method string, resultProcessor ResultProcessor) (*Response, error) {
+
+	result := NewResponse()
+  
+
+  var req *http.Request
+  var err error
+
+  client := new(http.Client)
+  apiUrl := fmt.Sprintf("%v/%v", PAGARME_URL, action)
+
+  this.Log("URL %v, METHOD = %v", apiUrl, method)
+
+  if (method == "POST" || method == "PUT") && data != nil {
+
+    payload, err := json.Marshal(data)
+
+    if err != nil {
+      fmt.Println("error json.Marshal ", err.Error())    
+      return result, err
+    }
+
+    postData := bytes.NewBuffer(payload)
+
+
+    result.Request = string(payload)
+
+    if this.Debug {
+      fmt.Println("****************** Pagarme Request ******************")
+      fmt.Println(result.Request)
+      fmt.Println("****************** Pagarme Request ******************")
+    }
+
+
+    req, err = http.NewRequest(method, apiUrl, postData)
+
+  } else {
+    req, err = http.NewRequest(method, apiUrl, nil)    
+  }
+
+  if err != nil {
+    fmt.Println("err = ", err)
+    return nil, errors.New(fmt.Sprintf("error on http.NewRequest: %v", err))
+  }
+
+  req.Header.Add("Content-Type", "application/json")
+
+  res, err := client.Do(req)
+
+  if err != nil {
+    fmt.Println("err = %v", err)
+    return nil, errors.New(fmt.Sprintf("error on client.Do: %v", err))
+  }
+
+  defer res.Body.Close()
+  body, err := ioutil.ReadAll(res.Body)
+
+  if err != nil {
+    fmt.Println("err = %v", err)
+    return nil, errors.New(fmt.Sprintf("error on ioutil.ReadAll: %v", err))
+  }
+
+  result.Response = string(body)
+
+  if this.Debug {
+    fmt.Println("****************** Pagarme Response ******************")
+    fmt.Println("STATUS CODE ", res.StatusCode)
+    fmt.Println(result.Response)
+    fmt.Println("****************** Pagarme Response ******************")
+  }
+
+  if res.StatusCode == 200 || res.StatusCode == 400 {
+    if resultProcessor != nil && res.StatusCode == 200 {
+      if err := resultProcessor(body, result); err != nil {
+        fmt.Println("err = %v", err)
+        return nil, errors.New(fmt.Sprintf("error on resultProcessor: %v", err))      
+      }
+    } else {
+
+      err = json.Unmarshal(body, result)
+
+      if err != nil {
+        fmt.Println("err = %v", err)
+        return nil, errors.New(fmt.Sprintf("error on json.Unmarshal: %v", err))
+      }
+
+    }
+  }
+
+  if res.StatusCode == 400 {
+    result.Error = true
+
+    if result.ErrorsCount() == 1 {
+      result.Message = result.FirstError()
+    } else {
+      result.Message = fmt.Sprintf("Pagarme validation errror")
+    }
+    
+    return result, nil
+  }
+
+  if res.StatusCode != 200 {
+    result.Error = true
+    result.Message = fmt.Sprintf("Pagarme error. Status: %v", res.StatusCode)
+    return result, errors.New(result.Message) 
+  }
+
+  result.Error = result.HasError()
+  result.BuildStatus()
+
+  return result, nil
+}
+
+func (this *Pagarme) onValidPayment(payment *Payment) bool {
   this.EntityValidatorResult, _ = this.EntityValidator.IsValid(payment, func (validator *validation.Validation) {
   	
   	emptyCardHash := len(strings.TrimSpace(payment.CardHash)) == 0
   	emptyCardId := len(strings.TrimSpace(payment.CardId)) == 0
 
 
-  	if payment.PaymentMethod == PAYMENT_METHOD_CREDIT_CARD {
-			if emptyCardHash && emptyCardId {
-				if len(strings.TrimSpace(payment.CardHolderName)) == 0 {
-					validator.SetError("CardHolderName", this.getMessage("Pagarme.rquired"))
-				} 
 
-				if len(strings.TrimSpace(payment.CardExpirationDate)) == 0 {
-					validator.SetError("CardExpirationDate", this.getMessage("Pagarme.rquired"))
-				} 
+  	switch payment.PaymentMethod {
+      case api.PaymentMethodCreditCard:
+  			if emptyCardHash && emptyCardId {
+  				if len(strings.TrimSpace(payment.CardHolderName)) == 0 {
+  					validator.SetError("CardHolderName", this.getMessage("Pagarme.rquired"))
+  				} 
 
-				if len(strings.TrimSpace(payment.CardNumber)) == 0 {
-					validator.SetError("CardNumber", this.getMessage("Pagarme.rquired"))
-				} 
+  				if len(strings.TrimSpace(payment.CardExpirationDate)) == 0 {
+  					validator.SetError("CardExpirationDate", this.getMessage("Pagarme.rquired"))
+  				} 
 
-				if len(strings.TrimSpace(payment.CardCvv)) == 0 {
-					validator.SetError("CardCvv", this.getMessage("Pagarme.rquired"))
-				} 
-			}
-		}else{
-			if len(strings.TrimSpace(payment.BoletoExpirationDate)) == 0 {
-				validator.SetError("BoletoExpirationDate", this.getMessage("Pagarme.rquired"))
-			} 					
+  				if len(strings.TrimSpace(payment.CardNumber)) == 0 {
+  					validator.SetError("CardNumber", this.getMessage("Pagarme.rquired"))
+  				} 
+
+  				if len(strings.TrimSpace(payment.CardCvv)) == 0 {
+  					validator.SetError("CardCvv", this.getMessage("Pagarme.rquired"))
+  				} 
+  			}
+        break
+      case api.PaymentMethodBoleto:
+        if len(strings.TrimSpace(payment.BoletoExpirationDate)) == 0 {
+          validator.SetError("BoletoExpirationDate", this.getMessage("Pagarme.rquired"))
+        }
+        break        
+      case api.PaymentMethodPix:
+        if len(strings.TrimSpace(payment.PixExpirationDate)) == 0 {
+          validator.SetError("PixExpirationDate", this.getMessage("Pagarme.rquired"))
+        }
+        break        
 		}		
 
   })
-  return this.EntityValidatorResult.HasError == false
+
+  if this.EntityValidatorResult.HasError {
+    this.onValidationErrors()
+    return false
+  }
+
+  return true
 }
 
-func (this *PagarmeService) onValidCapture(captureData *CaptureData) bool {
-  this.EntityValidatorResult, _ = this.EntityValidator.IsValid(captureData, nil)
-  return this.EntityValidatorResult.HasError == false
+func (this *Pagarme) onValidSubscription(subscription *Subscription) bool {
+
+  items := []interface{}{
+    subscription,
+    subscription.Customer,
+  }
+
+  this.EntityValidatorResult, _ = this.EntityValidator.ValidMult(items, func (validator *validation.Validation) {
+  	
+  	emptyCardHash := len(strings.TrimSpace(subscription.CardHash)) == 0
+  	emptyCardId := len(strings.TrimSpace(subscription.CardId)) == 0
+
+
+  	if subscription.PaymentMethod == api.PaymentMethodCreditCard {
+			if emptyCardHash && emptyCardId {
+				if len(strings.TrimSpace(subscription.CardHolderName)) == 0 {
+					validator.SetError("CardHolderName", this.getMessage("Pagarme.rquired"))
+				} 
+
+				if len(strings.TrimSpace(subscription.CardExpirationDate)) == 0 {
+					validator.SetError("CardExpirationDate", this.getMessage("Pagarme.rquired"))
+				} 
+
+				if len(strings.TrimSpace(subscription.CardNumber)) == 0 {
+					validator.SetError("CardNumber", this.getMessage("Pagarme.rquired"))
+				} 
+
+				if len(strings.TrimSpace(subscription.CardCvv)) == 0 {
+					validator.SetError("CardCvv", this.getMessage("Pagarme.rquired"))
+				} 
+			}
+		}		
+
+  })
+
+  if this.EntityValidatorResult.HasError {
+    this.onValidationErrors()
+    return false
+  }
+
+  return true
 }
 
-func FormatAmount(amount float64) int64 {
-	ac := accounting.Accounting{Symbol: "", Precision: 2, Thousand: "", Decimal: ""}
-	text := strings.Replace(ac.FormatMoney(amount), ",", "", -1)
-	text = strings.Replace(text, ".", "", -1)
-	val, _ := strconv.Atoi(text)
-	return int64(val)
+func (this *Pagarme) onValidEntity(entity interface{}) bool {
+  this.EntityValidatorResult, _ = this.EntityValidator.IsValid(entity, nil)
+
+  if this.EntityValidatorResult.HasError {
+    this.onValidationErrors()
+    return false
+  }
+
+  return true
 }
 
-func (this *PagarmeService) getMessage(key string, args ...interface{}) string{
+func (this *Pagarme) getMessage(key string, args ...interface{}) string{
   return i18n.Tr(this.Lang, key, args)
 }
 
-func CheckPostbackSignature(apiKey string, hubSignature string, requestBody []byte) bool {
+func (this *Pagarme) onValidationErrors(){
+  this.HasValidationError = true
+  this.ValidationErrors = this.EntityValidator.GetValidationErrors(this.EntityValidatorResult)
+}
 
-  pagarmeSignature := hubSignature
-
-  if !strings.Contains(pagarmeSignature, "="){
-    fmt.Println("************************************************")
-    fmt.Println("** Pagarme Signature not has =")
-    fmt.Println("************************************************")        
-    return false
+func (this *Pagarme) SetValidationError(key string, value string){
+  this.HasValidationError = true
+  if this.ValidationErrors == nil {
+    this.ValidationErrors = make(map[string]string)
   }
+  this.ValidationErrors[key]= value
+}
 
-  fmt.Println("************************************************")
-  fmt.Println("**  X-Hub-Signature = ", pagarmeSignature)
-  fmt.Println("************************************************")    
-
-  /*
-  this.Log("************************************************")
-  this.Log("**  RequestBody = ", string(this.Ctx.Input.RequestBody))
-  this.Log("************************************************")    
-  */
-
-  cleanedSignature := strings.Split(pagarmeSignature, "=")[1]
-
-  fmt.Println("************************************************")
-  fmt.Println("**  cleanedSignature = ", cleanedSignature)
-  fmt.Println("************************************************")    
-
-  mac := hmac.New(sha1.New, []byte(apiKey))
-  mac.Write(requestBody)
-  rawBodyMAC := mac.Sum(nil)
-  computedHash := hex.EncodeToString(rawBodyMAC)
-
-  fmt.Println("************************************************")
-  fmt.Println("**  computedHash = ", computedHash)
-  fmt.Println("************************************************")      
-
-  if !hmac.Equal([]byte(cleanedSignature), []byte(computedHash)){
-    fmt.Println("************************************************")
-    fmt.Println("** Inválid Pagarme Signature: Expected: %v, Received: %v", string(cleanedSignature), string(computedHash))
-    fmt.Println("************************************************")    
-    return false
+func (this *Pagarme) Log(message string, args ...interface{}) {
+	if this.Debug {
+    fmt.Println("Pagarme: ", fmt.Sprintf(message, args...))
   }
-  
-  fmt.Println("************************************************")
-  fmt.Println("** Válido Pagarme Signature: Expected: %v, Received: %v", string(cleanedSignature), string(computedHash))
-  fmt.Println("************************************************")        
-  
-  return true
+}
+
+func (this *Pagarme) urlQuery(filter map[string]string) string {
+  url := ""
+  if filter != nil && len(filter) > 0 {
+    url = fmt.Sprintf("%v?", url)    
+
+    for k, v := range filter {
+      url = fmt.Sprintf("%v%v=%v", url, k, v)    
+      url = fmt.Sprintf("%v&", url)    
+    }
+  }  
+
+  return url
 }

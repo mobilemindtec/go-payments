@@ -3,293 +3,15 @@ package payzen
 import (
 	"github.com/mobilemindtec/go-utils/beego/validator"
 	"github.com/beego/beego/v2/core/validation"
+	"github.com/mobilemindtec/go-payments/api"
 	"github.com/beego/i18n"
-	"github.com/mobilemindtec/go-payments/pagarme"
-	"github.com/mobilemindtec/go-payments/picpay"
 	"strconv"
 	"strings"
 	"errors"
-	"time"
 	"fmt"
 )
 
-type PayZenCard struct {
-	Number string `valid:""`
-	Scheme string `valid:""`
-	ExpiryMonth string `valid:""`
-	ExpiryYear string `valid:""`
-	CardSecurityCode string `valid:""`
-	CardHolderBirthDay string `valid:""`
-	CardHolderName string `valid:""`
-	Token string`valid:""`
 
-	BoletoOnline BoletoOnlineTipo `valid:""`	
-	BoletoOnlineDaysDalay int // Obs.: Não suportado para boletos online Bradesco.
-
-	BoletoOnlineTexto string 
-	BoletoOnlineTexto2 string
-	BoletoOnlineTexto3 string
-
-	BoletoInstructions string `valid:""` 
-	BoletoExpirationDate string // 2006-01-02
-}
-
-type PayZenCustomer struct {
-	FirstName string `valid:"Required"`
-	LastName string `valid:""`
-	PhoneNumber string `valid:""`
-	Email string `valid:"Required"`
-	StreetNumber string `valid:""`
-	Address string `valid:""`
-	District string `valid:""`
-	ZipCode string `valid:""`
-	City string `valid:""`
-	State string `valid:""`
-	Country string `valid:"Required"`
-	IdentityCode string `valid:"Required"`
-}
-
-type PayZenSubscription struct{
-
-	OrderId string `valid:"Required"`
-	SubscriptionId string `valid:"Required"`
-	Description string `valid:"Required"`
-
-	// valor da recorrência
-	Amount float64 `valid:"Required"`
-
-	// valor inicial da recorrência
-	InitialAmount float64 `valid:""`
-	// quantas vezes o valor inicial deve ser cobrado
-	InitialAmountNumber float64 `valid:""`
-
-	// data de inicio da cobrança
-	EffectDate time.Time `valid:"Required"`
-	// cobrar no último dia do mês
-	LastDayOfMonth bool
-	// quantidade de cobranças
-	Count int64 `valid:"Required;"`
-
-	MonthDay int64
-
-	FrequencyByDay int64
-
-	Rule string
-
-	Token string `valid:"Required;"`
-
-	Account *PayZenAccount `valid:"Required"`
-}
-
-type PayZenPayment struct{
-	OrderId string `valid:""`
-	Installments int `valid:""`
-	Amount float64 `valid:""`
-	Customer *PayZenCustomer `valid:""`
-	Card *PayZenCard `valid:""`
-	Account *PayZenAccount `valid:"Required"`
-	TokenOperation bool
-	TransactionUuid string
-	VadsTransId string
-	ValidationType PayZenPaymentValidationType	
-
-	// pagarme
-	PostbackUrl string `valid:""` 
-	SoftDescriptor string `valid:""` 	
-	Metadata map[string]string `valid:""` 
-	SaveBoletoAtPath string
-
-	//PicPay
-  CallbackUrl string `json:""`
-  ReturnUrl string `json:""`
-  Plugin string `json:""`
-  AdditionalInfo map[string]interface{} `json:""`
-  ExpiresAt time.Time `json:""`
-}
-
-type PayZenCapturePayment struct {
-	TransactionUuids string `valid:"Required"`
-	Commission float64
-	Account *PayZenAccount `valid:"Required"`
-}
-
-type PayZenPaymentToken struct {
-	Token string `valid:"Required"`
-	Account *PayZenAccount `valid:"Required"`
-}
-
-type PayZenPaymentFind struct {
-	TransactionId string
-	TransactionUuid string
-	OrderId string
-	SubscriptionId string
-	Token string
-	AuthorizationId string
-	Account *PayZenAccount `valid:"Required"`
-}
-
-func NewPayZenSubscription(shopId string, mode string, cert string) *PayZenSubscription {
-	subscription := new(PayZenSubscription)
-	subscription.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
-	return subscription
-}
-
-
-func NewPayZenPaymentFind(shopId string, mode string, cert string) *PayZenPaymentFind {
-	find := new(PayZenPaymentFind)
-	find.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
-	return find
-}
-
-func NewEmptyPayZenPaymentFind() *PayZenPaymentFind {
-	find := new(PayZenPaymentFind)
-	find.Account = &PayZenAccount{ }
-	return find
-}
-
-func NewPayZenPaymentToken(shopId string, mode string, cert string) *PayZenPaymentToken {
-	tokenPayment := new(PayZenPaymentToken)
-	tokenPayment.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
-	return tokenPayment
-}
-
-func NewPayZenCapturePayment(shopId string, mode string, cert string) *PayZenCapturePayment {
-	capturePayment := new(PayZenCapturePayment)
-	capturePayment.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
-	return capturePayment
-}
-
-func NewPayZenPayment(shopId string, mode string, cert string) *PayZenPayment {
-	payment := new(PayZenPayment)
-	payment.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
-	payment.Customer = new(PayZenCustomer)
-	payment.Card = new(PayZenCard)
-	payment.ValidationType = Automatica
-	return payment
-}
-
-func NewEmptyPayZenPayment() *PayZenPayment {
-	payment := new(PayZenPayment)
-	payment.Customer = new(PayZenCustomer)
-	payment.Card = new(PayZenCard)
-	return payment
-}
-
-func NewPayZenAccount(shopId string, mode string, cert string) *PayZenAccount {
-	return &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
-}
-
-type PayZenTokenResult struct {
-	Token string
-	Number string
-	Brand string
-	CreationDate time.Time
-	CancellationDate time.Time
-	Cancelled bool
-	Active bool
-	NotFound bool
-}
-
-type PayZenSubscriptionResult struct {
-	SubscriptionId string
-
-	PastPaymentsNumber int64
-	TotalPaymentsNumber int64
-	EffectDate time.Time
-	CancelDate time.Time
-	InitialAmountNumber int64
-	Rule string
-	Description string
-
-	Active bool
-	Cancelled bool
-	Started bool
-
-	Token string
-}
-
-
-type PayZenTransactionItemResult struct {
-	TransactionUuid string
-	TransactionId string
-	TransactionStatus PayZenTransactionStatus
-	PagarmeStatus pagarme.PagarmeStatus
-	PicPayStatus picpay.PicPayStatus
-	TransactionStatusLabel string
-	ExternalTransactionId string
-	Amount float64
-	ExpectedCaptureDate time.Time
-	CreationDate time.Time
-}
-
-type PayZenResult struct {
-	Error bool
-	Message string
-	Request string
-	Response string
-
-	//RequestObject interface{}
-	//ResponseObject interface{}
-
-	PagarmeStatus pagarme.PagarmeStatus
-	PicPayStatus picpay.PicPayStatus
-	TransactionStatus PayZenTransactionStatus
-
-	TransactionStatusLabel string
-
-	TransactionId string
-	TransactionUuid string
-	//ExternalTransactionId string
-
-  ResponseCode string
-  ResponseCodeDetail string
-
-	BoletoUrl string
-	BoletoNumber string
-
-	SubscriptionId string
-
-	TokenInfo *PayZenTokenResult
-
-	PaymentNotFound bool
-	SubscriptionInvalid bool
-	SubscriptionIdNotFound bool
-	PaymentTokenNotFound bool
-
-	Transactions []*PayZenTransactionItemResult
-
-	SubscriptionInfo *PayZenSubscriptionResult
-
-	ValidationErrors map[string]string
-
-	Platform string
-	Nsu string	
-	BoletoOutputContent []byte	`json:"-"`
-	BoletoFileName string `json:"-"`
-
-	QrCode string
-	QrCodeUrl string
-	PaymentUrl string
-  AuthorizationId string
-  CancellationId string
-}
-
-func NewPayZenResult() *PayZenResult {
-	result := new(PayZenResult)
-	result.TokenInfo = new(PayZenTokenResult)
-	result.Transactions = []*PayZenTransactionItemResult{}
-	result.SubscriptionInfo = new(PayZenSubscriptionResult)
-	result.ValidationErrors = make(map[string]string)
-	result.Platform = "PayZen"
-	return result
-}
-
-func NewPayZenResultWithErrors(errors map[string]string) *PayZenResult {
-	result := NewPayZenResult()
-	result.Error = true
-	result.ValidationErrors = errors
-	return result
-}
 
 type PayZen struct {
 
@@ -316,14 +38,14 @@ func (this *PayZen) OnDebug() {
 
 /* pay operations */
 
-func (this *PayZen) PaymentCreate(payment *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZen) PaymentCreate(payment *api.Payment) (*api.PaymentResult, error) {
 	if !this.onValid(payment) {
 		return nil, errors.New(this.getMessage("PayZen.ValidationError"))
 	}
 
   if payment.Card.Scheme == SchemeBoleto && payment.Account.Mode == PayZenModeProduction {
     switch payment.Card.BoletoOnline {
-      case BoletoOnline, BoletoOnlineItauIb, BoletoOnlineItauBoleto, BoletoOnlineBradescoBoleto:
+      case api.BoletoOnline, api.BoletoOnlineItauIb, api.BoletoOnlineItauBoleto, api.BoletoOnlineBradescoBoleto:
         return this.PaymentCreateBoletoOnline(payment)
     }
   }
@@ -334,7 +56,7 @@ func (this *PayZen) PaymentCreate(payment *PayZenPayment) (*PayZenResult, error)
 }
 
 
-func (this *PayZen) PaymentCreateBoletoOnline(payment *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZen) PaymentCreateBoletoOnline(payment *api.Payment) (*api.PaymentResult, error) {
 	if !this.onValid(payment) {
 		return nil, errors.New(this.getMessage("PayZen.ValidationError"))
 	}
@@ -343,7 +65,7 @@ func (this *PayZen) PaymentCreateBoletoOnline(payment *PayZenPayment) (*PayZenRe
 	return this.ToolBox.CreatePaymentBoletoOnline(payment)
 }
 
-func (this *PayZen) PaymentUpdate(payment *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZen) PaymentUpdate(payment *api.Payment) (*api.PaymentResult, error) {
 
 	valid := this.onValidOther(payment, func (validator *validation.Validation) {
 		if len(payment.TransactionUuid) == 0 {
@@ -365,7 +87,7 @@ func (this *PayZen) PaymentUpdate(payment *PayZenPayment) (*PayZenResult, error)
 }
 
 // Para cancelar: Initial, Authorised,
-func (this *PayZen) PaymentCancel(paymentFind *PayZenPaymentFind) (*PayZenResult, error) {
+func (this *PayZen) PaymentCancel(paymentFind *api.PaymentFind) (*api.PaymentResult, error) {
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.TransactionUuid) == 0 {
@@ -382,7 +104,7 @@ func (this *PayZen) PaymentCancel(paymentFind *PayZenPaymentFind) (*PayZenResult
 	return this.ToolBox.CancelPayment(paymentFind.TransactionUuid)
 }
 
-func (this *PayZen) PaymentCapture(capturePayment *PayZenCapturePayment) (*PayZenResult, error) {
+func (this *PayZen) PaymentCapture(capturePayment *api.PaymentCapture) (*api.PaymentResult, error) {
 
 	if !this.onValidOther(capturePayment, nil) {
 		return nil, errors.New(this.getMessage("PayZen.ValidationError"))
@@ -393,7 +115,7 @@ func (this *PayZen) PaymentCapture(capturePayment *PayZenCapturePayment) (*PayZe
 	return this.ToolBox.CapturePayment(capturePayment)
 }
 
-func (this *PayZen) PaymentValidate(paymentFind *PayZenPaymentFind) (*PayZenResult, error) {
+func (this *PayZen) PaymentValidate(paymentFind *api.PaymentFind) (*api.PaymentResult, error) {
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.TransactionUuid) == 0 {
@@ -410,7 +132,7 @@ func (this *PayZen) PaymentValidate(paymentFind *PayZenPaymentFind) (*PayZenResu
 	return this.ToolBox.ValidatePayment(paymentFind.TransactionUuid)
 }
 
-func (this *PayZen) PaymentDuplicate(payment *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZen) PaymentDuplicate(payment *api.Payment) (*api.PaymentResult, error) {
 
 	valid := this.onValidOther(payment, func (validator *validation.Validation) {
 		if len(payment.TransactionUuid) == 0 {
@@ -435,7 +157,7 @@ func (this *PayZen) PaymentDuplicate(payment *PayZenPayment) (*PayZenResult, err
 }
 
 
-func (this *PayZen) PaymentRefund(payment *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZen) PaymentRefund(payment *api.Payment) (*api.PaymentResult, error) {
 
 	valid := this.onValidOther(payment, func (validator *validation.Validation) {
 		if len(payment.TransactionUuid) == 0 {
@@ -459,7 +181,7 @@ func (this *PayZen) PaymentRefund(payment *PayZenPayment) (*PayZenResult, error)
 
 /* token operations */
 
-func (this *PayZen) PaymentTokenCreate(payment *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZen) PaymentTokenCreate(payment *api.Payment) (*api.PaymentResult, error) {
 	payment.TokenOperation = true
 
 	if !this.onValid(payment) {
@@ -471,7 +193,7 @@ func (this *PayZen) PaymentTokenCreate(payment *PayZenPayment) (*PayZenResult, e
 	return this.ToolBox.CreatePaymentToken(payment)
 }
 
-func (this *PayZen) PaymentTokenUpdate(payment *PayZenPayment) (*PayZenResult, error) {
+func (this *PayZen) PaymentTokenUpdate(payment *api.Payment) (*api.PaymentResult, error) {
 	payment.TokenOperation = true
 
 	if !this.onValid(payment) {
@@ -495,7 +217,7 @@ func (this *PayZen) PaymentTokenUpdate(payment *PayZenPayment) (*PayZenResult, e
 	return this.ToolBox.UpdatePaymentToken(payment)
 }
 
-func (this *PayZen) PaymentTokenCancel(paymentToken *PayZenPaymentToken) (*PayZenResult, error) {
+func (this *PayZen) PaymentTokenCancel(paymentToken *api.PaymentToken) (*api.PaymentResult, error) {
 
 	if !this.onValidOther(paymentToken, nil) {
 		return nil, errors.New(this.getMessage("PayZen.ValidationError"))
@@ -506,7 +228,7 @@ func (this *PayZen) PaymentTokenCancel(paymentToken *PayZenPaymentToken) (*PayZe
 	return this.ToolBox.CancelPaymentToken(paymentToken.Token)
 }
 
-func (this *PayZen) PaymentTokenReactive(paymentToken *PayZenPaymentToken) (*PayZenResult, error) {
+func (this *PayZen) PaymentTokenReactive(paymentToken *api.PaymentToken) (*api.PaymentResult, error) {
 
 	if !this.onValidOther(paymentToken, nil) {
 		return nil, errors.New(this.getMessage("PayZen.ValidationError"))
@@ -517,7 +239,7 @@ func (this *PayZen) PaymentTokenReactive(paymentToken *PayZenPaymentToken) (*Pay
 	return this.ToolBox.ReactivePaymentToken(paymentToken.Token)
 }
 
-func (this *PayZen) PaymentTokenGetDetails(paymentToken *PayZenPaymentToken) (*PayZenResult, error) {
+func (this *PayZen) PaymentTokenGetDetails(paymentToken *api.PaymentToken) (*api.PaymentResult, error) {
 
 	if !this.onValidOther(paymentToken, nil) {
 		return nil, errors.New(this.getMessage("PayZen.ValidationError"))
@@ -533,7 +255,7 @@ func (this *PayZen) PaymentTokenGetDetails(paymentToken *PayZenPaymentToken) (*P
 /*
 	Com esse método é possível buscar todos os pagamentos relacionados a uma recorrência. As transações retornam no atributo Transactions do resultado
 */
-func (this *PayZen) PaymentFind(paymentFind *PayZenPaymentFind) (*PayZenResult, error) {
+func (this *PayZen) PaymentFind(paymentFind *api.PaymentFind) (*api.PaymentResult, error) {
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.OrderId) == 0 {
@@ -552,7 +274,7 @@ func (this *PayZen) PaymentFind(paymentFind *PayZenPaymentFind) (*PayZenResult, 
 	return this.ToolBox.FindPayment(paymentFind.OrderId)
 }
 
-func (this *PayZen) PaymentGetDetails(paymentFind *PayZenPaymentFind) (*PayZenResult, error) {
+func (this *PayZen) PaymentGetDetails(paymentFind *api.PaymentFind) (*api.PaymentResult, error) {
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.TransactionUuid) == 0 {
@@ -571,7 +293,7 @@ func (this *PayZen) PaymentGetDetails(paymentFind *PayZenPaymentFind) (*PayZenRe
 	return this.ToolBox.GetPaymentDetails(paymentFind.TransactionUuid)
 }
 
-func (this *PayZen) PaymentGetDetailsWithNsu(paymentFind *PayZenPaymentFind) (*PayZenResult, error) {
+func (this *PayZen) PaymentGetDetailsWithNsu(paymentFind *api.PaymentFind) (*api.PaymentResult, error) {
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.TransactionUuid) == 0 {
@@ -590,7 +312,7 @@ func (this *PayZen) PaymentGetDetailsWithNsu(paymentFind *PayZenPaymentFind) (*P
 	return this.ToolBox.GetPaymentDetailsWithNsu(paymentFind.TransactionUuid)
 }
 
-func (this *PayZen) PaymentCreateSubscription(subscription *PayZenSubscription) (*PayZenResult, error) {
+func (this *PayZen) PaymentCreateSubscription(subscription *api.Subscription) (*api.PaymentResult, error) {
 
 	if !this.onValidSubscription(subscription) {
 		return nil, errors.New(this.getMessage("PayZen.ValidationError"))
@@ -601,7 +323,7 @@ func (this *PayZen) PaymentCreateSubscription(subscription *PayZenSubscription) 
 	return this.ToolBox.CreateSubscription(subscription)
 }
 
-func (this *PayZen) PaymentGetDetailsSubscription(paymentFind *PayZenPaymentFind) (*PayZenResult, error) {
+func (this *PayZen) PaymentGetDetailsSubscription(paymentFind *api.PaymentFind) (*api.PaymentResult, error) {
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.SubscriptionId) == 0 {
@@ -623,7 +345,7 @@ func (this *PayZen) PaymentGetDetailsSubscription(paymentFind *PayZenPaymentFind
 	return this.ToolBox.GetSubscriptionDetails(paymentFind.SubscriptionId, paymentFind.Token)
 }
 
-func (this *PayZen) PaymentCancelSubscription(paymentFind *PayZenPaymentFind) (*PayZenResult, error) {
+func (this *PayZen) PaymentCancelSubscription(paymentFind *api.PaymentFind) (*api.PaymentResult, error) {
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.SubscriptionId) == 0 {
@@ -645,7 +367,7 @@ func (this *PayZen) PaymentCancelSubscription(paymentFind *PayZenPaymentFind) (*
 	return this.ToolBox.CancelSubscription(paymentFind.SubscriptionId, paymentFind.Token)
 }
 
-func (this *PayZen) PaymentUpdateSubscription(subscription *PayZenSubscription) (*PayZenResult, error) {
+func (this *PayZen) PaymentUpdateSubscription(subscription *api.Subscription) (*api.PaymentResult, error) {
 
 	if !this.onValidSubscription(subscription) {
 		return nil, errors.New(this.getMessage("PayZen.ValidationError"))
@@ -672,38 +394,38 @@ func (this *PayZen) PaymentUpdateSubscription(subscription *PayZenSubscription) 
 	return this.ToolBox.UpdateSubscription(subscription)
 }
 
-func (this *PayZen) CanCancelPayment(status PayZenTransactionStatus) bool {
+func (this *PayZen) CanCancelPayment(status api.PayZenTransactionStatus) bool {
 
 	switch status {
-		case Initial:
-		case Authorised:
-		case AuthorisedToValidate:
-		case WaitingAuthorisation:
-		case WaitingAuthorisationToValidate:
+		case api.Initial:
+		case api.Authorised:
+		case api.AuthorisedToValidate:
+		case api.WaitingAuthorisation:
+		case api.WaitingAuthorisationToValidate:
 			return true
 	}
 	return false
 
 }
 
-func (this *PayZen) CanUpdatePayment(status PayZenTransactionStatus) bool {
+func (this *PayZen) CanUpdatePayment(status api.PayZenTransactionStatus) bool {
 
 	switch status {
-		case Initial:
-		case Authorised:
-		case AuthorisedToValidate:
-		case WaitingAuthorisation:
-		case WaitingAuthorisationToValidate:
+		case api.Initial:
+		case api.Authorised:
+		case api.AuthorisedToValidate:
+		case api.WaitingAuthorisation:
+		case api.WaitingAuthorisationToValidate:
 			return true
 	}
 	return false
 
 }
 
-func (this *PayZen) CanDuplicatePayment(status PayZenTransactionStatus) bool {
+func (this *PayZen) CanDuplicatePayment(status api.PayZenTransactionStatus) bool {
 
 	switch status {
-		case Captured:
+		case api.Captured:
 			return true
 	}
 	return false
@@ -721,19 +443,11 @@ func (this *PayZen) onValidOther(object interface{}, action func (*validation.Va
 	return true
 }
 
-func (this *PayZen) onValidSubscription(subscription *PayZenSubscription) bool {
+func (this *PayZen) onValidSubscription(subscription *api.Subscription) bool {
 
   this.EntityValidatorResult, _ = this.EntityValidator.IsValid(subscription, func (validator *validation.Validation) {
 
   	if len(subscription.Rule) == 0 {
-
-  		if !subscription.LastDayOfMonth && subscription.MonthDay == 0 {
-  			validator.SetError("Rule", "you need set Rule or LastDayOfMonth or MonthDay")
-  		}
-
-  		if subscription.Count <= 0 {
-  			validator.SetError("Count", this.getMessage("Pagarme.rquired"))
-  		}
 
   		if subscription.EffectDate.IsZero() {
   			validator.SetError("EffectDate", this.getMessage("Pagarme.rquired"))
@@ -763,7 +477,7 @@ func (this *PayZen) onValidSubscription(subscription *PayZenSubscription) bool {
   return true
 }
 
-func (this *PayZen) onValid(payment *PayZenPayment) bool {
+func (this *PayZen) onValid(payment *api.Payment) bool {
 
   this.EntityValidatorResult, _ = this.EntityValidator.IsValid(payment, func (validator *validation.Validation) {
 
@@ -802,21 +516,21 @@ func (this *PayZen) onValid(payment *PayZenPayment) bool {
   	if payment.Card.Scheme == SchemeBoleto {
 	    switch payment.Card.BoletoOnline {
 
-	      case BoletoOnline:
+	      case api.BoletoOnline:
 	      	validator.SetError(this.getMessage("Pagarme.BoletoOnline"), fmt.Sprintf("Boleto On-Line %v não implementado", payment.Card.BoletoOnline))
 	        break
 
-	      case BoletoOnlineItauIb:
+	      case api.BoletoOnlineItauIb:
 	      	validator.SetError(this.getMessage("Pagarme.BoletoOnline"), fmt.Sprintf("Boleto On-Line %v não implementado", payment.Card.BoletoOnline))
 	        break
 
-	      case BoletoOnlineItauBoleto:
+	      case api.BoletoOnlineItauBoleto:
 					if _, err := strconv.Atoi(payment.VadsTransId); err != nil {
 						validator.SetError(this.getMessage("Pagarme.VadsTransId"), "vads_trans_id deve ser um valor númerico de 6 digitos que não pode repetir no mesmo dia.")
 					}	        
 	        break
 
-	      case BoletoOnlineBradescoBoleto:
+	      case api.BoletoOnlineBradescoBoleto:
 					if _, err := strconv.Atoi(payment.VadsTransId); err != nil {
 						validator.SetError(this.getMessage("Pagarme.VadsTransId"), "vads_trans_id deve ser um valor númerico de 6 digitos que não pode repetir no mesmo dia.")
 					}	        

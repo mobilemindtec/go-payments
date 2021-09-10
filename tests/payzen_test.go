@@ -3,15 +3,10 @@ package gopayments
 import (
   "github.com/mobilemindtec/go-payments/payzen"
   "github.com/mobilemindtec/go-utils/app/util"
-  "github.com/mobilemindtec/go-utils/support"
-	"github.com/satori/go.uuid"
-	"github.com/go-redis/redis"
-  "encoding/json"
-  "io/ioutil"
+  "github.com/mobilemindtec/go-payments/api"
 	"testing"
 	"time"
 	"fmt"
-	"os"
 )
 
 const(
@@ -33,43 +28,10 @@ const(
   ClientName = "stargym_conventos"
 )
 
-var (
-	client *redis.Client
-  Mode = "TEST"
-  ShopId = ""
-  Cert = ""  
-)
-
-func init(){
-  file, err := ioutil.ReadFile("../certs.json")
-  if err != nil {
-      fmt.Printf("error on open file ../certs.json: %v\n", err)
-      return
-  }
-
-  data := make(map[string]interface{})
-  
-  err = json.Unmarshal(file, &data)
-  if err != nil {
-      fmt.Printf("JSON error: %v\n", err)
-      return
-  }  
-
-  jsonParser := new(support.JsonParser)
-
-  clienteData := jsonParser.GetJsonObject(data, ClientName)
-  payzenData := jsonParser.GetJsonObject(clienteData, "payzen")
-  certData := jsonParser.GetJsonObject(payzenData, "cert")
-
-  Mode, _ = payzenData["mode"].(string)
-  ShopId, _ = payzenData["shop_id"].(string)
-  Cert, _ = certData["prod"].(string)
-
-  fmt.Printf("init payzen data: Mode = %v, ShopId = %v, Cert = %v", Mode, ShopId, Cert)
-}
 
 
-func fillCard(card *payzen.PayZenCard) {
+
+func fillCard(card *api.Card) {
   card.Number = "4970100000000007"
   card.Scheme = "VISA"
   card.ExpiryMonth = "12"
@@ -77,7 +39,7 @@ func fillCard(card *payzen.PayZenCard) {
   card.CardSecurityCode = "235"
 }
 
-func fillCustomer(customer *payzen.PayZenCustomer) {
+func fillCustomer(customer *api.Customer) {
   customer.FirstName = "Tony"
   customer.LastName = "Montana"
   customer.PhoneNumber = "54999999999"
@@ -92,42 +54,17 @@ func fillCustomer(customer *payzen.PayZenCustomer) {
   customer.IdentityCode = "833.618.550-04"
 }
 
-func genUUID() string {
-	id := uuid.NewV4()
-	return id.String()
-}
 
-func setup(){
-	client = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
-	pong, err := client.Ping().Result()
-	fmt.Println(pong, err)
-}
-
-func shutdown() {
-
-}
-
-func TestMain(m *testing.M) {
-  setup()
-  code := m.Run()
-  shutdown()
-  os.Exit(code)
-}
 
 func TestPayZenPaymentCreateCartao(t *testing.T) {
 
   time.Sleep(3 * time.Second)
 
 	PayZen := payzen.NewPayZen("pt-BR")
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
 
-  payment.OrderId = genUUID()
+  payment.OrderId = GenUUID()
   payment.Installments = 1
   payment.Amount = 10.0
 
@@ -164,10 +101,10 @@ func TestPayZenPaymentCreateBoleto(t *testing.T) {
   time.Sleep(1 * time.Second)
 
 	PayZen := payzen.NewPayZen("pt-BR")
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
 
-  payment.OrderId = genUUID()
+  payment.OrderId = GenUUID()
   payment.Installments = 1
   payment.Amount = 10.0
 
@@ -204,12 +141,12 @@ func TestPayZenPaymentCreateBoletoOnlineItau(t *testing.T) {
   time.Sleep(1 * time.Second)
 
   PayZen := payzen.NewPayZen("pt-BR")
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
   PayZen.OnDebug()
 
 
-  payment.OrderId = genUUID()
+  payment.OrderId = GenUUID()
   payment.Installments = 1
   payment.Amount = 10.0
 
@@ -219,7 +156,7 @@ func TestPayZenPaymentCreateBoletoOnlineItau(t *testing.T) {
 
   payment.VadsTransId = "000004" // deve ser um valor númerico de 6 digitos que não pode repetir no mesmo dia
   payment.Card.Scheme = payzen.SchemeBoleto
-  payment.Card.BoletoOnline = payzen.BoletoOnlineItauBoleto
+  payment.Card.BoletoOnline = api.BoletoOnlineItauBoleto
   payment.Card.BoletoOnlineDaysDalay = 3
 
   fillCustomer(payment.Customer)
@@ -255,12 +192,12 @@ func TestPayZenPaymentCreateBoletoOnlineBradesco(t *testing.T) {
   time.Sleep(1 * time.Second)
 
   PayZen := payzen.NewPayZen("pt-BR")
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
   PayZen.OnDebug()
 
 
-  payment.OrderId = "6"//genUUID()
+  payment.OrderId = "6"//GenUUID()
   payment.Installments = 1
   payment.Amount = 10.0
 
@@ -270,7 +207,7 @@ func TestPayZenPaymentCreateBoletoOnlineBradesco(t *testing.T) {
 
   payment.VadsTransId = fmt.Sprintf("00000%v", payment.OrderId) // deve ser um valor númerico de 6 digitos que não pode repetir no mesmo dia
   payment.Card.Scheme = payzen.SchemeBoleto
-  payment.Card.BoletoOnline = payzen.BoletoOnlineBradescoBoleto
+  payment.Card.BoletoOnline = api.BoletoOnlineBradescoBoleto
   payment.Card.BoletoOnlineDaysDalay = 3
   payment.SaveBoletoAtPath = "/Users/ricardo/Downloads"
 
@@ -321,7 +258,7 @@ func TestPayZenCaptureBoleto(t *testing.T) {
 
   fmt.Printf("BoletoTransactionUuid %v\n", BoletoTransactionUuid)
 
-  capture := payzen.NewPayZenCapturePayment(ShopId, Mode, Cert)
+  capture := api.NewPaymentCapture(ShopId, Mode, Cert)
   capture.TransactionUuids = "000001"//BoletoTransactionUuid
   result, err := PayZen.PaymentCapture(capture)
 
@@ -352,7 +289,7 @@ func TestPayZenCaptureCartao(t *testing.T) {
 
   fmt.Printf("CardTransactionUuid %v\n", CardTransactionUuid)
 
-  capture := payzen.NewPayZenCapturePayment(ShopId, Mode, Cert)
+  capture := api.NewPaymentCapture(ShopId, Mode, Cert)
   capture.TransactionUuids = CardTransactionUuid
   result, err := PayZen.PaymentCapture(capture)
 
@@ -371,7 +308,7 @@ func TestPayZenCreateTokenActive(t *testing.T) {
   time.Sleep(1 * time.Second)
 
 	PayZen := payzen.NewPayZen("pt-BR")
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
 	fillCard(payment.Card)
   fillCustomer(payment.Customer)
@@ -401,7 +338,7 @@ func TestPayZenCreateTokenCancelled(t *testing.T) {
   time.Sleep(1 * time.Second)
 
   PayZen := payzen.NewPayZen("pt-BR")
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
   fillCard(payment.Card)
   fillCustomer(payment.Customer)
@@ -432,7 +369,7 @@ func TestPayZenUpdateToken(t *testing.T) {
 
   PayZen := payzen.NewPayZen("pt-BR")
   //PayZen.OnDebug()
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
   fillCard(payment.Card)
   fillCustomer(payment.Customer)
@@ -473,7 +410,7 @@ func TestPayZenCancelToken(t *testing.T) {
   }
 
 
-  paymentToken := payzen.NewPayZenPaymentToken(ShopId, Mode, Cert)
+  paymentToken := api.NewPaymentToken(ShopId, Mode, Cert)
   paymentToken.Token = CardToken
 
   result, err := PayZen.PaymentTokenCancel(paymentToken)
@@ -502,7 +439,7 @@ func TestPayZenGetDetailsTokenCancelled(t *testing.T) {
   }
 
 
-  paymentToken := payzen.NewPayZenPaymentToken(ShopId, Mode, Cert)
+  paymentToken := api.NewPaymentToken(ShopId, Mode, Cert)
   paymentToken.Token = CardToken
 
   result, err := PayZen.PaymentTokenGetDetails(paymentToken)
@@ -555,7 +492,7 @@ func TestPayZenGetDetailsTokenActive(t *testing.T) {
   }
 
 
-  paymentToken := payzen.NewPayZenPaymentToken(ShopId, Mode, Cert)
+  paymentToken := api.NewPaymentToken(ShopId, Mode, Cert)
   paymentToken.Token = CardToken
 
   result, err := PayZen.PaymentTokenGetDetails(paymentToken)
@@ -609,7 +546,7 @@ func TestPayZenReactiveToken(t *testing.T) {
 
 
   // busca status para ver se está inativo
-  paymentToken := payzen.NewPayZenPaymentToken(ShopId, Mode, Cert)
+  paymentToken := api.NewPaymentToken(ShopId, Mode, Cert)
   paymentToken.Token = CardToken
 
   result, err := PayZen.PaymentTokenGetDetails(paymentToken)
@@ -633,7 +570,7 @@ func TestPayZenReactiveToken(t *testing.T) {
   }
 
     // busca status para ver se está ativo
-  paymentToken = payzen.NewPayZenPaymentToken(ShopId, Mode, Cert)
+  paymentToken = api.NewPaymentToken(ShopId, Mode, Cert)
   paymentToken.Token = CardToken
 
   result, err = PayZen.PaymentTokenGetDetails(paymentToken)
@@ -654,7 +591,7 @@ func TestPayZenGetDetailsTokenNotFound(t *testing.T) {
   //PayZen.OnDebug()
 
 
-  paymentToken := payzen.NewPayZenPaymentToken(ShopId, Mode, Cert)
+  paymentToken := api.NewPaymentToken(ShopId, Mode, Cert)
   paymentToken.Token = "3123213233213"
 
   result, _ := PayZen.PaymentTokenGetDetails(paymentToken)
@@ -686,7 +623,7 @@ func TestPayZenFindPayment(t *testing.T) {
     return
   }
 
-  paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+  paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
   paymentFind.OrderId = CardOrderId //"ecf02704-f155-40b0-bee3-3477d752da9d" //CardOrderId
 
   result, err := PayZen.PaymentFind(paymentFind)
@@ -741,7 +678,7 @@ func TestPayZenFindPaymentBoletoOnline(t *testing.T) {
   
   BoletoOrderId = "6d5cef2b-c27d-4905-af85-86e29ca3c0fb"
   
-  paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+  paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
   paymentFind.OrderId = BoletoOrderId //"205e125f-3bac-4210-b80e-ebec704a5845" //CardOrderId
 
   result, err := PayZen.PaymentFind(paymentFind)
@@ -781,7 +718,7 @@ func TestPayZenFindPaymentNotFound(t *testing.T) {
   PayZen := payzen.NewPayZen("pt-BR")
 
 
-  paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+  paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
   paymentFind.OrderId = "31323213312"
 
   result, _ := PayZen.PaymentFind(paymentFind)
@@ -807,7 +744,7 @@ func TestPayZenGetDetailsPayment(t *testing.T) {
     return
   }
 
-  paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+  paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
   paymentFind.TransactionUuid = CardTransactionUuid
 
   result, err := PayZen.PaymentGetDetails(paymentFind)
@@ -860,7 +797,7 @@ func TestPayZenGetDetailsPaymentWithNsu(t *testing.T) {
     return
   }
 
-  paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+  paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
   paymentFind.TransactionUuid = CardTransactionUuid
 
   result, err := PayZen.PaymentGetDetailsWithNsu(paymentFind)
@@ -917,10 +854,10 @@ func TestPayZenCreateSubscription(t *testing.T) {
     return
   }
 
-  subscription := payzen.NewPayZenSubscription(ShopId, Mode, Cert)
+  subscription := api.NewSubscription(ShopId, Mode, Cert)
 
-  subscription.OrderId = genUUID()
-  subscription.SubscriptionId = genUUID()
+  subscription.OrderId = GenUUID()
+  subscription.SubscriptionId = GenUUID()
   subscription.Description = "Recorrência diária"
 
   // valor da recorrência
@@ -932,11 +869,11 @@ func TestPayZenCreateSubscription(t *testing.T) {
   // data de inicio da cobrança
   subscription.EffectDate = util.DateNow()
   // cobrar no último dia do mês
-  subscription.LastDayOfMonth = false
+  subscription.PaymentAtLastDayOfMonth = false
   // quantidade de cobranças
   subscription.Count = 50
-  subscription.MonthDay = 10
-  subscription.FrequencyByDay = 1
+  subscription.PaymentAtDayOfMonth = 10
+  subscription.Cycle = api.Monthly
   subscription.Rule = ""
   subscription.Token = CardTokenActive
 
@@ -984,7 +921,7 @@ func TestPayZenGetDetailsSubscription(t *testing.T) {
   }
 
 
-  paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+  paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
   paymentFind.SubscriptionId = SubscriptionId
   paymentFind.Token = CardTokenActive
 
@@ -1055,7 +992,7 @@ func TestPayZenUpdateSubscription(t *testing.T) {
     return
   }
 
-  subscription := payzen.NewPayZenSubscription(ShopId, Mode, Cert)
+  subscription := api.NewSubscription(ShopId, Mode, Cert)
 
   subscription.OrderId = OrderId
   subscription.SubscriptionId = SubscriptionId
@@ -1070,10 +1007,10 @@ func TestPayZenUpdateSubscription(t *testing.T) {
   // data de inicio da cobrança
   subscription.EffectDate = util.DateNow()
   // cobrar no último dia do mês
-  subscription.LastDayOfMonth = false
+  subscription.PaymentAtLastDayOfMonth = false
   // quantidade de cobranças
   subscription.Count = 3
-  subscription.MonthDay = 10
+  subscription.PaymentAtDayOfMonth = 10
   subscription.Rule = ""
   subscription.Token = CardTokenActive
 
@@ -1118,7 +1055,7 @@ func TestPayZenCancelSubscription(t *testing.T) {
   }
 
 
-  paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+  paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
   paymentFind.SubscriptionId = SubscriptionId
   paymentFind.Token = CardTokenActive
 
@@ -1174,7 +1111,7 @@ func TestPayZenGetDetailsCancelledSubscription(t *testing.T) {
     return
   }
 
-  paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+  paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
   paymentFind.SubscriptionId = SubscriptionId
   paymentFind.Token = CardTokenActive
 
@@ -1202,10 +1139,10 @@ func TestPayZenPaymentCancel(t *testing.T) {
 
   PayZen := payzen.NewPayZen("pt-BR")
   PayZen.OnDebug()
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
 
-  payment.OrderId = genUUID()
+  payment.OrderId = GenUUID()
   payment.Installments = 1
   payment.Amount = 10.0
 
@@ -1234,7 +1171,7 @@ func TestPayZenPaymentCancel(t *testing.T) {
 
     time.Sleep(3 * time.Second)
 
-    paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+    paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
     paymentFind.TransactionUuid = result.TransactionUuid
 
     result, err = PayZen.PaymentCancel(paymentFind)
@@ -1249,7 +1186,7 @@ func TestPayZenPaymentCancel(t *testing.T) {
       return
     }
 
-    if result.TransactionStatus != payzen.Cancelled{
+    if result.TransactionStatus != api.Cancelled{
       t.Errorf("autorização não foi cancelada: %v", result.Message)
     }
 
@@ -1263,10 +1200,10 @@ func TestPayZenPaymentUpdate(t *testing.T) {
 
   PayZen := payzen.NewPayZen("pt-BR")
   //PayZen.OnDebug()
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
 
-  payment.OrderId = genUUID()
+  payment.OrderId = GenUUID()
   payment.Installments = 1
   payment.Amount = 10.0
 
@@ -1313,7 +1250,7 @@ func TestPayZenPaymentUpdate(t *testing.T) {
 
     time.Sleep(3 * time.Second)
 
-    paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+    paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
     paymentFind.OrderId = payment.OrderId
 
     result, err = PayZen.PaymentFind(paymentFind)
@@ -1345,9 +1282,9 @@ func TestPayZenPaymentDuplicate(t *testing.T) {
 
   PayZen := payzen.NewPayZen("pt-BR")
   PayZen.OnDebug()
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
-  orderId := genUUID()
+  orderId := GenUUID()
 
   payment.OrderId = orderId
   payment.Installments = 1
@@ -1380,7 +1317,7 @@ func TestPayZenPaymentDuplicate(t *testing.T) {
 
     time.Sleep(3 * time.Second)
 
-    capture := payzen.NewPayZenCapturePayment(ShopId, Mode, Cert)
+    capture := api.NewPaymentCapture(ShopId, Mode, Cert)
     capture.TransactionUuids = transactionUuid
     result, err := PayZen.PaymentCapture(capture)
 
@@ -1394,7 +1331,7 @@ func TestPayZenPaymentDuplicate(t *testing.T) {
 
     time.Sleep(3 * time.Second)
 
-    payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+    payment := api.NewPayment(ShopId, Mode, Cert)
     payment.TransactionUuid = transactionUuid // UUID Transação BackOffice
     payment.OrderId = orderId // Referência do pedido BackOffice
     payment.Amount = 10.0
@@ -1413,7 +1350,7 @@ func TestPayZenPaymentDuplicate(t *testing.T) {
 
     time.Sleep(3 * time.Second)
 
-    paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+    paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
     paymentFind.OrderId = payment.OrderId
 
     result, err = PayZen.PaymentFind(paymentFind)
@@ -1443,14 +1380,14 @@ func TestPayZenPaymentValidate(t *testing.T) {
 
   PayZen := payzen.NewPayZen("pt-BR")
   PayZen.OnDebug()
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
-  orderId := genUUID()
+  orderId := GenUUID()
 
   payment.OrderId = orderId
   payment.Installments = 1
   payment.Amount = 10.0
-  payment.ValidationType = payzen.Manual
+  payment.ValidationType = api.Manual
 
 
   fillCard(payment.Card)
@@ -1480,7 +1417,7 @@ func TestPayZenPaymentValidate(t *testing.T) {
 
     time.Sleep(3 * time.Second)
 
-    paymentFind := payzen.NewPayZenPaymentFind(ShopId, Mode, Cert)
+    paymentFind := api.NewPaymentFind(ShopId, Mode, Cert)
     paymentFind.TransactionUuid = result.TransactionUuid
 
     result, err := PayZen.PaymentValidate(paymentFind)
@@ -1505,9 +1442,9 @@ func TestPayZenPaymentRefund(t *testing.T) {
 
   PayZen := payzen.NewPayZen("pt-BR")
   PayZen.OnDebug()
-  payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+  payment := api.NewPayment(ShopId, Mode, Cert)
 
-  orderId := genUUID()
+  orderId := GenUUID()
 
   payment.OrderId = orderId
   payment.Installments = 1
@@ -1540,7 +1477,7 @@ func TestPayZenPaymentRefund(t *testing.T) {
 
     time.Sleep(3 * time.Second)
 
-    capture := payzen.NewPayZenCapturePayment(ShopId, Mode, Cert)
+    capture := api.NewPaymentCapture(ShopId, Mode, Cert)
     capture.TransactionUuids = transactionUuid
     result, err := PayZen.PaymentCapture(capture)
 
@@ -1554,7 +1491,7 @@ func TestPayZenPaymentRefund(t *testing.T) {
 
     time.Sleep(3 * time.Second)
 
-    payment := payzen.NewPayZenPayment(ShopId, Mode, Cert)
+    payment := api.NewPayment(ShopId, Mode, Cert)
     payment.TransactionUuid = transactionUuid // UUID Transação BackOffice
     payment.Amount = 5.0
 

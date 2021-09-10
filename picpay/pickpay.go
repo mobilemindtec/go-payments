@@ -2,14 +2,14 @@ package picpay
 
 import (
   "github.com/mobilemindtec/go-utils/beego/validator"  
-  "github.com/beego/beego/v2/core/validation"
+  _ "github.com/beego/beego/v2/core/validation"
+  "github.com/mobilemindtec/go-payments/api"
   "github.com/beego/i18n"  
   "encoding/json"
   "io/ioutil"
   "net/http"
   "errors"
   "bytes"
-  "time"
   "fmt"
 )
 
@@ -19,61 +19,10 @@ import (
 curl --location --request GET 'https://api.chat24.io/v1/help/transports'
 
 */
-/*
-  "created": registro criado
-  "expired": prazo para pagamento expirado
-  "analysis": pago e em processo de análise anti-fraude
-  "paid": pago
-  "completed": pago e saldo disponível
-  "refunded": pago e devolvido
-  "chargeback": pago e com chargeback
-*/ 
-
-type PicPayStatus int64
-
-const (
-  PicPayCreated PicPayStatus = 1 + iota
-  PicPayExpired
-  PicPayAnalysis
-  PicPayPaid
-  PicPayCompleted
-  PicPayRefunded
-  PicPayChargeback
-)
 
 const (
   PicPayApiUrl = "https://appws.picpay.com"
 )
-
-type PicPayQrCode struct {
-  Content string `json:"content"`
-  Base64 string `json:"base64"`
-}
-
-type PicPayTransaction struct {
-  ReferenceId string `json:"referenceId"`
-  PaymentUrl string `json:"paymentUrl"`
-  ExpiresAt time.Time `json:"expiresAt"`
-  QrCode *PicPayQrCode `json:"qrcode"`
-  Message string `json:"message"`
-  StatusText string `json:"status"`
-  PicPayStatus PicPayStatus `json:"picpayStatus"`
-  AuthorizationId string `json:"authorizationId"`
-  CancellationId string `json:"cancellationId"`
-}
-
-type PicPayResult struct {
-  Transaction *PicPayTransaction `json:"transaction"`
-  ValidationErrors map[string]string `json:"error"`
-  Error bool `json:"error"`  
-  Message string `json:"message"`
-  Response string
-  Request string
-}
-
-func (this *PicPayTransaction) HasError() bool {
-  return len(this.Message) > 0
-}
 
 type PicPay struct {
   PicPayToken string
@@ -86,33 +35,6 @@ type PicPay struct {
   HasValidationError bool  
 }
 
-type PicPayBuyer struct {
-  FirstName string `json:"firstName" valid:"Required"`
-  LastName string `json:"lastName" valid:"Required"`
-  Document string `json:"document" valid:"Required"`
-  Email string `json:"email" valid:"Required"`
-  Phone string `json:"phone" valid:"Required"`    
-}
-
-type PicPayTransactionRequest struct {
-  ReferenceId string `json:"referenceId" valid:"Required"`
-  CallbackUrl string `json:"callbackUrl" valid:"Required"`
-  ReturnUrl string `json:"returnUrl" valid:"Required"`
-  Value string `json:"value" valid:"Required"`
-  Plugin string `json:"plugin" valid:""`
-  AdditionalInfo map[string]interface{} `json:"additionalInfo" valid:"Required"`
-  Buyer *PicPayBuyer `json:"buyer" valid:"Required"`
-  ExpiresAt time.Time `json:"" valid:"Required"`
-  ExpiresAtFormatted string `json:"expiresAt" valid:""`
-  AuthorizationId string `json:"authorizationId,omitempty" valid:""`
-}
-
-func NewPicPayTransactionRequest() *PicPayTransactionRequest {
-  request := new(PicPayTransactionRequest)
-  request.Buyer = new(PicPayBuyer)
-  request.AdditionalInfo = make(map[string]interface{})
-  return request
-}
 
 func NewPicPay(lang string, token string, sallerToken string) *PicPay {
   entityValidator := validator.NewEntityValidator(lang, "PicPay")
@@ -125,6 +47,7 @@ func (this *PicPay) CreateTransaction(request *PicPayTransactionRequest) (*PicPa
     fmt.Println("PicPay CreateTransaction")
   }
 
+  var err error
   result := new(PicPayResult)
 
   this.EntityValidatorResult = new(validator.EntityValidatorResult)
@@ -140,81 +63,15 @@ func (this *PicPay) CreateTransaction(request *PicPayTransactionRequest) (*PicPa
     request.ExpiresAtFormatted = request.ExpiresAt.UTC().Format("2006-01-02T15:04:05Z")
   }
 
-  jsonData, err := json.Marshal(request)
+
+  result, err = this.request(request, "ecommerce/public/payments")
 
   if err != nil {
-    fmt.Println("error json.Marshal ", err.Error())    
     return result, err
   }
 
-  postData := bytes.NewBuffer(jsonData)
-
-  result.Request = string(jsonData)
-
-	method := "POST"
-
-  client := &http.Client {}
-  req, err := http.NewRequest(method, fmt.Sprintf("%v/ecommerce/public/payments", PicPayApiUrl), postData)
-
-  if err != nil {
-    fmt.Println("err = %v", err)
-  	return nil, errors.New(fmt.Sprintf("error on http.NewRequest: %v", err))
-  }
-
-  req.Header.Add("x-picpay-token", this.PicPayToken)  
-  req.Header.Add("Content-Type", "application/json")
-
-  res, err := client.Do(req)
-
-  if err != nil {
-    fmt.Println("err = %v", err)
-    return nil, errors.New(fmt.Sprintf("error on client.Do: %v", err))
-  }
-
-  defer res.Body.Close()
-  body, err := ioutil.ReadAll(res.Body)
-
-  if err != nil {
-    fmt.Println("err = %v", err)
-    return nil, errors.New(fmt.Sprintf("error on ioutil.ReadAll: %v", err))
-  }
-
-  result.Response = string(body)
-
-  if this.Debug {
-    fmt.Println("****************** PicPay Response ******************")
-    fmt.Println(result.Response)
-    fmt.Println("****************** PicPay Response ******************")
-  }
-
-  tresult := new(PicPayTransaction)
-  err = json.Unmarshal(body, tresult)
-
-
-
-  if err != nil {
-    fmt.Println("err = %v", err)
-    fmt.Println(result.Response)    
-    return nil, errors.New(fmt.Sprintf("error on json.Unmarshal: %v", err))
-  }
-
-  if res.StatusCode != 200 {
-    result.Error = true
-    result.Message = fmt.Sprintf("PicPay error. Status: %v, Detalhes: %v", res.StatusCode, tresult.Message)
-    return result, errors.New(result.Message) 
-  }
-
-  if len(tresult.Message) > 0 {
-    result.Error = true
-    result.Message = fmt.Sprintf("%v", tresult.Message)
-    return result, errors.New(result.Message)  
-  }
-
-
-  tresult.StatusText = "created"
-  tresult.PicPayStatus = PicPayCreated
-
-  result.Transaction = tresult
+  result.Transaction.StatusText = "created"
+  result.Transaction.PicPayStatus = api.PicPayCreated
 
   return result, nil
 }
@@ -225,96 +82,12 @@ func (this *PicPay) CheckStatus(referenceId string) (*PicPayResult, error) {
     fmt.Println("PicPay CheckStatus")
   }
 
-  result := new(PicPayResult)
-
-  method := "GET"
-
-  client := &http.Client {}
-  req, err := http.NewRequest(method, fmt.Sprintf("%v/ecommerce/public/payments/%v/status", PicPayApiUrl, referenceId), nil)
-
-  if err != nil {
-    fmt.Println("err = %v", err)
-    return nil, errors.New(fmt.Sprintf("error on http.NewRequest: %v", err))
+  if len(referenceId) == 0 {
+    this.SetValidationError("referenceId", "is required")
+    return nil, errors.New(this.getMessage("PayZen.ValidationError"))       
   }
 
-  req.Header.Add("x-picpay-token", this.PicPayToken)  
-  req.Header.Add("Content-Type", "application/json")
-
-  res, err := client.Do(req)
-
-  if err != nil {
-    fmt.Println("err = %v", err)
-    return nil, errors.New(fmt.Sprintf("error on client.Do: %v", err))
-  }
-
-  defer res.Body.Close()
-  body, err := ioutil.ReadAll(res.Body)
-
-  if err != nil {
-    fmt.Println("err = %v", err)
-    return nil, errors.New(fmt.Sprintf("error on ioutil.ReadAll: %v", err))
-  }
-
-  result.Response = string(body)
-
-  if this.Debug {
-    fmt.Println("****************** PicPay Response ******************")
-    fmt.Println(result.Response)
-    fmt.Println("****************** PicPay Response ******************")
-  }
-
-  tresult := new(PicPayTransaction)
-  err = json.Unmarshal(body, tresult)
-
-
-
-  if err != nil {
-    fmt.Println("err = %v", err)
-    fmt.Println(result.Response)    
-    return nil, errors.New(fmt.Sprintf("error on json.Unmarshal: %v", err))
-  }
-
-  if res.StatusCode != 200 {
-    result.Error = true
-    result.Message = fmt.Sprintf("PicPay error. Status: %v, Detalhes: %v", res.StatusCode, tresult.Message)
-    return result, errors.New(result.Message) 
-  }
-
-  if len(tresult.Message) > 0 {
-    result.Error = true
-    result.Message = fmt.Sprintf("%v", tresult.Message)
-    return result, errors.New(result.Message)  
-  }
-
-  switch tresult.StatusText {
-    case "created":
-      tresult.PicPayStatus = PicPayCreated
-      break
-    case "expired":
-      tresult.PicPayStatus = PicPayExpired
-      break
-    case "analysis":
-      tresult.PicPayStatus = PicPayAnalysis
-      break
-    case "paid":
-      tresult.PicPayStatus = PicPayPaid
-      break
-    case "completed":
-      tresult.PicPayStatus = PicPayCompleted
-      break
-    case "refunded":
-      tresult.PicPayStatus = PicPayRefunded
-      break
-    case "chargeback":
-      tresult.PicPayStatus = PicPayChargeback
-      break    
-    default:
-      fmt.Println("PicPay: status %v not found", tresult.StatusText)
-  }
-
-  result.Transaction = tresult
-
-  return result, nil
+  return this.request(nil, fmt.Sprintf("ecommerce/public/payments/%v/status", referenceId))
 }
 
 func (this *PicPay) Cancel(referenceId string, authorizationId string) (*PicPayResult, error) {
@@ -323,7 +96,10 @@ func (this *PicPay) Cancel(referenceId string, authorizationId string) (*PicPayR
     fmt.Println("PicPay Cancel")
   }
 
-  result := new(PicPayResult)
+  if len(referenceId) == 0 {
+    this.SetValidationError("referenceId", "is required")
+    return nil, errors.New(this.getMessage("PayZen.ValidationError"))       
+  }  
 
   payload := map[string]string{}
 
@@ -331,23 +107,57 @@ func (this *PicPay) Cancel(referenceId string, authorizationId string) (*PicPayR
     payload["authorizationId"] = authorizationId
   } 
 
-  jsonData, err := json.Marshal(payload)
+  return this.request(payload, fmt.Sprintf("ecommerce/public/payments/%v/cancellations", referenceId))
+}
 
-  if err != nil {
-    fmt.Println("error json.Marshal ", err.Error())    
-    return result, err
+func (this *PicPay) request(data interface{}, action string) (*PicPayResult, error) {
+
+  result := new(PicPayResult)
+
+  client := new(http.Client)
+  apiUrl := fmt.Sprintf("%v/%v", PicPayApiUrl, action)
+
+  method := "GET"
+  var postData *bytes.Buffer = nil
+
+  if data != nil {
+    method = "POST"
+
+    jsonData, err := json.Marshal(data)
+
+    if err != nil {
+      fmt.Println("error json.Marshal ", err.Error())    
+      return nil, err
+    }
+
+    postData = bytes.NewBuffer(jsonData)
+
+    result.Request = string(jsonData)
+
+    if this.Debug {
+      fmt.Println("****************** PicPay Request ******************")
+      fmt.Println(result.Request)
+      fmt.Println("****************** PicPay Request ******************")
+    }
+
+  } else {
+    result.Request = "http get"
   }
 
-  postData := bytes.NewBuffer(jsonData)
+  this.Log("URL %v, METHOD = %v", apiUrl, method)
 
-  method := "POST"
+  var req *http.Request 
+  var reqError error
 
-  client := &http.Client {}
-  req, err := http.NewRequest(method, fmt.Sprintf("%v/ecommerce/public/payments/%v/cancellations", PicPayApiUrl, referenceId), postData)
+  if method == "GET" {
+    req, reqError = http.NewRequest(method, apiUrl, nil)
+  } else {
+    req, reqError = http.NewRequest(method, apiUrl, postData)
+  }
 
-  if err != nil {
-    fmt.Println("err = %v", err)
-    return nil, errors.New(fmt.Sprintf("error on http.NewRequest: %v", err))
+  if reqError != nil {
+    fmt.Println("err = %v", reqError)
+    return nil, errors.New(fmt.Sprintf("error on http.NewRequest: %v", reqError))
   }
 
   req.Header.Add("x-picpay-token", this.PicPayToken)  
@@ -376,8 +186,8 @@ func (this *PicPay) Cancel(referenceId string, authorizationId string) (*PicPayR
     fmt.Println("****************** PicPay Response ******************")
   }
 
-  tresult := new(PicPayTransaction)
-  err = json.Unmarshal(body, tresult)
+  transaction := new(PicPayTransaction)
+  err = json.Unmarshal(body, transaction)
 
 
 
@@ -389,28 +199,51 @@ func (this *PicPay) Cancel(referenceId string, authorizationId string) (*PicPayR
 
   if res.StatusCode != 200 {
     result.Error = true
-    result.Message = fmt.Sprintf("PicPay error. Status: %v, Detalhes: %v", res.StatusCode, tresult.Message)
+    result.Message = fmt.Sprintf("PicPay error. Status: %v, Detalhes: %v", res.StatusCode, transaction.Message)
     return result, errors.New(result.Message) 
   }
 
-  if len(tresult.Message) > 0 {
+  if len(transaction.Message) > 0 {
     result.Error = true
-    result.Message = fmt.Sprintf("%v", tresult.Message)
+    result.Message = fmt.Sprintf("%v", transaction.Message)
     return result, errors.New(result.Message)  
-  }  
+  }
 
-  result.Transaction = tresult
+  switch transaction.StatusText {
+    case "created":
+      transaction.PicPayStatus = api.PicPayCreated
+      break
+    case "expired":
+      transaction.PicPayStatus = api.PicPayExpired
+      break
+    case "analysis":
+      transaction.PicPayStatus = api.PicPayAnalysis
+      break
+    case "paid":
+      transaction.PicPayStatus = api.PicPayPaid
+      break
+    case "completed":
+      transaction.PicPayStatus = api.PicPayCompleted
+      break
+    case "refunded":
+      transaction.PicPayStatus = api.PicPayRefunded
+      break
+    case "chargeback":
+      transaction.PicPayStatus = api.PicPayChargeback
+      break    
+    default:
+      fmt.Println("PicPay: status %v not found", transaction.StatusText)
+  }
+
+  result.Transaction = transaction  
 
   return result, nil
 }
 
 func (this *PicPay) onValid(request *PicPayTransactionRequest) bool {
-  this.EntityValidatorResult, _ = this.EntityValidator.IsValid(request, func (validator *validation.Validation) {
-    
+  this.EntityValidatorResult, _ = this.EntityValidator.IsValid(request, nil)
  
-  })
- 
-   if this.EntityValidatorResult.HasError {
+  if this.EntityValidatorResult.HasError {
     this.onValidationErrors()
     return false
   }
@@ -427,4 +260,19 @@ func (this *PicPay) onValidationErrors(){
   data := make(map[interface{}]interface{})
   this.EntityValidator.CopyErrorsToView(this.EntityValidatorResult, data)
   this.ValidationErrors = data["errors"].(map[string]string)
+}
+
+
+func (this *PicPay) Log(message string, args ...interface{}) {
+  if this.Debug {
+    fmt.Println("PicPay: ", fmt.Sprintf(message, args...))
+  }
+}
+
+func (this *PicPay) SetValidationError(key string, value string){
+  this.HasValidationError = true
+  if this.ValidationErrors == nil {
+    this.ValidationErrors = make(map[string]string)
+  }
+  this.ValidationErrors[key]= value
 }
