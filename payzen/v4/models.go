@@ -324,7 +324,7 @@ type Transaction struct {
 	PaymentMethodType string `json:"paymentMethodType"` // CARD
 	ShopId string `json:"shopId"`
 	Status string `json:"status"`
-	TransactionDetails TransactionDetails `json:"transactionDetails"`
+	TransactionDetails *TransactionDetails `json:"transactionDetails"`
 	TransactionStatus TransactionStatus
 	PaymentStatus PaymentStatus
 	ResponseCode int64 `json:"responseCode,omitempty"`

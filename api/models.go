@@ -606,6 +606,7 @@ type TransactionItemResult struct {
 
 	TransactionStatusLabel string `jsonp:""`
 	ExternalTransactionId string `jsonp:""`
+	Nsu string `jsonp:""`
 	Amount float64 `jsonp:""`
 	ExpectedCaptureDate time.Time `jsonp:""`
 	CreationDate time.Time `jsonp:""`
