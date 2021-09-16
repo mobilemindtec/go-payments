@@ -629,6 +629,32 @@ func (this *Asaas) AccountList() (*Response, error) {
   return this.get("accounts", resultProcessor)
 }
 
+func (this *Asaas) WebhookCreateOrChange(webhook *WebhookObject) (*Response, error) {
+  this.Log("Call WebhookCreateOrChange")
+
+  if !this.onValid(webhook) {
+    return nil, errors.New(this.getMessage("Asaas.ValidationError"))       
+  }
+
+  resultProcessor := func(data []byte, response *Response) error {    
+    response.Webhook = NewWebhookObject()
+    return json.Unmarshal(data, response.Webhook)
+  }
+
+  return this.post(webhook, "webhook", resultProcessor)
+}
+
+func (this *Asaas) WebhookStatus() (*Response, error) {
+  this.Log("Call WebhookStatus")
+
+  resultProcessor := func(data []byte, response *Response) error {    
+    response.Webhook = NewWebhookObject()
+    return json.Unmarshal(data, response.Webhook)
+  }
+
+  return this.get("webhook", resultProcessor)
+}
+
 func (this *Asaas) get(action string, resultProcessor ResultProcessor) (*Response, error) {
   return this.request(nil, action, "GET", resultProcessor)
 }

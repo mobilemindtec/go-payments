@@ -70,6 +70,18 @@ const (
 	ASSOCIATION CompanyType = "ASSOCIATION"
 )
 
+type WebhookObject struct {
+  Url string `json:"url" valid:"Required"`
+  Email string `json:"email" valid:"Required"`
+  Interrupted bool `json:"interrupted" valid:"Required"`
+  Enabled bool `json:"enabled" valid:"Required"`
+  ApiVersion int64 `json:"apiVersion" valid:"Required"`
+  AuthToken string `json:"authToken" valid:"Required"`
+}
+
+func NewWebhookObject() *WebhookObject{
+	return &WebhookObject{}
+}
 
 type Bank struct {
 	Code string `json:"code" valid:"Required"`
@@ -737,6 +749,7 @@ type Response struct {
   BankAccount *BankAccount `json:"bankAccount,omitempty"`
   TransferResults *TransferResults 
   AccountResults *AccountResults
+  Webhook *WebhookObject
 
 
   EncodedImage string `json:"encodedImage"`

@@ -407,19 +407,35 @@ func TestPayZenV4NotificacaoFormData(t *testing.T) {
   t.Errorf(urlQuery)
   splited := strings.Split(urlQuery, "&")
 
-  
+
+
+  krAnswer := ""
+  krHash := ""
 
   for _, value := range splited {
     vals := strings.Split(value, "=")
 
+    if vals[0] == "kr-hash" {
+      krHash = vals[1]
+    }
+
     if vals[0] == "kr-answer" {
+      krAnswer = vals[1]
       //answer := make(map[string]interface{})
       json.Unmarshal([]byte(vals[1]), webhookData.Answer)    
       formData[vals[0]] = webhookData.Answer
     } else{
+
+
       formData[vals[0]]  = vals[1]
     }
   }
+
+  signeture := v4.GenerateSignatureFromBody(Authentication.PasswordTest, krAnswer)
+
+  //if signeture != krHash {
+    t.Errorf("Signature calculed = %v,  received = %v", signeture, krHash)  
+  //}
 
   jsonData, _ := json.MarshalIndent(formData, "", " ")
   t.Errorf(string(jsonData))

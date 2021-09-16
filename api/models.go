@@ -669,8 +669,8 @@ func (this *TransactionItemResult) BuildStatus() {
 			this.StatusLabel = PaymentWaitingPaymentLabel
 			break
 		case Refused:
-			this.Status = PaymentPaid
-			this.StatusLabel = PaymentPaidLabel
+			this.Status = PaymentRefused
+			this.StatusLabel = PaymentRefusedLabel
 			break
 		case Captured:
 			this.Status = PaymentPaid
@@ -929,8 +929,8 @@ func (this *PaymentResult) BuildStatus() {
 			this.StatusLabel = PaymentWaitingPaymentLabel
 			break
 		case Refused:
-			this.Status = PaymentPaid
-			this.StatusLabel = PaymentPaidLabel
+			this.Status = PaymentRefused
+			this.StatusLabel = PaymentRefusedLabel
 			break
 		case Captured:
 			this.Status = PaymentPaid

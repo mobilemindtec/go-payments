@@ -1250,3 +1250,58 @@ func TestAsaasAccountList(t *testing.T) {
   }   
   
 }
+
+// go test -v  github.com/mobilemindtec/go-payments/tests -run TestAsaasCreateOrChangeWebhook
+func TestAsaasCreateOrChangeWebhook(t *testing.T) {
+
+  Asaas := asaas.NewAsaas("pt-BR", AsaasAccessToken, AsaasApiMode)
+  Asaas.Debug = true
+
+  webhookData := asaas.NewWebhookObject()
+
+  webhookData.Url = "https://pay.mobilemind.com.br/gateway/asaas/tenant-uuid"
+  webhookData.Email = "ricardo@mobilemind.com.br"
+  webhookData.Enabled = true
+  webhookData.Interrupted = false
+  webhookData.ApiVersion = 3
+  webhookData.AuthToken = "5tLxsL6uoN"  
+
+  result, err := Asaas.WebhookCreateOrChange(webhookData)
+
+  if err != nil {
+    t.Errorf("Erro ao buscar transaferencias: %v", err)
+    return
+  }
+
+  if result.Error {
+    t.Errorf("Erro ao buscar transaferencias: %v", result.Message)
+    return
+  }
+  
+  
+}
+
+// go test -v  github.com/mobilemindtec/go-payments/tests -run TestAsaasWebhookStatus
+func TestAsaasWebhookStatus(t *testing.T) {
+
+  Asaas := asaas.NewAsaas("pt-BR", AsaasAccessToken, AsaasApiMode)
+  Asaas.Debug = true
+
+  result, err := Asaas.WebhookStatus()
+
+  if err != nil {
+    t.Errorf("Erro ao buscar transaferencias: %v", err)
+    return
+  }
+
+  if result.Error {
+    t.Errorf("Erro ao buscar transaferencias: %v", result.Message)
+    return
+  }
+  
+  if len(result.Webhook.Url) == 0 {
+    t.Errorf("webhook is required")
+    return
+  }
+  
+}

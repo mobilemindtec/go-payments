@@ -4,9 +4,12 @@ package v4
 import (
   "github.com/mobilemindtec/go-utils/beego/validator" 
   beego "github.com/beego/beego/v2/server/web"
-  "github.com/mobilemindtec/go-utils/support"  
+  "github.com/mobilemindtec/go-utils/support" 
+  "crypto/hmac"
+  "crypto/sha256" 
+  //"encoding/base64"
   "encoding/json"
-  _ "encoding/hex"
+  "encoding/hex"
   _ "crypto/sha1"
   _ "crypto/hmac" 
   _ "strings"
@@ -102,4 +105,17 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
   }
 
   return data, nil  
+}
+
+func GenerateSignatureFromBody(cert string, krAnswer string) string{
+  
+  mac := hmac.New(sha256.New, []byte(cert))
+  mac.Write([]byte(krAnswer))
+  raw := mac.Sum(nil)
+
+  base64Content := hex.EncodeToString(raw)
+  //return string(raw)
+
+  return base64Content
+  
 }

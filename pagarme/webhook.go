@@ -73,7 +73,7 @@ func (this *Webhook) SetDebug() {
 
 func (this *Webhook) IsValid() bool {
   signature := this.Controller.Ctx.Request.Header.Get("X-Hub-Signature")
-  return this.CheckPostbackSignature(signature, this.Controller.Ctx.Input.RequestBody)
+  return CheckPostbackSignature(this.ApiKey, signature, this.Controller.Ctx.Input.RequestBody)
 }
 
 func (this *Webhook) GetData() (*WebhookData, error) {
@@ -121,7 +121,7 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
 
 }
 
-func (this *Webhook) CheckPostbackSignature(hubSignature string, requestBody []byte) bool {
+func CheckPostbackSignature(apiKey string, hubSignature string, requestBody []byte) bool {
 
   pagarmeSignature := hubSignature
 
@@ -134,7 +134,7 @@ func (this *Webhook) CheckPostbackSignature(hubSignature string, requestBody []b
 
   finalSignature := strings.Split(pagarmeSignature, "=")[1]
 
-  mac := hmac.New(sha1.New, []byte(this.ApiKey))
+  mac := hmac.New(sha1.New, []byte(apiKey))
   mac.Write(requestBody)
   rawBodyMAC := mac.Sum(nil)
   computedSignature := hex.EncodeToString(rawBodyMAC)
@@ -145,19 +145,19 @@ func (this *Webhook) CheckPostbackSignature(hubSignature string, requestBody []b
     fmt.Println("**  X-Hub-Signature = ", pagarmeSignature)
     fmt.Println("**  final signature = ", finalSignature)
     fmt.Println("**  computed signature = ", computedSignature)
-    fmt.Println("** Inválid Pagarme Signature: Expected: %v, Received: %v", string(finalSignature), string(computedSignature))
+    fmt.Println("** Inválid Pagarme Signature: Expected: ", string(finalSignature), " Received: %v", string(computedSignature))
     fmt.Println("************************************************")    
     return false
   }
     
 
-  if this.Debug {
-    fmt.Println("************************************************")
-    fmt.Println("**  X-Hub-Signature = ", pagarmeSignature)
-    fmt.Println("**  final signature = ", finalSignature)
-    fmt.Println("**  computed signature = ", computedSignature)    
-    fmt.Println("************************************************")
-  }
+  //if this.Debug {
+  //  fmt.Println("************************************************")
+  //  fmt.Println("**  X-Hub-Signature = ", pagarmeSignature)
+  //  fmt.Println("**  final signature = ", finalSignature)
+  //  fmt.Println("**  computed signature = ", computedSignature)    
+  //  fmt.Println("************************************************")
+  //}
 
   return true
 }

@@ -434,7 +434,7 @@ func (this *PayZen) validPayment(payment *Payment, checkPaymentId bool, tokenOpe
 		payment.Device,
 	}
 
-  if payment.Card != nil && len(strings.TrimSpace(payment.Card.PaymentMethodToken)) == 0  {
+  if payment.Card != nil && len(strings.TrimSpace(payment.Card.PaymentMethodToken)) == 0 && len(strings.TrimSpace(payment.PaymentMethodToken)) == 0  {
 	  items = append(items, payment.Card)
 	}
 
@@ -479,7 +479,7 @@ func (this *PayZen) validPayment(payment *Payment, checkPaymentId bool, tokenOpe
   	}
 
   	if tokenUpdate {
-				if len(strings.TrimSpace(payment.PaymentMethodToken)) == 0 {
+				if len(strings.TrimSpace(payment.PaymentMethodToken)) == 0 && len(strings.TrimSpace(payment.Card.PaymentMethodToken)) == 0 {
 					validator.SetError(this.getMessage("PaymentMethodToken"), this.getMessage("PayZen.rquired"))
 				}  		
   	}  	
