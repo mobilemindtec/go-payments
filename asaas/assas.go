@@ -824,7 +824,7 @@ func (this *Asaas) onValidAccount(account *Account) bool {
       validator.SetError("Bank", this.getMessage("Asaas.rquired")) 
     }
 
-    if account.BankAccount != nil && account.BankAccount.Bank == nil {
+    if account.BankAccount != nil && len(account.BankAccount.Bank) == 0 {
       validator.SetError("Bank", this.getMessage("Asaas.rquired")) 
     }
 

@@ -95,6 +95,23 @@ type BankAccount struct {
 	Bank *Bank `json:"bank" valid:"Required"`
 	AccountName string `json:"accountName"` // Nome da conta bancária
 	OwnerName string `json:"ownerName" valid:"Required"`
+	//Data de nascimento do proprietário da conta. 
+	//Somente quando a conta bancária não pertencer ao mesmo CPF ou CNPJ da conta Asaas.
+	OwnerBirthDate string `json:"ownerBirthDate"` 
+	CpfCnpj string `json:"cpfCnpj" valid:"Required"`
+	Agency string `json:"agency" valid:"Required"`
+	Account string `json:"account" valid:"Required"`
+	AccountDigit string `json:"accountDigit" valid:"Required"`
+	BankAccountType api.BankAccountType `json:"bankAccountType" valid:"Required"`
+}
+
+func NewBankAccount(bank *Bank, bankAccountType api.BankAccountType) *BankAccount {
+	return &BankAccount{ Bank: bank, BankAccountType: bankAccountType  }
+}
+
+type BankAccountSimple struct {
+	Bank string `json:"bank" valid:"Required"`
+	AccountName string `json:"accountName"` // Nome da conta bancária
 	Name string `json:"name" valid:"Required"`
 	//Data de nascimento do proprietário da conta. 
 	//Somente quando a conta bancária não pertencer ao mesmo CPF ou CNPJ da conta Asaas.
@@ -106,10 +123,10 @@ type BankAccount struct {
 	BankAccountType api.BankAccountType `json:"bankAccountType" valid:"Required"`
 }
 
-
-func NewBankAccount(bank *Bank, bankAccountType api.BankAccountType) *BankAccount {
-	return &BankAccount{ Bank: bank, BankAccountType: bankAccountType  }
+func NewBankAccountSimple(bank string, bankAccountType api.BankAccountType) *BankAccountSimple {
+	return &BankAccountSimple{ Bank: bank, BankAccountType: bankAccountType  }
 }
+
 
 type Account struct {
 	Name string `json:"name" valid:"Required"`
@@ -124,7 +141,7 @@ type Account struct {
 	Complement string `json:"complement"`
 	Province string `json:"province" valid:"Required"` // bairro
 	PostalCode string `json:"postalCode" valid:"Required"` // bairro
-	BankAccount *BankAccount `json:"bankAccount" valid:"Required"`
+	BankAccount *BankAccountSimple `json:"bankAccount" valid:"Required"`
 	// result
 	WalletId string `json:"walletId,omitempty"`
 	ApiKey string `json:"apiKey,omitempty"`
@@ -134,7 +151,7 @@ type Account struct {
 	PersonType string `json:"personType,omitempty"`	
 }
 
-func NewAccount(bankAccount *BankAccount) *Account{
+func NewAccount(bankAccount *BankAccountSimple) *Account{
 	return &Account{ BankAccount: bankAccount }
 }
 
