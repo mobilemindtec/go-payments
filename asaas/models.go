@@ -95,6 +95,7 @@ type BankAccount struct {
 	Bank *Bank `json:"bank" valid:"Required"`
 	AccountName string `json:"accountName"` // Nome da conta bancária
 	OwnerName string `json:"ownerName" valid:"Required"`
+	Name string `json:"name" valid:"Required"`
 	//Data de nascimento do proprietário da conta. 
 	//Somente quando a conta bancária não pertencer ao mesmo CPF ou CNPJ da conta Asaas.
 	OwnerBirthDate string `json:"ownerBirthDate"` 
