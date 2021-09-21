@@ -550,6 +550,41 @@ func (this *CustomerResults) Last() *Customer {
 	return nil
 }
 
+type Wallet struct {
+	Id string `json:"id"`
+}
+
+type WalletResults struct {
+  Object string `json:"object"`
+  HasMore bool `json:"hasMore"`
+  TotalCount int64 `json:"totalCount"`
+  Limit int64 `json:"limit"`
+  Offset int64 `json:"offset"`
+  Data []*Wallet `json:"data"`	
+}
+
+func (this *WalletResults) HasData() bool {
+	return len(this.Data) > 0
+}
+
+func (this *WalletResults) Count() int {
+	return len(this.Data)
+}
+
+func (this *WalletResults) First() *Wallet {
+	if this.HasData() {
+		return this.Data[0]
+	}
+	return nil
+}
+
+func (this *WalletResults) Last() *Wallet {
+	if this.HasData() {
+		return this.Data[len(this.Data)-1]
+	}
+	return nil
+}
+
 type TransferResult struct {
   Id string `json:"id"` // "777eb7c8-b1a2-4356-8fd8-a1b0644b5282",
   Object string `json:"object"` // "transfer",
@@ -750,6 +785,7 @@ type Response struct {
   TransferResults *TransferResults 
   AccountResults *AccountResults
   Webhook *WebhookObject
+  WalletResults *WalletResults
 
 
   EncodedImage string `json:"encodedImage"`
@@ -787,6 +823,7 @@ func NewResponse() *Response {
 		FinancialTransactionResults: &FinancialTransactionResults{ Data: []*FinancialTransaction{} },
 		TransferResults: &TransferResults{ Data: []*TransferResult{} },
 		AccountResults: &AccountResults{ Data: []*Account{}},
+		WalletResults: &WalletResults{ Data: []*Wallet{} },
 	}
 }
 

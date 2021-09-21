@@ -1305,3 +1305,32 @@ func TestAsaasWebhookStatus(t *testing.T) {
   }
   
 }
+
+// go test -v  github.com/mobilemindtec/go-payments/tests -run TestAsaasWallets
+func TestAsaasWallets(t *testing.T) {
+
+  Asaas := asaas.NewAsaas("pt-BR", AsaasAccessToken, AsaasApiMode)
+  Asaas.Debug = true
+
+  result, err := Asaas.Wallets()
+
+  if err != nil {
+    t.Errorf("Erro ao buscar transaferencias: %v", err)
+    return
+  }
+
+  if result.Error {
+    t.Errorf("Erro ao buscar transaferencias: %v", result.Message)
+    return
+  }
+  
+  if !result.WalletResults.HasData() {
+    t.Errorf("wallets is required")
+    return
+  }
+  
+  if len(result.WalletResults.First().Id) == 0 {
+    t.Errorf("wallets is required")
+    return
+  }
+}

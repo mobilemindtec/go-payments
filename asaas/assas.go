@@ -655,6 +655,16 @@ func (this *Asaas) WebhookStatus() (*Response, error) {
   return this.get("webhook", resultProcessor)
 }
 
+func (this *Asaas) Wallets() (*Response, error) {
+  this.Log("Call Wallets")
+
+  resultProcessor := func(data []byte, response *Response) error {        
+    return json.Unmarshal(data, response.WalletResults)
+  }
+
+  return this.get("wallets", resultProcessor)
+}
+
 func (this *Asaas) get(action string, resultProcessor ResultProcessor) (*Response, error) {
   return this.request(nil, action, "GET", resultProcessor)
 }
