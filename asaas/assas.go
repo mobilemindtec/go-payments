@@ -813,9 +813,9 @@ func (this *Asaas) onValidAccount(account *Account) bool {
     account.BankAccount,
   }
 
-  if account.BankAccount != nil {
-    items = append(items, account.BankAccount.Bank)
-  }
+  //if account.BankAccount != nil {
+  //  items = append(items, account.BankAccount.Bank)
+  //}
 
   this.EntityValidatorResult, _ = this.EntityValidator.ValidMult(items, func (validator *validation.Validation) {
 
