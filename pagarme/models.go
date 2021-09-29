@@ -193,7 +193,7 @@ type Plano struct {
 	Days int64 `json:"days,omitempty"` // Prazo, em dias, para cobrança das parcelas
 	Name string `json:"name" valid:"Required"`
 	TrialDays int64 `json:"trial_days"`
-	PaymentMethods []api.PaymentMethod `json:"payment_methods"`
+	PaymentMethods []api.PaymentType `json:"payment_methods"`
 	//Número de cobranças que poderão ser feitas nesse plano. 
 	// Ex: Plano cobrado 1x por ano, válido por no máximo 3 anos. 
 	// Nesse caso, nossos parâmetros serão: days = 365, installments = 1, 
@@ -263,7 +263,7 @@ type Payment struct {
 	ApiKey string `json:"api_key" valid:"Required"`	
  	Installments int64 `json:"Installments,omitempty" valid:"Required"`	// parcelas
 	Customer *Customer `json:"customer" valid:"Required"`
-	PaymentMethod api.PaymentMethod `json:"payment_method" valid:"Required"`
+	PaymentMethod api.PaymentType `json:"payment_method" valid:"Required"`
 
 	
 	PostbackUrl string `json:"postback_url,omitempty" valid:""`
@@ -294,16 +294,16 @@ type Payment struct {
 }
 
 func NewPaymentWithCard(amount float64) *Payment {
-	return &Payment{ Amount: FormatAmount(amount), Installments: 1, PaymentMethod: api.PaymentMethodCreditCard, Customer: new(Customer) }
+	return &Payment{ Amount: FormatAmount(amount), Installments: 1, PaymentMethod: api.PaymentTypeCreditCard, Customer: new(Customer) }
 }
 
 
 func NewPaymentWithBoleto(amount float64) *Payment {
-	return &Payment{ PaymentMethod: api.PaymentMethodBoleto, Amount: FormatAmount(amount), Customer: new(Customer), Installments: 1  }
+	return &Payment{ PaymentMethod: api.PaymentTypeBoleto, Amount: FormatAmount(amount), Customer: new(Customer), Installments: 1  }
 }
 
 func NewPaymentWithPix(amount float64) *Payment {
-	return &Payment{ PaymentMethod: api.PaymentMethodPix, Amount: FormatAmount(amount), PixAdditionalFields: []*PixAdditionalFields{}, Customer: new(Customer), Installments: 1  }
+	return &Payment{ PaymentMethod: api.PaymentTypePix, Amount: FormatAmount(amount), PixAdditionalFields: []*PixAdditionalFields{}, Customer: new(Customer), Installments: 1  }
 }
 
 func (this *Payment) SetPixExpirationDate(date time.Time) {
@@ -311,14 +311,28 @@ func (this *Payment) SetPixExpirationDate(date time.Time) {
 }
 
 func (this *Payment) AddPixAdditionalFields(name string, value string) {
+
+	if this.PixAdditionalFields == nil {
+		this.PixAdditionalFields = []*PixAdditionalFields{}
+	}
+
 	this.PixAdditionalFields = append(this.PixAdditionalFields, NewPixAdditionalFields(name, value))
+}
+
+func (this *Payment) AddMetadata(name string, value string) {
+
+	if this.Metadata == nil {
+		this.Metadata = make(map[string]interface{})
+	}
+
+	this.Metadata[name] = value
 }
 
 type Subscription struct {
 	Id int64 `json:"id,omitempty"`
 	PlanoId int64 `json:"plan_id" valid:"Required"`
 	ReferenceKey string `json:"reference_key,omitempty" valid:""`
-	PaymentMethod api.PaymentMethod `json:"payment_method" valid:"Required"`
+	PaymentMethod api.PaymentType `json:"payment_method" valid:"Required"`
 	ApiKey string `json:"api_key" valid:"Required"`	
 	CardId string `json:"card_id,omitempty" valid:""`
 	CardHolderName string `json:"card_holder_name,omitempty" valid:""`
@@ -341,11 +355,11 @@ func NewSubscription(planoId int64) *Subscription {
 } 
 
 func NewSubscriptionWithCard(planoId int64) *Subscription {
-	return &Subscription{ PlanoId: planoId, Customer: new(Customer), PaymentMethod: api.PaymentMethodCreditCard }
+	return &Subscription{ PlanoId: planoId, Customer: new(Customer), PaymentMethod: api.PaymentTypeCreditCard }
 } 
 
 func NewSubscriptionWithBoleto(planoId int64) *Subscription {
-	return &Subscription{ PlanoId: planoId, Customer: new(Customer), PaymentMethod: api.PaymentMethodBoleto }
+	return &Subscription{ PlanoId: planoId, Customer: new(Customer), PaymentMethod: api.PaymentTypeBoleto }
 } 
 
 type CaptureData struct {
@@ -653,7 +667,7 @@ func (this *Response) FirstError() string {
 	return ""
 }
 
-func (this *Response) GetPayZenSOAPStatus() api.PayZenTransactionStatus {
+func (this *Response) GetPayZenSOAPStatus() api.TransactionStatus {
   switch this.Status {
 	  case api.PagarmeProcessing:
 	  	return api.Created

@@ -62,10 +62,10 @@ EXPIRED Expirada. A date de captura foi atingida mas o vendedor não validou a t
 UNDER_VERIFICATION (Específico a PayPal) Verificação por PayPal em andamento. Este valor significa que Paypal segura a transação por causa de uma suspeita de fraude. O pagamento fica então na aba Pagamento em andamento.
 
 */
-type PayZenTransactionStatus int
+type TransactionStatus int
 
 const (
-	Initial PayZenTransactionStatus = 1 + iota
+	Initial TransactionStatus = 1 + iota
 	NotCreated
 	Authorised
 	AuthorisedToValidate
@@ -205,17 +205,17 @@ const (
 	Biweekly SubscriptionCycle = "BIWEEKLY" // quinzenal
 	Monthly SubscriptionCycle = "MONTHLY" // mensal
 	Quarterly SubscriptionCycle = "QUARTERLY" // trimestral
-	Semiannually SubscriptionCycle = "SEMIANNUALLY" // semanal
+	Semiannually SubscriptionCycle = "SEMIANNUALLY" // semestral
 	Yearly SubscriptionCycle = "YEARLY" // anual
 )
 
-type PaymentMethod string
-
-const(
-	PaymentMethodBoleto PaymentMethod = "boleto"
-	PaymentMethodCreditCard PaymentMethod = "credit_card"
-	PaymentMethodPix PaymentMethod = "pix"
-)
+//type PaymentMethod string // Pagarme
+//
+//const(
+//	PaymentMethodBoleto PaymentMethod = "boleto"
+//	PaymentMethodCreditCard PaymentMethod = "credit_card"
+//	PaymentMethodPix PaymentMethod = "pix"
+//)
 
 type PaymentType string
 
@@ -345,13 +345,13 @@ type Plan struct {
 	Days int64 `jsonp:""` // Prazo, em dias, para cobrança das parcelas
 	Name string `jsonp:""`
 	TrialDays int64 `jsonp:""`
-	PaymentMethods []PaymentMethod `jsonp:""`
+	PaymentMethods []PaymentType `jsonp:""`
 	Charges int64 `jsonp:""`
 	InvoiceReminder int64 `jsonp:""` 
 }
 
 func NewPlan() *Plan {
-	return &Plan{ PaymentMethods: []PaymentMethod{} }
+	return &Plan{ PaymentMethods: []PaymentType{} }
 }
 
 type PayZenAccount struct {
@@ -369,20 +369,10 @@ type Card struct {
 	CardHolderBirthDay string `valid:""`
 	CardHolderName string `valid:"" jsonp:"holder_name"`
 	Token string`valid:"" jsonp:""`
-
-	BoletoOnline BoletoOnlineTipo `valid:"" jsonp:"boleto_payzen_type"`	
-	BoletoOnlineDaysDalay int `jsonp:"boleto_payzen_delay"`// Obs.: Não suportado para boletos online Bradesco.
-
-	BoletoOnlineTexto string  `jsonp:"payzen_boleto_text"`
-	BoletoOnlineTexto2 string `jsonp:"payzen_boleto_tex2"`
-	BoletoOnlineTexto3 string `jsonp:"payzen_boleto_text3"`
-
-	//pagarme
-	BoletoInstructions string `jsonp:"pagarme_boleto_text"`
-	ExpirationDate time.Time `jsonp:"expiration_date"` // 2006-01-02
 }
 
 type Customer struct {
+	Id string `jsonp:""`
 	FirstName string `valid:"Required" jsonp:""`
 	LastName string `valid:"" jsonp:""`
 	PhoneNumber string `valid:"" jsonp:""`
@@ -398,7 +388,6 @@ type Customer struct {
 	Country string `valid:"Required" jsonp:""`
 	IdentityCode string `valid:"Required" jsonp:"document"`
 	ExternalReference string `jsonp:""`
-	Id string `jsonp:""`
 }
 
 func NewCustomer() *Customer{
@@ -440,10 +429,11 @@ type Subscription struct{
 	BoletoDiscount *BoletoDiscount `jsonp:""`
 	Card *Card `valid:"" jsonp:""`
 	PostbackUrl string `jsonp:""`
+	WebhookUrl string `jsonp:""`
 	PaymentType PaymentType `jsonp:""` // pagarme/asaas
 	PlanId string `jsonp:""` // pagarme
 	Customer *Customer `jsonp:""`
-	Metadata map[string]interface{} `jsonp:""`
+	AdditionalInfo map[string]interface{} `jsonp:""`
 }
 
 type Payment struct{
@@ -461,9 +451,9 @@ type Payment struct{
 	PaymentType PaymentType `jsonp:""`
 
 	// pagarme
-	PostbackUrl string `valid:"" jsonp:"pagarme_postback_url"` 
-	SoftDescriptor string `valid:"" jsonp:"pagarme_soft_descriptor"` 	
-	Metadata map[string]interface{} `valid:"" jsonp:"pagarme_metadata"` 
+	PostbackUrl string `valid:"" jsonp:""` 
+	SoftDescriptor string `valid:"" jsonp:""` 	
+	//Metadata map[string]interface{} `valid:"" jsonp:"pagarme_metadata"` 
 	SaveBoletoAtPath string
 	BoletoFine *BoletoFine `jsonp:""`
 	BoletoInterest *BoletoInterest `jsonp:""`
@@ -471,12 +461,21 @@ type Payment struct{
 	WebhookUrl string `jsonp:""`
 
 	//PicPay
-  CallbackUrl string `json:"" jsonp:"picpay_callback_url"`
   ReturnUrl string `json:"" jsonp:"picpay_return_url"`
   Plugin string `json:"" jsonp:"" picpay_plugin`
-  AdditionalInfo map[string]interface{} `json:"" jsonp:"picpay_additional_info"`
-  ExpiresAt time.Time `json:"" jsonp:"picpay_expires_at"`
-  PaymentDate time.Time `jsonp:""`
+  AdditionalInfo map[string]interface{} `json:"" jsonp:""`
+  
+  ExpiresAt time.Time `json:"" jsonp:"expires_at"`
+
+	BoletoOnline BoletoOnlineTipo `valid:"" `	
+	//dalay para pagemento do boleto (válido apenas para itaú. O bradesco deve ser configurado na plataforma)
+	BoletoOnlineDaysDalay int `jsonp:""`// Obs.: Não suportado para boletos online Bradesco.
+
+	BoletoOnlineTexto string  `jsonp:"payzen_boleto_text"`
+	BoletoOnlineTexto2 string `jsonp:"payzen_boleto_tex2"`
+	BoletoOnlineTexto3 string `jsonp:"payzen_boleto_text3"`
+
+	BoletoInstructions string `jsonp:"boleto_instructions"`
 
 }
 
@@ -493,53 +492,65 @@ type PaymentToken struct {
 
 type PaymentFind struct {
 	//TransactionId string `jsonp:""`
-	TransactionUuid string `jsonp:"transaction_id"`
+	TransactionUuid string `jsonp:""`
 	OrderId string `jsonp:""`
 	SubscriptionId string `jsonp:""`
 	Amount float64 `valid:"" jsonp:""`
 	Token string `jsonp:""`
-	AuthorizationId string `jsonp:"picpay_authorization_id"`
+	AuthorizationId string `jsonp:""`
 	Account *PayZenAccount `valid:"Required"`
 	
 	PaymentType PaymentType `jsonp:""` // picpay, pix
 }
 
-func NewSubscription(shopId string, mode string, cert string) *Subscription {
+func NewSubscriptionWithShopId(shopId string, mode string, cert string) *Subscription {
 	subscription := new(Subscription)
 	subscription.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
 	return subscription
 }
 
-func NewEmptySubscription() *Subscription {
+func NewSubscription() *Subscription {
 	subscription := new(Subscription)
 	return subscription
 }
 
-func NewPaymentFind(shopId string, mode string, cert string) *PaymentFind {
+func NewPaymentFindWithShopId(shopId string, mode string, cert string) *PaymentFind {
 	find := new(PaymentFind)
 	find.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
 	return find
 }
 
-func NewEmptyPaymentFind() *PaymentFind {
+func NewPaymentFind() *PaymentFind {
 	find := new(PaymentFind)
 	find.Account = &PayZenAccount{ }
 	return find
 }
 
-func NewPaymentToken(shopId string, mode string, cert string) *PaymentToken {
+func NewPaymentTokenWithShopId(shopId string, mode string, cert string) *PaymentToken {
 	tokenPayment := new(PaymentToken)
 	tokenPayment.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
 	return tokenPayment
 }
 
-func NewPaymentCapture(shopId string, mode string, cert string) *PaymentCapture {
+func NewPaymentToken() *PaymentToken {
+	tokenPayment := new(PaymentToken)
+	tokenPayment.Account = &PayZenAccount{  }
+	return tokenPayment	
+}
+
+func NewPaymentCaptureWithShopId(shopId string, mode string, cert string) *PaymentCapture {
 	capturePayment := new(PaymentCapture)
 	capturePayment.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
 	return capturePayment
 }
 
-func NewPayment(shopId string, mode string, cert string) *Payment {
+func NewPaymentCapture() *PaymentCapture {
+	capturePayment := new(PaymentCapture)
+	capturePayment.Account = &PayZenAccount{  }
+	return capturePayment
+}
+
+func NewPaymentWithShopId(shopId string, mode string, cert string) *Payment {
 	payment := new(Payment)
 	payment.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
 	payment.Customer = new(Customer)
@@ -549,7 +560,7 @@ func NewPayment(shopId string, mode string, cert string) *Payment {
 	return payment
 }
 
-func NewEmptyPayment() *Payment {
+func NewPayment() *Payment {
 	payment := new(Payment)
 	payment.Customer = new(Customer)
 	payment.Card = new(Card)
@@ -600,7 +611,7 @@ type TransactionItemResult struct {
 	
 	PagarmeStatus PagarmeStatus `jsonp:"pagarme_status"`
 	PicPayStatus PicPayStatus `jsonp:"picpay_status"`
-	TransactionStatus PayZenTransactionStatus `jsonp:"payzen_status"`
+	TransactionStatus TransactionStatus `jsonp:"payzen_status"`
 	PayZenV4Status string `jsonp:"payzen_v4_status"`
 	AsaasStatus AsaasStatus `jsonp:"asaas_status"`
 
@@ -799,7 +810,7 @@ type PaymentResult struct {
 
 	PagarmeStatus PagarmeStatus `jsonp:"pagarme_status"`
 	PicPayStatus PicPayStatus `jsonp:"picpay_status"`
-	TransactionStatus PayZenTransactionStatus `jsonp:"status"`
+	TransactionStatus TransactionStatus `jsonp:"status"`
 	PayZenV4Status string `jsonp:"payzen_v4_status"`
 	AsaasStatus AsaasStatus `jsonp:"asaas_status"`
 	

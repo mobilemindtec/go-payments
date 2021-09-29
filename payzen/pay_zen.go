@@ -44,7 +44,7 @@ func (this *PayZen) PaymentCreate(payment *api.Payment) (*api.PaymentResult, err
 	}
 
   if payment.Card.Scheme == SchemeBoleto && payment.Account.Mode == PayZenModeProduction {
-    switch payment.Card.BoletoOnline {
+    switch payment.BoletoOnline {
       case api.BoletoOnline, api.BoletoOnlineItauIb, api.BoletoOnlineItauBoleto, api.BoletoOnlineBradescoBoleto:
         return this.PaymentCreateBoletoOnline(payment)
     }
@@ -394,7 +394,7 @@ func (this *PayZen) PaymentUpdateSubscription(subscription *api.Subscription) (*
 	return this.ToolBox.UpdateSubscription(subscription)
 }
 
-func (this *PayZen) CanCancelPayment(status api.PayZenTransactionStatus) bool {
+func (this *PayZen) CanCancelPayment(status api.TransactionStatus) bool {
 
 	switch status {
 		case api.Initial:
@@ -408,7 +408,7 @@ func (this *PayZen) CanCancelPayment(status api.PayZenTransactionStatus) bool {
 
 }
 
-func (this *PayZen) CanUpdatePayment(status api.PayZenTransactionStatus) bool {
+func (this *PayZen) CanUpdatePayment(status api.TransactionStatus) bool {
 
 	switch status {
 		case api.Initial:
@@ -422,7 +422,7 @@ func (this *PayZen) CanUpdatePayment(status api.PayZenTransactionStatus) bool {
 
 }
 
-func (this *PayZen) CanDuplicatePayment(status api.PayZenTransactionStatus) bool {
+func (this *PayZen) CanDuplicatePayment(status api.TransactionStatus) bool {
 
 	switch status {
 		case api.Captured:
@@ -514,14 +514,14 @@ func (this *PayZen) onValid(payment *api.Payment) bool {
   	}
 
   	if payment.Card.Scheme == SchemeBoleto {
-	    switch payment.Card.BoletoOnline {
+	    switch payment.BoletoOnline {
 
 	      case api.BoletoOnline:
-	      	validator.SetError(this.getMessage("Pagarme.BoletoOnline"), fmt.Sprintf("Boleto On-Line %v não implementado", payment.Card.BoletoOnline))
+	      	validator.SetError(this.getMessage("Pagarme.BoletoOnline"), fmt.Sprintf("Boleto On-Line %v não implementado", payment.BoletoOnline))
 	        break
 
 	      case api.BoletoOnlineItauIb:
-	      	validator.SetError(this.getMessage("Pagarme.BoletoOnline"), fmt.Sprintf("Boleto On-Line %v não implementado", payment.Card.BoletoOnline))
+	      	validator.SetError(this.getMessage("Pagarme.BoletoOnline"), fmt.Sprintf("Boleto On-Line %v não implementado", payment.BoletoOnline))
 	        break
 
 	      case api.BoletoOnlineItauBoleto:
@@ -534,7 +534,7 @@ func (this *PayZen) onValid(payment *api.Payment) bool {
 					if _, err := strconv.Atoi(payment.VadsTransId); err != nil {
 						validator.SetError(this.getMessage("Pagarme.VadsTransId"), "vads_trans_id deve ser um valor númerico de 6 digitos que não pode repetir no mesmo dia.")
 					}	        
-	      	//validator.SetError(this.getMessage("Pagarme.BoletoOnline"), fmt.Sprintf("Boleto On-Line %v não implementado", payment.Card.BoletoOnline))
+	      	//validator.SetError(this.getMessage("Pagarme.BoletoOnline"), fmt.Sprintf("Boleto On-Line %v não implementado", payment.BoletoOnline))
 	        break
 	        
 	    }  		

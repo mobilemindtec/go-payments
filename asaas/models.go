@@ -908,7 +908,7 @@ func (this *Response) BuildStatus() {
 	}
 }
 
-func (this *Response) GetPayZenSOAPStatus() api.PayZenTransactionStatus {
+func (this *Response) GetPayZenSOAPStatus() api.TransactionStatus {
 
 	this.BuildStatus()
 	

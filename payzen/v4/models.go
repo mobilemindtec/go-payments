@@ -397,7 +397,7 @@ func(this *Transaction) BuildStatus(){
 	}
 }
 
-func (this *Transaction) GetSOAPStatus() api.PayZenTransactionStatus {
+func (this *Transaction) GetSOAPStatus() api.TransactionStatus {
 
 	this.BuildStatus()
 	

@@ -147,7 +147,7 @@ func (this *Pagarme) TokenCreate(card *Card) (*Response, error) {
 func (this *Pagarme) PaymentCreate(payment *Payment) (*Response, error) {
 	
 
-	if payment.PaymentMethod == api.PaymentMethodCreditCard {
+	if payment.PaymentMethod == api.PaymentTypeCreditCard {
 
 		if len(payment.CardId) == 0 {
 
@@ -299,7 +299,7 @@ func (this *Pagarme) SubscriptionCreate(subscription *Subscription) (*Response, 
 		return nil, errors.New(this.getMessage("Pagarme.ValidationError"))
 	}
 
-  if subscription.PaymentMethod == api.PaymentMethodCreditCard {
+  if subscription.PaymentMethod == api.PaymentTypeCreditCard {
 
     if len(subscription.CardId) == 0 {
 
@@ -343,7 +343,7 @@ func (this *Pagarme) SubscriptionUpdate(subscription *Subscription) (*Response, 
     return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
   }	
 
-  if subscription.PaymentMethod == api.PaymentMethodCreditCard {
+  if subscription.PaymentMethod == api.PaymentTypeCreditCard {
 
     if len(subscription.CardId) == 0 {
 
@@ -649,7 +649,7 @@ func (this *Pagarme) onValidPayment(payment *Payment) bool {
 
 
   	switch payment.PaymentMethod {
-      case api.PaymentMethodCreditCard:
+      case api.PaymentTypeCreditCard:
   			if emptyCardHash && emptyCardId {
   				if len(strings.TrimSpace(payment.CardHolderName)) == 0 {
   					validator.SetError("CardHolderName", this.getMessage("Pagarme.rquired"))
@@ -668,12 +668,12 @@ func (this *Pagarme) onValidPayment(payment *Payment) bool {
   				} 
   			}
         break
-      case api.PaymentMethodBoleto:
+      case api.PaymentTypeBoleto:
         if len(strings.TrimSpace(payment.BoletoExpirationDate)) == 0 {
           validator.SetError("BoletoExpirationDate", this.getMessage("Pagarme.rquired"))
         }
         break        
-      case api.PaymentMethodPix:
+      case api.PaymentTypePix:
         if len(strings.TrimSpace(payment.PixExpirationDate)) == 0 {
           validator.SetError("PixExpirationDate", this.getMessage("Pagarme.rquired"))
         }
@@ -703,7 +703,7 @@ func (this *Pagarme) onValidSubscription(subscription *Subscription) bool {
   	emptyCardId := len(strings.TrimSpace(subscription.CardId)) == 0
 
 
-  	if subscription.PaymentMethod == api.PaymentMethodCreditCard {
+  	if subscription.PaymentMethod == api.PaymentTypeCreditCard {
 			if emptyCardHash && emptyCardId {
 				if len(strings.TrimSpace(subscription.CardHolderName)) == 0 {
 					validator.SetError("CardHolderName", this.getMessage("Pagarme.rquired"))

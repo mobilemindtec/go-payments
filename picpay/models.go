@@ -24,7 +24,7 @@ type PicPayTransaction struct {
   CancellationId string `json:"cancellationId"`
 }
 
-func (this *PicPayTransaction) GetPayZenSOAPStatus() api.PayZenTransactionStatus {
+func (this *PicPayTransaction) GetPayZenSOAPStatus() api.TransactionStatus {
 
 
   switch this.PicPayStatus {

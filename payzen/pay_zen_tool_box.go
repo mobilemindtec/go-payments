@@ -791,7 +791,7 @@ func (this *PayZenToolBox) CreatePaymentBoletoOnline(paymentData *api.Payment) (
 	payloadTmp["vads_cust_zip"] = paymentData.Customer.ZipCode
 	payloadTmp["vads_cust_city"] = paymentData.Customer.City
 	payloadTmp["vads_cust_district"] = paymentData.Customer.District
-	payloadTmp["vads_capture_delay"] = fmt.Sprintf("%v", paymentData.Card.BoletoOnlineDaysDalay)
+	payloadTmp["vads_capture_delay"] = fmt.Sprintf("%v", paymentData.BoletoOnlineDaysDalay)
 	payloadTmp["vads_amount"] = formatAmount(paymentData.Amount)
 	
 	payloadTmp["vads_cust_email"] = paymentData.Customer.Email
@@ -799,7 +799,7 @@ func (this *PayZenToolBox) CreatePaymentBoletoOnline(paymentData *api.Payment) (
 	payloadTmp["vads_currency"] = fmt.Sprintf("%v", CurrencyCode)
 	payloadTmp["vads_cust_phone"] = paymentData.Customer.PhoneNumber
   
-  payloadTmp["vads_payment_cards"] = string(paymentData.Card.BoletoOnline) // tipo de boleto
+  payloadTmp["vads_payment_cards"] = string(paymentData.BoletoOnline) // tipo de boleto
 
   if this.Account.Mode == PayZenModeProduction {
   	payloadTmp["vads_ctx_mode"] = PayZenModeProduction
@@ -808,9 +808,9 @@ func (this *PayZenToolBox) CreatePaymentBoletoOnline(paymentData *api.Payment) (
 	}
 
 	payloadTmp["vads_ext_info_soft_descriptor"] = "Mobile Mind Soluções Tecnológicas"
-	payloadTmp["vads_order_info"] = paymentData.Card.BoletoOnlineTexto
-	payloadTmp["vads_order_info2"] = paymentData.Card.BoletoOnlineTexto2
-	payloadTmp["vads_order_info3"] = paymentData.Card.BoletoOnlineTexto3
+	payloadTmp["vads_order_info"] = paymentData.BoletoOnlineTexto
+	payloadTmp["vads_order_info2"] = paymentData.BoletoOnlineTexto2
+	payloadTmp["vads_order_info3"] = paymentData.BoletoOnlineTexto3
 
 	payloadTmp["vads_trans_date"] = util.DateNow().UTC().Format("20060102150405")
 
