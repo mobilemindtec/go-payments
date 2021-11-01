@@ -525,6 +525,7 @@ type Response struct {
 	Referer string `json:"referer"`
 	Ip string `json:"ip"`
 	ReferenceKey string `json:"reference_key"`
+	ManageUrl string `json:"manage_url"`
 
 	PixQrCode string `json:"pix_qr_code"`
 	PixExpirationDate string `json:"pix_expiration_date"`
@@ -679,6 +680,8 @@ func (this *Response) GetPayZenSOAPStatus() api.TransactionStatus {
 	  	return api.Refunded
 	  case api.PagarmeWaitingPayment:
 	  	return api.WaitingPayment
+	  case api.PagarmeUnpaid:
+	  	return api.WaitingPayment
 	  case api.PagarmePendingRefund:
 	  	return api.PendingRefund
 	  case api.PagarmeRefused:
@@ -708,6 +711,9 @@ func (this *Response) BuildStatus() {
 	  	break
 	  case "paid":
 	  	this.Status = api.PagarmePaid
+	  	break
+	  case "unpaid":
+	  	this.Status = api.PagarmeUnpaid
 	  	break
 	  case "refunded":
 	  	this.Status = api.PagarmeRefunded
@@ -755,7 +761,11 @@ func FormatAmount(amount float64) int64 {
 
 func FormatToFloat(amount int64) float64 {
 
-	text := fmt.Sprintf("%v", amount)
+
+	unformateed := accounting.UnformatNumber(fmt.Sprintf("%v", amount), 2, "BRL")
+	val, _ := strconv.ParseFloat(unformateed, 64)
+	return val
+	/*text := fmt.Sprintf("%v", amount)
 	if len(text) >= 2 {
 		a := text[:len(text)-2]
 		b := text[len(text)-2:]
@@ -768,6 +778,6 @@ func FormatToFloat(amount int64) float64 {
 		return val
 	} else {
 		return 0
-	}
+	}*/
 
 }

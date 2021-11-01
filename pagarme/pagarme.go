@@ -412,7 +412,15 @@ func (this *Pagarme) SubscriptionTransactionsGet(id string) (*Response, error) {
   }
 
   resultProcessor := func(data []byte, response *Response) error {      	
-    return json.Unmarshal(data, &response.Transactions)
+    if err := json.Unmarshal(data, &response.Transactions); err != nil {
+      return err
+    }
+
+    for _, it := range response.Transactions {
+      it.BuildStatus()
+    }
+
+    return nil
   }   
 
   return this.get(fmt.Sprintf("subscriptions/%v/transactions?api_key=%v", id, this.ApiKey), resultProcessor)

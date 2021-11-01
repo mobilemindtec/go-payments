@@ -47,6 +47,48 @@ const (
 	PaymentErrorLabel  PaymentStatusLabel = "error"
 )
 
+type PaymentEvent string
+
+const (
+
+	/*
+
+	Asaas Events 
+
+	PAYMENT_CREATED - Geração de nova cobrança.
+	PAYMENT_UPDATED - Alteração no vencimento ou valor de cobrança existente.
+	PAYMENT_CONFIRMED - Cobrança confirmada (pagamento efetuado, porém o saldo ainda não foi disponibilizado).
+	PAYMENT_RECEIVED - Cobrança recebida.
+	PAYMENT_OVERDUE - Cobrança vencida.
+	PAYMENT_DELETED - Cobrança removida.
+	PAYMENT_RESTORED - Cobrança restaurada.
+	PAYMENT_REFUNDED - Cobrança estornada.
+	PAYMENT_RECEIVED_IN_CASH_UNDONE - Recebimento em dinheiro desfeito.
+	PAYMENT_CHARGEBACK_REQUESTED - Recebido chargeback.
+	PAYMENT_CHARGEBACK_DISPUTE - Em disputa de chargeback (caso sejam apresentados documentos para contestação).
+	PAYMENT_AWAITING_CHARGEBACK_REVERSAL - Disputa vencida, aguardando repasse da adquirente.
+	PAYMENT_DUNNING_RECEIVED - Recebimento de recuperação.
+	PAYMENT_DUNNING_REQUESTED - Requisição de recuperação.
+	*/	
+	
+	PaymentEventCreated PaymentEvent = "PAYMENT_CREATED"
+	PaymentEventUpdated PaymentEvent = "PAYMENT_UPDATED"
+	PaymentEventConfirmed PaymentEvent = "PAYMENT_CONFIRMED"
+	PaymentEventReceived PaymentEvent = "PAYMENT_RECEIVED"
+	PaymentEventOverdue PaymentEvent = "PAYMENT_OVERDUE"
+	PaymentEventDeleted PaymentEvent = "PAYMENT_DELETED"
+	PaymentEventRestored PaymentEvent = "PAYMENT_RESTORED"
+	PaymentEventRefunded PaymentEvent = "PAYMENT_REFUNDED"
+	PaymentEventReceivedInCashUndone PaymentEvent = "PAYMENT_RECEIVED_IN_CASH_UNDONE"
+	PaymentEventChargebackRequested PaymentEvent = "PAYMENT_CHARGEBACK_REQUESTED"
+	PaymentEventChargebackDispute PaymentEvent = "PAYMENT_CHARGEBACK_DISPUTE"
+	PaymentEventAwaitingChargebackReversal PaymentEvent = "PAYMENT_AWAITING_CHARGEBACK_REVERSAL"
+	PaymentEventDunningReceived PaymentEvent = "PAYMENT_DUNNING_RECEIVED"
+	PaymentEventDunningRequested PaymentEvent = "PAYMENT_DUNNING_REQUESTED"	
+
+	//
+)
+
 
 /*
 INITIAL Em andamento. Status temporário. O status definitivo será retornado assim que a sincronização for realizada.
@@ -123,6 +165,7 @@ const (
 	PagarmeEmpty
 	PagarmeCancelled
 	PagarmeError
+	PagarmeUnpaid
 )
 
 
@@ -226,6 +269,9 @@ const (
 	PaymentTypeBoleto PaymentType = "boleto"	
 	PaymentTypePix PaymentType = "pix"	
 	PaymentTypePicPay PaymentType = "picpay"	
+	PaymentTypeTransfer PaymentType = "transfer"	
+	PaymentTypeDeposit PaymentType = "deposit"	
+	PaymentTypeUndefined PaymentType = "undefined"	
 )
 
 type BankAccountType string
@@ -341,7 +387,7 @@ func NewBoletoDiscount() *BoletoFine {
 
 type Plan struct {
 	Id string `jsonp:""`
-	Amount int64 `jsonp:""`
+	Amount float64 `jsonp:""`
 	Days int64 `jsonp:""` // Prazo, em dias, para cobrança das parcelas
 	Name string `jsonp:""`
 	TrialDays int64 `jsonp:""`
@@ -388,6 +434,10 @@ type Customer struct {
 	Country string `valid:"Required" jsonp:""`
 	IdentityCode string `valid:"Required" jsonp:"document"`
 	ExternalReference string `jsonp:""`
+}
+
+func (this *Customer) IsCreated() bool {
+	return len(this.Id) > 0 
 }
 
 func NewCustomer() *Customer{
@@ -572,7 +622,7 @@ func NewPayZenAccount(shopId string, mode string, cert string) *PayZenAccount {
 	return &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
 }
 
-type TokenResult struct {
+type TokenInfo struct {
 	Token string `jsonp:""`
 	Number string `jsonp:""`
 	Brand string `jsonp:""`
@@ -810,7 +860,7 @@ type PaymentResult struct {
 
 	PagarmeStatus PagarmeStatus `jsonp:"pagarme_status"`
 	PicPayStatus PicPayStatus `jsonp:"picpay_status"`
-	TransactionStatus TransactionStatus `jsonp:"status"`
+	TransactionStatus TransactionStatus `jsonp:"payzen_status"`
 	PayZenV4Status string `jsonp:"payzen_v4_status"`
 	AsaasStatus AsaasStatus `jsonp:"asaas_status"`
 	
@@ -835,13 +885,16 @@ type PaymentResult struct {
 	BoletoUrl string `jsonp:""`
 	BoletoNumber string `jsonp:""`
 
+	PaymentType PaymentType `jsonp:""`
+	PaymentEvent PaymentEvent `jsonp:""`
+
 	SubscriptionId string `jsonp:""`
 
 	InstallmentId string `jsonp:""`
 	InstallmentCount int64 `jsonp:""`
 	Amount float64 `jsonp:""`
 
-	TokenInfo *TokenResult `jsonp:""`
+	TokenInfo *TokenInfo `jsonp:""`
 
 	PaymentNotFound bool `jsonp:""`
 	SubscriptionInvalid bool `jsonp:""`
@@ -900,6 +953,14 @@ func (this *PaymentResult) isPicPay() bool {
 
 func (this *PaymentResult) isAsaas() bool {
 	return this.Platform == GatewayAsaas
+}
+
+func (this *PaymentResult) IsInstallment() bool {
+	return len(this.InstallmentId) > 0
+}
+
+func (this *PaymentResult) IsSubscription() bool {
+	return len(this.SubscriptionId) > 0
 }
 
 func (this *PaymentResult) BuildStatus() {
@@ -1004,7 +1065,7 @@ func (this *PaymentResult) BuildStatus() {
 
 func NewPaymentResult() *PaymentResult {
 	result := new(PaymentResult)
-	result.TokenInfo = new(TokenResult)
+	result.TokenInfo = new(TokenInfo)
 	result.Transactions = []*TransactionItemResult{}
 	result.SubscriptionInfo = new(SubscriptionResult)
 	result.ValidationErrors = make(map[string]string)

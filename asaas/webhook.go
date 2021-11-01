@@ -3,49 +3,17 @@ package asaas
 import (
   "github.com/mobilemindtec/go-utils/beego/validator"	
 	beego "github.com/beego/beego/v2/server/web"
+  "github.com/mobilemindtec/go-payments/api"	
 	"encoding/json"
 	"errors"
 	"fmt"
 )
 
 
-/*
-PAYMENT_CREATED - Geração de nova cobrança.
-PAYMENT_UPDATED - Alteração no vencimento ou valor de cobrança existente.
-PAYMENT_CONFIRMED - Cobrança confirmada (pagamento efetuado, porém o saldo ainda não foi disponibilizado).
-PAYMENT_RECEIVED - Cobrança recebida.
-PAYMENT_OVERDUE - Cobrança vencida.
-PAYMENT_DELETED - Cobrança removida.
-PAYMENT_RESTORED - Cobrança restaurada.
-PAYMENT_REFUNDED - Cobrança estornada.
-PAYMENT_RECEIVED_IN_CASH_UNDONE - Recebimento em dinheiro desfeito.
-PAYMENT_CHARGEBACK_REQUESTED - Recebido chargeback.
-PAYMENT_CHARGEBACK_DISPUTE - Em disputa de chargeback (caso sejam apresentados documentos para contestação).
-PAYMENT_AWAITING_CHARGEBACK_REVERSAL - Disputa vencida, aguardando repasse da adquirente.
-PAYMENT_DUNNING_RECEIVED - Recebimento de recuperação.
-PAYMENT_DUNNING_REQUESTED - Requisição de recuperação.
-*/
-type WebhookEvent string
 
-const (
-	EventPaymentCreated WebhookEvent = "PAYMENT_CREATED"
-	EventPaymentUpdated WebhookEvent = "PAYMENT_UPDATED"
-	EventPaymentConfirmed WebhookEvent = "PAYMENT_CONFIRMED"
-	EventPaymentReceived WebhookEvent = "PAYMENT_RECEIVED"
-	EventPaymentOverdue WebhookEvent = "PAYMENT_OVERDUE"
-	EventPaymentDeleted WebhookEvent = "PAYMENT_DELETED"
-	EventPaymentRestored WebhookEvent = "PAYMENT_RESTORED"
-	EventPaymentRefunded WebhookEvent = "PAYMENT_REFUNDED"
-	EventPaymentReceivedInCashUndone WebhookEvent = "PAYMENT_RECEIVED_IN_CASH_UNDONE"
-	EventPaymentChargebackRequested WebhookEvent = "PAYMENT_CHARGEBACK_REQUESTED"
-	EventPaymentChargebackDispute WebhookEvent = "PAYMENT_CHARGEBACK_DISPUTE"
-	EventPaymentAwaitingChargebackReversal WebhookEvent = "PAYMENT_AWAITING_CHARGEBACK_REVERSAL"
-	EventPaymentDunningReceived WebhookEvent = "PAYMENT_DUNNING_RECEIVED"
-	EventPaymentDunningRequested WebhookEvent = "PAYMENT_DUNNING_REQUESTED"	
-)
 
 type WebhookData struct {
-	Event WebhookEvent `json:"event" valid:"Required"`
+	Event api.PaymentEvent `json:"event" valid:"Required"`
 	Response *Response `json:"payment" valid:"Required"`
 	Raw string `json:"raw" valid:"Required"`
 	Uuid string `json:"uuid" valid:""`
@@ -67,6 +35,11 @@ type Webhook struct {
 func NewWebhook(lang string, accessToken string, controller *beego.Controller) *Webhook {
 	entityValidator := validator.NewEntityValidator(lang, "Asaas")
 	return &Webhook{ AccessToken: accessToken, EntityValidator: entityValidator }
+}
+
+func NewDefaultWebhook() *Webhook {
+	entityValidator := validator.NewEntityValidator("pt-BR", "Asaas")
+	return &Webhook{ EntityValidator: entityValidator }
 }
 
 func (this *Webhook) SetDebug()  {

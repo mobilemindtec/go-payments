@@ -185,6 +185,7 @@ func (this *Asaas) PaymentGet(id string) (*Response, error) {
 func (this *Asaas) PaymentFindByKey(key string, value string) (*Response, error) {
   return this.PaymentFind(map[string]string{ key: value })
 }
+
 func (this *Asaas) PaymentFind(filter map[string]string) (*Response, error) {
 
   this.Log("Call PaymentFind")
@@ -200,6 +201,25 @@ func (this *Asaas) PaymentFind(filter map[string]string) (*Response, error) {
   }  
 
   url := fmt.Sprintf("payments%v", this.urlQuery(filter)) 
+
+  return this.get(url, resultProcessor)
+}
+
+func (this *Asaas) Payments(filter *DefaultFilter) (*Response, error) {
+
+  this.Log("Call Payments")
+
+  resultProcessor := func(data []byte, response *Response) error {    
+    err := json.Unmarshal(data, response.PaymentResults)
+
+    for _, it := range response.PaymentResults.Data {
+      it.BuildStatus()
+    }
+
+    return err    
+  }  
+
+  url := fmt.Sprintf("payments%v", this.urlQuery(filter.ToMap())) 
 
   return this.get(url, resultProcessor)
 }

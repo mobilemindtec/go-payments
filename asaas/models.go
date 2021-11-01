@@ -952,6 +952,26 @@ func (this *Response) GetPayZenSOAPStatus() api.TransactionStatus {
   } 
 }
 
+func (this *Response) GetPaymentType() api.PaymentType {
+  switch this.BillingType {
+    case BillingBoleto:
+    	return api.PaymentTypeBoleto
+    case BillingCreditCard:
+    	return api.PaymentTypeCreditCard
+    case BillingDebitCard:
+    	return api.PaymentTypeDebitCard
+    case BillingPix:
+    	return api.PaymentTypePix
+    case BillingTransfer:
+    	return api.PaymentTypeTransfer
+    case BillingDeposit:
+    	return api.PaymentTypeDeposit
+    //case BillingUndefined:
+  	default:
+    	return api.PaymentTypeUndefined
+  }	
+}
+
 func (this *Response) ErrorsToMap() map[string]string {
 	errors := make(map[string]string)
 
