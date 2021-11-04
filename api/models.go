@@ -29,6 +29,7 @@ const (
 	PaymentOther
 	PaymentSuccess
 	PaymentError
+	PaymentCreated
 )
 
 type PaymentStatusLabel string
@@ -45,6 +46,7 @@ const (
 	PaymentOtherLabel PaymentStatusLabel = "other"
 	PaymentSuccessLabel PaymentStatusLabel = "success"
 	PaymentErrorLabel  PaymentStatusLabel = "error"
+	PaymentCreatedLabel  PaymentStatusLabel = "created"
 )
 
 type PaymentEvent string

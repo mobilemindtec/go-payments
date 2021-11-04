@@ -918,7 +918,7 @@ func (this *Response) GetPayZenSOAPStatus() api.TransactionStatus {
 		case api.AsaasReceived:
 			return api.Captured
 		case api.AsaasConfirmed:
-			return api.Authorised
+			return api.Captured
 		case api.AsaasOverdue:
 			return api.Expired
 		case api.AsaasRefunded:
