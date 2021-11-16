@@ -25,7 +25,7 @@ func pagarmeFillPayments(payment *pagarme.Payment) {
   //payment.Amount = 10  
   payment.Installments = 1
   payment.Customer = customer
-  payment.PaymentMethod = api.PaymentMethodCreditCard
+  payment.PaymentMethod = api.PaymentTypeCreditCard
   //payment.PostbackUrl = "https://mobilemind.com.br"
   payment.SoftDescriptor = "Mobile Mind"
   //payment.Metadata = ""
@@ -261,7 +261,7 @@ func TestPagarmePaymentCreateWithPix(t *testing.T) {
         return
       }
 
-      if result.Status != api.PagarmeAuthorized {
+      if result.Status != api.PagarmeWaitingPayment {
         t.Errorf("status expected %v, returned %v", result.Status, api.PagarmeAuthorized)
         return      
       }

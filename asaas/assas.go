@@ -352,9 +352,9 @@ func (this *Asaas) SubscriptionUpdate(payment *Payment) (*Response, error) {
   }
 
 
-  if !this.onValidPayment(payment) {
-    return nil, errors.New(this.getMessage("Asaas.ValidationError"))       
-  }
+  //if !this.onValidPayment(payment) {
+  //  return nil, errors.New(this.getMessage("Asaas.ValidationError"))       
+  //}
 
   return this.post(payment, fmt.Sprintf("subscriptions/%v", payment.Id), nil)
 }

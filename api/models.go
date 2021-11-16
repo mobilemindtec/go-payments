@@ -486,6 +486,8 @@ type Subscription struct{
 	PlanId string `jsonp:""` // pagarme
 	Customer *Customer `jsonp:""`
 	AdditionalInfo map[string]interface{} `jsonp:""`
+
+	UpdatePendingPayments bool
 }
 
 type Payment struct{
@@ -939,6 +941,8 @@ type PaymentResult struct {
   Transfers []*TransferResult `jsonp:""`
 
   Customer *Customer `jsonp:""`
+
+  Tag interface{}
 }
 
 func (this *PaymentResult) isPagarme() bool {

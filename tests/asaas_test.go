@@ -1167,10 +1167,10 @@ func TestAsaasAccountCreate(t *testing.T) {
   Asaas := asaas.NewAsaas("pt-BR", AsaasAccessToken, AsaasApiMode)
   Asaas.Debug = true
 
-  bank := asaas.NewBank("104")
-  bankAccount := asaas.NewBankAccount(bank, api.ContaCorrente)
+  //bank := asaas.NewBank("104")
+  bankAccount := asaas.NewBankAccountSimple("104", api.ContaCorrente)
   bankAccount.AccountName = "Mobile Mind - Caixa Corrente"
-  bankAccount.OwnerName = "Mobile Mind Empresa de Tecnologia LTDA"
+  //bankAccount.OwnerName = "Mobile Mind Empresa de Tecnologia LTDA"
   //bankAccount.OwnerBirthDate = "1995-04-12"
   bankAccount.CpfCnpj = "15095430000101"
   bankAccount.Agency = "3060"
