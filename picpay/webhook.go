@@ -2,8 +2,8 @@ package picpay
 
 import (
   "github.com/mobilemindtec/go-utils/beego/validator" 
-  beego "github.com/beego/beego/v2/server/web"
   "github.com/mobilemindtec/go-utils/support"  
+  "github.com/mobilemindtec/go-payments/api"  
   "errors"
 )
 
@@ -12,7 +12,7 @@ type WebhookData struct {
   ReferenceId string `json:"referenceId" valid:"Required"`
   AuthorizationId string `json:"authorizationId"`
   Raw string `json:"row" valid:"Required"`
-  Uuid string `json:"uuid" valid:"Required"`
+  Response *PicPayResult
 }
 
 func NewWebhookData() *WebhookData {
@@ -20,7 +20,6 @@ func NewWebhookData() *WebhookData {
 }
 
 type Webhook struct {
-  Controller *beego.Controller  
   JsonParser *support.JsonParser
   SallerToken string
   Debug bool
@@ -30,10 +29,18 @@ type Webhook struct {
   HasValidationError bool
 }
 
-func NewWebhook(lang string, sallerToken string, controller *beego.Controller) *Webhook {
+func NewWebhook(lang string, sallerToken string) *Webhook {
   entityValidator := validator.NewEntityValidator(lang, "PicPay")
   return &Webhook{ 
     SallerToken: sallerToken, 
+    JsonParser:  new(support.JsonParser), 
+    EntityValidator: entityValidator, 
+  }
+}
+
+func NewDefaultWebhook() *Webhook{
+  entityValidator := validator.NewEntityValidator("pt-BR", "PicPay")
+  return &Webhook{
     JsonParser:  new(support.JsonParser), 
     EntityValidator: entityValidator, 
   }
@@ -43,19 +50,9 @@ func (this *Webhook) SetDebug() {
   this.Debug = true
 }
 
-func (this *Webhook) IsValid() bool {
-  token := this.Controller.Ctx.Request.Header.Get("x-seller-token")
-  return this.SallerToken == token
-}
-
-func (this *Webhook) GetData() (*WebhookData, error) {
-  body := this.Controller.Ctx.Input.RequestBody
-  return this.Parse(body)
-}
-
 func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
 
-	jsonMap, err := this.JsonParser.JsonToMap(this.Controller.Ctx)
+	jsonMap, err := this.JsonParser.JsonBytesToMap(body)
 
 	if err != nil {
 		return nil, err
@@ -66,7 +63,6 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
   data.ReferenceId = this.JsonParser.GetJsonString(jsonMap, "referenceId")
   data.AuthorizationId = this.JsonParser.GetJsonString(jsonMap, "authorizationId")
   data.Raw = string(body)
-  data.Uuid = this.Controller.Ctx.Input.Param(":uuid")
 
   entityValidatorResult, _ := this.EntityValidator.IsValid(data, nil)  
 
@@ -75,6 +71,14 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
     this.ValidationErrors = this.EntityValidator.GetValidationErrors(entityValidatorResult)
     return nil, errors.New("Validation error")
   }
+
+  data.Response = new(PicPayResult)
+  data.Response.Response = string(body)
+  data.Response.Transaction = new(PicPayTransaction)
+  data.Response.Transaction.ReferenceId = data.ReferenceId
+  data.Response.Transaction.AuthorizationId = data.AuthorizationId
+  data.Response.Transaction.PicPayStatus = api.PicPayCreated
+  data.Response.Transaction.StatusText = "new status received"
 
   return data, nil  
 }

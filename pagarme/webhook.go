@@ -2,13 +2,13 @@ package pagarme
 
 import (
   "github.com/mobilemindtec/go-utils/beego/validator" 
-  beego "github.com/beego/beego/v2/server/web"
   "github.com/mobilemindtec/go-utils/support"  
   "encoding/json"
   "encoding/hex"
   "crypto/sha1"
   "crypto/hmac" 
   "strings"
+  _ "net/url"
   "errors"
   "fmt"
 
@@ -33,7 +33,6 @@ const (
 
 type WebhookData struct {
   Id string `json:"id" valid:"Required"`
-  Uuid string  `json:"uuid" valid:"Required"`
   Fingerprint string `json:"fingerprint" valid:"Required"`
   Event WebhookEvent  `json:"event" valid:"Required"`
   OldStatus string `json:"old_status" valid:"Required"`
@@ -41,6 +40,9 @@ type WebhookData struct {
   CurrentStatus string `json:"current_status" valid:"Required"`
   Object ObjectType `json:"object" valid:"Required"`
   Raw string `json:"raw" valid:"Required"`
+  Response *Response
+  Payload string
+  Signature string
 }
 
 func NewWebhookData() *WebhookData {
@@ -48,9 +50,7 @@ func NewWebhookData() *WebhookData {
 }
 
 type Webhook struct {
-  Controller *beego.Controller  
   JsonParser *support.JsonParser
-  ApiKey string
   Debug bool
 
   EntityValidator *validator.EntityValidator  
@@ -58,10 +58,17 @@ type Webhook struct {
   HasValidationError bool
 }
 
-func NewWebhook(lang string, apiKey string, controller *beego.Controller) *Webhook {
+func NewWebhook(lang string) *Webhook {
   entityValidator := validator.NewEntityValidator(lang, "Pagarme")
   return &Webhook{ 
-    ApiKey: apiKey, 
+    JsonParser:  new(support.JsonParser), 
+    EntityValidator: entityValidator, 
+  }
+}
+
+func NewDefaultWebhook() *Webhook {
+  entityValidator := validator.NewEntityValidator("pt-BR", "Pagarme")
+  return &Webhook{ 
     JsonParser:  new(support.JsonParser), 
     EntityValidator: entityValidator, 
   }
@@ -71,19 +78,14 @@ func (this *Webhook) SetDebug() {
   this.Debug = true
 }
 
-func (this *Webhook) IsValid() bool {
-  signature := this.Controller.Ctx.Request.Header.Get("X-Hub-Signature")
-  return CheckPostbackSignature(this.ApiKey, signature, this.Controller.Ctx.Input.RequestBody)
-}
-
-func (this *Webhook) GetData() (*WebhookData, error) {
-  body := this.Controller.Ctx.Input.RequestBody
-  return this.Parse(body)
-}
-
 func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
 
-  jsonMap := this.JsonParser.FormToJson(this.Controller.Ctx)
+  jsonMap, err := this.JsonParser.JsonBytesToMap(body)
+  
+  if err != nil {
+    return nil, err
+  }
+
   data := NewWebhookData()
 
   if this.Debug {
@@ -91,15 +93,28 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
     fmt.Println("**** Pagarme.Webhook: ", jsonMap)
     fmt.Println("************************************************")
   }
+  
+  data.Object = ObjectType(this.JsonParser.GetJsonString(jsonMap, "object"))
+  data.Payload = this.JsonParser.GetJsonString(jsonMap, "payload")
+  
+  payloadMap := make(map[string]interface{})
+  splited := strings.Split(data.Payload, "&")
 
-  data.Id = this.Controller.GetString("id")
-  data.Fingerprint = this.Controller.GetString("fingerprint")
-  data.Event = WebhookEvent(this.Controller.GetString("event"))
-  data.OldStatus = this.Controller.GetString("old_status")
-  data.DesiredStatus = this.Controller.GetString("desired_status")
-  data.CurrentStatus = this.Controller.GetString("current_status")
-  data.Object = ObjectType(this.Controller.GetString("object"))
-  data.Uuid = this.Controller.Ctx.Input.Param(":uuid")
+  for _, it := range splited {
+    sp := strings.Split(it, "=")
+    if len(sp) == 2 {
+      //fmt.Println(sp)
+      payloadMap[sp[0]] = sp[1]
+    }
+  }
+
+  data.Id = this.JsonParser.GetJsonString(payloadMap, "id")
+  data.Fingerprint = this.JsonParser.GetJsonString(payloadMap, "fingerprint")
+  data.Event = WebhookEvent(this.JsonParser.GetJsonString(payloadMap, "event"))
+  data.OldStatus = this.JsonParser.GetJsonString(payloadMap, "old_status")
+  data.DesiredStatus = this.JsonParser.GetJsonString(payloadMap, "desired_status")
+  data.CurrentStatus = this.JsonParser.GetJsonString(payloadMap, "current_status")
+  data.Signature = this.JsonParser.GetJsonString(payloadMap, "signature")
 
   jsonString, err := json.Marshal(jsonMap)
 
@@ -116,6 +131,29 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
     this.ValidationErrors = this.EntityValidator.GetValidationErrors(entityValidatorResult)
     return nil, errors.New("Validation error")
   }
+
+  data.Response = new(Response)
+  data.Response.Object = this.JsonParser.GetJsonString(payloadMap, "object")
+  data.Response.Id = this.JsonParser.GetJsonInt64(payloadMap, "id")
+  data.Response.StatusText = data.CurrentStatus
+  data.Response.OldStatusText = data.OldStatus
+  data.Response.DesiredStatusText = data.DesiredStatus
+
+  //query, err := url.ParseQuery(payload)
+  //if err != nil {
+  //  return nil, err
+  //}
+
+  //trasactionMap := make(map[string]interface{})
+  //for k, v := range query {
+  //  if strings.Contains(k, "transaction[") {
+  //    kk := strings.Replace(strings.Replace(k, "transaction[", "", -1), "]", "", -1)
+  //    trasactionMap[kk] = v[0]
+  //    //fmt.Println(kk, " = ", v[0])
+  //  }
+  //}
+
+
 
   return data, nil
 

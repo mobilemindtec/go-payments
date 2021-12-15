@@ -87,6 +87,12 @@ const (
 	PaymentEventAwaitingChargebackReversal PaymentEvent = "PAYMENT_AWAITING_CHARGEBACK_REVERSAL"
 	PaymentEventDunningReceived PaymentEvent = "PAYMENT_DUNNING_RECEIVED"
 	PaymentEventDunningRequested PaymentEvent = "PAYMENT_DUNNING_REQUESTED"	
+	PaymentEventPaymentStatusChanged PaymentEvent = "PAYMENT_STATUS_CHANGED"	
+	PaymentEventSubscriptionStatusChanged PaymentEvent = "SUBSCRIPTION_STATUS_CHANGED"	
+	PaymentEventRecipientStatusChanged PaymentEvent = "RECIPIENT_STATUS_CHANGED"	
+	PaymentEventTransactionCreated PaymentEvent = "TRANSACTION_CREATED"	
+	PaymentEventPicPayStatusChanged PaymentEvent = "PICPAY_STATUS_CHANGED"	
+	PaymentEventNotFound PaymentEvent = "EVENT_NOT_FOUND"	
 
 	//
 )

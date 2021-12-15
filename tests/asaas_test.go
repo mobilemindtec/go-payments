@@ -1145,7 +1145,7 @@ func TestAsaasWebhook(t *testing.T) {
     }
   `)
 
-  webhook := asaas.NewWebhook("pt-BR", "123", nil)
+  webhook := asaas.NewWebhook("pt-BR")
 
   result, err := webhook.Parse(jsonData)
 

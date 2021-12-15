@@ -492,6 +492,8 @@ type Response struct {
 
 	Object string `json:"object"`
 	StatusText string `json:"status"` // processing, authorized, paid, refunded, waiting_payment, pending_refund, refused
+	OldStatusText string
+	DesiredStatusText string
 	RefuseReason string `json:"refuse_reason"` // acquirer, antifraud, internal_error, no_acquirer, acquirer_timeout
 	StatusReason string `json:"status_reason"` // acquirer, antifraud, internal_error, no_acquirer, acquirer_timeout
 	AcquirerName string `json:"acquirer_name"` // tone, cielo, rede	

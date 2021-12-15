@@ -668,3 +668,50 @@ func TestPagarmeTransferCreate(t *testing.T) {
     t.Errorf("movement expected, but not has")
   }
 }
+
+// go test -v  github.com/mobilemindtec/go-payments/tests -run TestPagarmeWebhooTest
+func TestPagarmeWebhooTest(t *testing.T) {
+
+  requestBody := []byte(`{
+    "object": "postback",
+    "status": "pending_retry",
+    "model": "transaction",
+    "model_id": "1662527",
+    "headers": "{\"Content-Type\":\"application/x-www-form-urlencoded\",\"X-PagarMe-Event\":\"transaction_status_changed\",\"X-Hub-Signature\":\"sha1=0c62a0b489e1138ef39ae71dece45be1c0e97c1e\",\"User-Agent\":\"PagarMe-Hookshot/1.0\"}",
+    "payload": "id=1662527&fingerprint=a67597c98a493cc8b2c62ab018a553c19747e8a5&event=transaction_status_changed&old_status=waiting_payment&desired_status=paid&current_status=paid&object=transaction&transaction%5Bobject%5D=transaction&transaction%5Bstatus%5D=paid&transaction%5Brefuse_reason%5D=&transaction%5Bstatus_reason%5D=acquirer&transaction%5Bacquirer_response_code%5D=&transaction%5Bacquirer_name%5D=pagarme&transaction%5Bacquirer_id%5D=56f9d019decf72cc70055d58&transaction%5Bauthorization_code%5D=&transaction%5Bsoft_descriptor%5D=&transaction%5Btid%5D=1662527&transaction%5Bnsu%5D=1662527&transaction%5Bdate_created%5D=2017-06-28T17%3A36%3A52.808Z&transaction%5Bdate_updated%5D=2017-06-28T17%3A37%3A25.949Z&transaction%5Bamount%5D=15000&transaction%5Bauthorized_amount%5D=15000&transaction%5Bpaid_amount%5D=0&transaction%5Brefunded_amount%5D=0&transaction%5Binstallments%5D=1&transaction%5Bid%5D=1662527&transaction%5Bcost%5D=380&transaction%5Bcard_holder_name%5D=&transaction%5Bcard_last_digits%5D=&transaction%5Bcard_first_digits%5D=&transaction%5Bcard_brand%5D=&transaction%5Bcard_pin_mode%5D=&transaction%5Bpostback_url%5D=https%3A%2F%2Frequestb.in%2F10m5xva1&transaction%5Bpayment_method%5D=boleto&transaction%5Bcapture_method%5D=ecommerce&transaction%5Bantifraud_score%5D=&transaction%5Bboleto_url%5D=https%3A%2F%2Fpagar.me&transaction%5Bboleto_barcode%5D=1234%205678&transaction%5Bboleto_expiration_date%5D=2017-07-03T03%3A00%3A00.000Z&transaction%5Breferer%5D=api_key&transaction%5Bip%5D=177.63.194.231&transaction%5Bsubscription_id%5D=&transaction%5Bphone%5D=&transaction%5Baddress%5D=&transaction%5Bcustomer%5D=&transaction%5Bbilling%5D=&transaction%5Bshipping%5D=&transaction%5Bcard%5D=&transaction%5Bsplit_rules%5D=",
+    "request_url": "https://requestb.in/10m5xva1",
+    "retries": 0,
+    "next_retry": null,
+    "deliveries": [
+      {
+        "object": "postback_delivery",
+        "status": "success",
+        "status_reason": "http_status_code",
+        "status_code": "200",
+        "response_time": 228,
+        "response_headers": "{\"date\":\"Wed, 28 Jun 2017 17:37:26 GMT\",\"content-type\":\"text/html; charset=utf-8\",\"transfer-encoding\":\"chunked\",\"connection\":\"close\",\"set-cookie\":[\"__cfduid=dd5481bfa0252320257fb1d3de05f19961498671446; expires=Thu, 28-Jun-18 17:37:26 GMT; path=/; domain=.requestb.in; HttpOnly\"],\"sponsored-by\":\"https://www.runscope.com\",\"via\":\"1.1 vegur\",\"strict-transport-security\":\"max-age=15552000\",\"x-content-type-options\":\"nosniff\",\"server\":\"cloudflare-nginx\",\"cf-ray\":\"376269f9ef4c0ed9-EWR\"}",
+        "response_body": "ok",
+        "date_created": "2017-06-28T17:37:26.033Z",
+        "date_updated": "2017-06-28T17:37:26.266Z",
+        "id": "pd_cj4haa8lt14slps730qybvjij"
+      }
+    ],
+    "date_created": "2017-06-28T17:37:26.008Z",
+    "date_updated": "2017-06-28T18:11:42.999Z",
+    "signature": "sha1=0c62a0b489e1138ef39ae71dece45be1c0e97c1e",
+    "id": "po_cj4haa8l4131bpi73glgzbnpp"
+  }`)  
+
+  webkook := pagarme.NewDefaultWebhook()
+
+  data, err := webkook.Parse(requestBody)
+
+  if err != nil {
+    t.Errorf("Parse error: %v", err)
+  }
+
+  if data.Response.Id != 1662527 {
+    t.Errorf("Error is not pased: %v", data.Response.Id)
+  }
+
+}

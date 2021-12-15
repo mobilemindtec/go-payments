@@ -2,7 +2,6 @@ package asaas
 
 import (
   "github.com/mobilemindtec/go-utils/beego/validator"	
-	beego "github.com/beego/beego/v2/server/web"
   "github.com/mobilemindtec/go-payments/api"	
 	"encoding/json"
 	"errors"
@@ -16,7 +15,6 @@ type WebhookData struct {
 	Event api.PaymentEvent `json:"event" valid:"Required"`
 	Response *Response `json:"payment" valid:"Required"`
 	Raw string `json:"raw" valid:"Required"`
-	Uuid string `json:"uuid" valid:""`
 } 
 
 func NewWebhookData() *WebhookData{
@@ -24,17 +22,15 @@ func NewWebhookData() *WebhookData{
 }
 
 type Webhook struct {
-	AccessToken string
-	Controller *beego.Controller	
 	Debug bool
   EntityValidator *validator.EntityValidator  
   ValidationErrors map[string]string
   HasValidationError bool	
 }
 
-func NewWebhook(lang string, accessToken string, controller *beego.Controller) *Webhook {
+func NewWebhook(lang string) *Webhook {
 	entityValidator := validator.NewEntityValidator(lang, "Asaas")
-	return &Webhook{ AccessToken: accessToken, EntityValidator: entityValidator }
+	return &Webhook{ EntityValidator: entityValidator }
 }
 
 func NewDefaultWebhook() *Webhook {
@@ -44,16 +40,6 @@ func NewDefaultWebhook() *Webhook {
 
 func (this *Webhook) SetDebug()  {
 	this.Debug = true
-}
-
-func (this *Webhook) IsValid() bool {
-	token := this.Controller.Ctx.Request.Header.Get("asaas-access-token")
-	return token == this.AccessToken
-}
-
-func (this *Webhook) GetData() (*WebhookData, error) {
-	body := this.Controller.Ctx.Input.RequestBody
-	return this.Parse(body)
 }
 
 func (this *Webhook) Parse(body []byte) (*WebhookData, error) {

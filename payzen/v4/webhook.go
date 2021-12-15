@@ -3,7 +3,6 @@ package v4
 
 import (
   "github.com/mobilemindtec/go-utils/beego/validator" 
-  beego "github.com/beego/beego/v2/server/web"
   "github.com/mobilemindtec/go-utils/support" 
   "crypto/hmac"
   "crypto/sha256" 
@@ -13,6 +12,8 @@ import (
   _ "crypto/sha1"
   _ "crypto/hmac" 
   _ "strings"
+  "net/url"
+  "strings"
   "errors"
   _ "fmt"
 )
@@ -22,12 +23,13 @@ import (
 
 type WebhookData struct {
 	Answer *Answer `json:"kr-answer" valid:"Required"`
+  Response *PayZenResult
  	KrAnswerType string `json:"kr-answer-type" valid:"Required"`
+  KrAnswer string  
  	KrHash string `json:"kr-hash" valid:"Required"`
  	KrHashAlgorithm string `json:"kr-hash-algorithm" valid:"Required"`
  	KrHashKey string `json:"kr-hash-key" valid:"Required"`
   Raw string `json:"row" valid:"Required"`
-  Uuid string `json:"uuid" valid:"Required"`
 }
 
 func NewWebhookData() *WebhookData {
@@ -35,9 +37,7 @@ func NewWebhookData() *WebhookData {
 }
 
 type Webhook struct {
-  Controller *beego.Controller  
   JsonParser *support.JsonParser
-  SallerToken string
   Debug bool
 
   EntityValidator *validator.EntityValidator  
@@ -45,10 +45,17 @@ type Webhook struct {
   HasValidationError bool
 }
 
-func NewWebhook(lang string, sallerToken string, controller *beego.Controller) *Webhook {
+func NewWebhook(lang string, sallerToken string) *Webhook {
   entityValidator := validator.NewEntityValidator(lang, "PayZen")
   return &Webhook{ 
-    SallerToken: sallerToken, 
+    JsonParser:  new(support.JsonParser), 
+    EntityValidator: entityValidator, 
+  }
+}
+
+func NewDefaultWebhook() *Webhook {
+  entityValidator := validator.NewEntityValidator("pt-BR", "PayZen")
+  return &Webhook{ 
     JsonParser:  new(support.JsonParser), 
     EntityValidator: entityValidator, 
   }
@@ -58,43 +65,59 @@ func (this *Webhook) SetDebug() {
   this.Debug = true
 }
 
-func (this *Webhook) IsValid() bool {
-  token := this.Controller.Ctx.Request.Header.Get("x-seller-token")
-  return this.SallerToken == token
-}
-
-func (this *Webhook) GetData() (*WebhookData, error) {
-  body := this.Controller.Ctx.Input.RequestBody
-  return this.Parse(body)
-}
-
 func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
 
-	jsonMap := this.JsonParser.FormToJson(this.Controller.Ctx)
 
-
-  data := NewWebhookData()
-  data.Uuid = this.Controller.Ctx.Input.Param(":uuid")
-
-  jsonString, err := json.Marshal(jsonMap)
+  formData := make(map[string]interface{})
+  urlQuery, err := url.QueryUnescape(string(body))
 
   if err != nil {
     return nil, err
   }
 
-  data.Raw = string(jsonString)
+  data := NewWebhookData()  
 
-  krAnswer := this.JsonParser.GetJsonString(jsonMap, "kr-answer")
+  splited := strings.Split(urlQuery, "&")
 
-  if len(krAnswer) == 0 {
-  	return nil, errors.New("empty kr-answer")
+
+  for _, value := range splited {
+
+    vals := strings.Split(value, "=")
+
+    switch vals[0] {
+      case "kr-hash-key":
+        data.KrHashKey = vals[1]
+        break
+      case "kr-answer-type":
+        data.KrAnswerType = vals[1]
+        break
+      case "kr-hash-algorithm":
+        data.KrHashAlgorithm = vals[1]
+        break
+      case "kr-hash":
+        data.KrHash = vals[1]
+        break
+      case "kr-answer":
+        if err := json.Unmarshal([]byte(vals[1]), data.Answer); err != nil {
+          return nil, err
+        }
+        data.KrAnswer = vals[1]
+        formData[vals[0]] = data.Answer
+        break
+      default:
+        formData[vals[0]]  = vals[1]
+        break
+    }
+
+
   }
 
-  err = json.Unmarshal([]byte(krAnswer), data.Answer)    
+  jsonString, err := json.Marshal(formData)
 
   if err != nil {
-  	return nil, err
+    return nil, err
   }
+  data.Raw = string(jsonString)
 
   entityValidatorResult, _ := this.EntityValidator.IsValid(data, nil)  
 
@@ -104,6 +127,9 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
     return nil, errors.New("Validation error")
   }
 
+  response := new(PaymentResponse)
+  response.Answer = data.Answer
+  data.Response = NewPayZenResultWithResponse(response)
   return data, nil  
 }
 
