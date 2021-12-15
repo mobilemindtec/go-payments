@@ -245,10 +245,10 @@ func (this *Pagarme) PlanoCreate(plano *Plano) (*Response, error) {
     return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
   }	
 
-  if plano.InvoiceReminder <= 0 {
-    this.SetValidationError("InvoiceReminder", "is required")
-    return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
-  }	
+  //if plano.InvoiceReminder <= 0 {
+  //  this.SetValidationError("InvoiceReminder", "is required")
+  //  return nil, errors.New(this.getMessage("Pagarme.ValidationError"))       
+  //}	
 
   resultProcessor := func(data []byte, response *Response) error {      	
     return json.Unmarshal(data, response.Plano)

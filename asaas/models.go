@@ -224,6 +224,13 @@ type Customer struct {
 	NotificationDisabled bool `json:"notificationDisabled"` // true para desabilitar o envio de notificações de cobrança
 	ExternalReference string `json:"externalReference" valid:"Required"`
 	AdditionalEmails string `json:"additionalEmails"` // Emails adicionais para envio de notificações de cobrança separados por ","
+
+	Address string `json:"address"`
+	AddressNumber string `json:"addressNumber"`
+	Province string `json:"province"`
+	PostalCode string `json:"postalCode"`
+	City string `json:"city"`
+	State string `json:"state"`
 }
 
 func NewCustomer(name string, cpfCnpj string) *Customer {

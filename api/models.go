@@ -396,6 +396,7 @@ type Plan struct {
 	PaymentMethods []PaymentType `jsonp:""`
 	Charges int64 `jsonp:""`
 	InvoiceReminder int64 `jsonp:""` 
+	Installments int64 `jsonp:""` 
 }
 
 func NewPlan() *Plan {

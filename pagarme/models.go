@@ -121,7 +121,7 @@ type CustomerDocument struct {
 }
 
 type Customer struct {
-	DocumentNumber string `json:"document_number" valid:"Required;MaxSize(11);MinSize(11)"`
+	DocumentNumber string `json:"document_number" valid:"Required;MinSize(11);MaxSize(14)"`
 	Email string `json:"email" valid:"Required;Email"`
 	Name string `json:"name" valid:"Required"`
 	Address *Address `json:"address" valid:"Required"`
