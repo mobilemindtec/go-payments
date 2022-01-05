@@ -42,6 +42,7 @@ type WebhookData struct {
   Raw string `json:"raw" valid:"Required"`
   Response *Response
   Payload string
+  PayloadMap map[string]interface{}
   Signature string
 }
 
@@ -97,24 +98,24 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
   data.Object = ObjectType(this.JsonParser.GetJsonString(jsonMap, "object"))
   data.Payload = this.JsonParser.GetJsonString(jsonMap, "payload")
   
-  payloadMap := make(map[string]interface{})
+  data.PayloadMap = make(map[string]interface{})
   splited := strings.Split(data.Payload, "&")
 
   for _, it := range splited {
     sp := strings.Split(it, "=")
     if len(sp) == 2 {
       //fmt.Println(sp)
-      payloadMap[sp[0]] = sp[1]
+      data.PayloadMap[sp[0]] = sp[1]
     }
   }
 
-  data.Id = this.JsonParser.GetJsonString(payloadMap, "id")
-  data.Fingerprint = this.JsonParser.GetJsonString(payloadMap, "fingerprint")
-  data.Event = WebhookEvent(this.JsonParser.GetJsonString(payloadMap, "event"))
-  data.OldStatus = this.JsonParser.GetJsonString(payloadMap, "old_status")
-  data.DesiredStatus = this.JsonParser.GetJsonString(payloadMap, "desired_status")
-  data.CurrentStatus = this.JsonParser.GetJsonString(payloadMap, "current_status")
-  data.Signature = this.JsonParser.GetJsonString(payloadMap, "signature")
+  data.Id = this.JsonParser.GetJsonString(data.PayloadMap, "id")
+  data.Fingerprint = this.JsonParser.GetJsonString(data.PayloadMap, "fingerprint")
+  data.Event = WebhookEvent(this.JsonParser.GetJsonString(data.PayloadMap, "event"))
+  data.OldStatus = this.JsonParser.GetJsonString(data.PayloadMap, "old_status")
+  data.DesiredStatus = this.JsonParser.GetJsonString(data.PayloadMap, "desired_status")
+  data.CurrentStatus = this.JsonParser.GetJsonString(data.PayloadMap, "current_status")
+  data.Signature = this.JsonParser.GetJsonString(data.PayloadMap, "signature")
 
   jsonString, err := json.Marshal(jsonMap)
 
@@ -133,8 +134,8 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
   }
 
   data.Response = new(Response)
-  data.Response.Object = this.JsonParser.GetJsonString(payloadMap, "object")
-  data.Response.Id = this.JsonParser.GetJsonInt64(payloadMap, "id")
+  data.Response.Object = this.JsonParser.GetJsonString(data.PayloadMap, "object")
+  data.Response.Id = this.JsonParser.GetJsonInt64(data.PayloadMap, "id")
   data.Response.StatusText = data.CurrentStatus
   data.Response.OldStatusText = data.OldStatus
   data.Response.DesiredStatusText = data.DesiredStatus

@@ -305,10 +305,16 @@ type OrderDetails struct {
 	Customer *Customer `json:"customer"`
 }
 
+type SubscriptionDetails struct {
+	SubscriptionId string `json:"subscriptionId"`
+}
+
 type TransactionDetails struct {
 	ExternalTransactionId string `json:"externalTransactionId"` // nsu
 	Nsu string `json:"nsu"` // nsu
+	SubscriptionDetails *SubscriptionDetails `json:"subscriptionDetails"`
 }
+
 type Transaction struct {
 	Amount int64 `json:"amount"`
 	creationDate string `json:"creationDate"`
@@ -327,7 +333,7 @@ type Transaction struct {
 	TransactionDetails *TransactionDetails `json:"transactionDetails"`
 	TransactionStatus TransactionStatus
 	PaymentStatus PaymentStatus
-	ResponseCode int64 `json:"responseCode,omitempty"`
+	ResponseCode int64 `json:"responseCode,omitempty"`	
 }
 
 func (this *Transaction) HasError() bool {
@@ -441,7 +447,7 @@ type Answer struct {
 	ShopId string `json:"shopId"`
 	OrderDetails *OrderDetails `json:"orderDetails"`
 	Transactions []*Transaction `json:"transactions"`	
-	TransactionDetails *Transaction `json:"transactionDetails"`
+	TransactionDetails *Transaction `json:"transactionDetails"`	
 	DetailedErrorCode string `json:"detailedErrorCode"` // erro da adquirente
 	DetailedErrorMessage string `json:"detailedErrorMessage"` // erro da adquirente
 	ErrorCode string `json:"errorCode"` // erro payzen
