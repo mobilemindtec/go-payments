@@ -443,6 +443,7 @@ type Customer struct {
 	Country string `valid:"Required" jsonp:""`
 	IdentityCode string `valid:"Required" jsonp:"document"`
 	ExternalReference string `jsonp:""`
+	NotificationDisabled bool `jsonp:""`
 }
 
 func (this *Customer) IsCreated() bool {
