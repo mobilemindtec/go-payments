@@ -41,7 +41,7 @@ var (
 func init(){
   file, err := ioutil.ReadFile("../certs.json")
   if err != nil {
-      fmt.Printf("error on open file ../certs.json: %v\n", err)
+      panic(fmt.Sprintf("error on open file ../certs.json: %v\n", err))
       return
   }
 
@@ -49,7 +49,7 @@ func init(){
   
   err = json.Unmarshal(file, &data)
   if err != nil {
-      fmt.Printf("JSON error: %v\n", err)
+      panic(fmt.Sprintf("error load configs json: %v\n", err))
       return
   }  
 

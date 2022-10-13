@@ -444,6 +444,7 @@ type Customer struct {
 	IdentityCode string `valid:"Required" jsonp:"document"`
 	ExternalReference string `jsonp:""`
 	NotificationDisabled bool `jsonp:""`
+	IpAddress string `jsonp:""`
 }
 
 func (this *Customer) IsCreated() bool {
@@ -496,6 +497,8 @@ type Subscription struct{
 	AdditionalInfo map[string]interface{} `jsonp:""`
 
 	UpdatePendingPayments bool
+
+	Order *Order `jsonp:""`
 }
 
 type Payment struct{
@@ -538,6 +541,8 @@ type Payment struct{
 	BoletoOnlineTexto3 string `jsonp:"payzen_boleto_text3"`
 
 	BoletoInstructions string `jsonp:"boleto_instructions"`
+
+	Order *Order `jsonp:""`
 
 }
 
@@ -633,6 +638,50 @@ func NewPayment() *Payment {
 func NewPayZenAccount(shopId string, mode string, cert string) *PayZenAccount {
 	return &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
 }
+
+type OrderItem struct {
+	Id int64 `jsonp:""`
+	Description string `jsonp:""`
+	Type string `jsonp:""`
+	Reference string `jsonp:""`
+	Quantity int64 `jsonp:""`
+	Amount float64 `jsonp:""` 	
+}
+
+func NewOrderItem() *OrderItem{
+	return &OrderItem{}
+}
+
+type OrderDeliveryAddress struct{
+	StreetNumber string `jsonp:""`
+	Address string `jsonp:""`
+	Address2 string `jsonp:""`
+	District string `jsonp:""`
+	ZipCode string `jsonp:""`
+	City string `jsonp:""`
+	State string `jsonp:""`
+	Country string `jsonp:""`
+	ReclaimInShop bool `jsonp:""`
+}
+
+func NewOrderDeliveryAddress() *OrderDeliveryAddress{
+	return &OrderDeliveryAddress{}
+}
+
+type Order struct {
+	Id int64 `jsonp:""`
+	DeliveryCost float64 `jsonp:""` 
+	FirstName string `jsonp:""`
+	LastName string `jsonp:""`
+	PhoneNumber string `jsonp:""`
+	DeliveryAddress *OrderDeliveryAddress `jsonp:""`
+	Items []*OrderItem `jsonp:""`
+}
+
+func NewOrder() *Order {
+	return &Order { DeliveryAddress: NewOrderDeliveryAddress(),  Items: []*OrderItem{} }
+} 
+
 
 type TokenInfo struct {
 	Token string `jsonp:""`

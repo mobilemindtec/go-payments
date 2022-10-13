@@ -1,0 +1,29 @@
+{
+	"mobilemind": {
+		"pagarme": {
+			"ApiKey": "",
+			"CryptoKey": ""
+		},
+		"payzen": {
+			"shop_id": "",
+			"v4": {
+				"username": "",
+				"password": {
+					"prod": "",
+					"test": ""
+				}
+			},
+			"cert": {
+				"prod": "",
+				"test": ""
+			}			
+		}
+	},
+	"picpay": {
+		"token": "",
+		"sallerToken": ""
+	},
+	"asaas": {
+		"api_key": ""
+	}
+}

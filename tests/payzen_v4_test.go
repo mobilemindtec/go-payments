@@ -37,12 +37,50 @@ func createPayment() *v4.Payment {
   payment.Customer.BillingDetails.FirstName = "Ricardo"
   payment.Customer.BillingDetails.LastName = "Bocchi"
   payment.Customer.BillingDetails.IdentityCode = "83361855004"  
+
+  if len(payment.Customer.BillingDetails.IdentityCode) == 14 {
+    payment.Customer.BillingDetails.Category = "COMPANY"
+  }
+
+  payment.Customer.IpAddress = "138.36.81.242"
+  payment.Customer.Reference = "123"
+
+  payment.Customer.ShippingDetails.Category = payment.Customer.BillingDetails.Category
+  payment.Customer.ShippingDetails.FirstName  = payment.Customer.BillingDetails.FirstName 
+  payment.Customer.ShippingDetails.LastName = payment.Customer.BillingDetails.LastName
+  payment.Customer.ShippingDetails.PhoneNumber = payment.Customer.BillingDetails.PhoneNumber
+  payment.Customer.ShippingDetails.StreetNumber = payment.Customer.BillingDetails.StreetNumber
+  payment.Customer.ShippingDetails.Address = payment.Customer.BillingDetails.Address
+  payment.Customer.ShippingDetails.Address2 = payment.Customer.BillingDetails.Address2
+  payment.Customer.ShippingDetails.District = payment.Customer.BillingDetails.District
+  payment.Customer.ShippingDetails.ZipCode = payment.Customer.BillingDetails.ZipCode
+  payment.Customer.ShippingDetails.City = payment.Customer.BillingDetails.City
+  payment.Customer.ShippingDetails.State = payment.Customer.BillingDetails.State
+  payment.Customer.ShippingDetails.Country = payment.Customer.BillingDetails.Country
+  payment.Customer.ShippingDetails.DeliveryCompanyName = ""
+  payment.Customer.ShippingDetails.ShippingSpeed = ""
+  payment.Customer.ShippingDetails.ShippingMethod = ""
+  payment.Customer.ShippingDetails.LegalName = ""
+  payment.Customer.ShippingDetails.IdentityCode = payment.Customer.BillingDetails.IdentityCode
+
+  
+  payment.Customer.ShoppingCart.InsuranceAmount = ""
+  payment.Customer.ShoppingCart.ShippingAmount = "500"
+  payment.Customer.ShoppingCart.TaxAmount = ""
+  
+  item := v4.NewCartItemInfo()
+  item.ProductLabel = "Produto teste"
+  item.ProductQty = "1"
+  item.ProductAmount = "1000"
+  payment.Customer.ShoppingCart.CartItemInfo = append(payment.Customer.ShoppingCart.CartItemInfo, item)
+
   return payment
 }
 
-
 // go test -v  github.com/mobilemindtec/go-payments/tests -run TestPayZenV4PaymentCreate
 func TestPayZenV4PaymentCreate(t *testing.T) {
+
+  t.Errorf("Authentication = %v", Authentication)
 
   payment := createPayment() 
   payment.IpnTargetUrl = "https://mobilemind.free.beeceptor.com/webhook/payzen"

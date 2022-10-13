@@ -58,16 +58,16 @@ func ConvertAmount(amount float64) int64 {
 }
 
 type BillingDetails struct {
-	Address string `json:"address" valid:"Required"`
+	Address string `json:"address" valid:""`
 	Address2 string `json:"address2,omitempty"`
 	StreetNumber string `json:"streetNumber" valid:""`
 	ZipCode string `json:"zipCode" valid:""`
 	CellPhoneNumber string `json:"cellPhoneNumber,omitempty"`
 	PhoneNumber string `json:"phoneNumber,omitempty"`
-	City string `json:"city" valid:"Required"`
-	State string `json:"state" valid:"Required"`
-	Country string `json:"country" valid:"Required"`
-	District string `json:"district" valid:"Required"`
+	City string `json:"city" valid:""`
+	State string `json:"state" valid:""`
+	Country string `json:"country" valid:""`
+	District string `json:"district" valid:""`
 	FirstName string `json:"firstName" valid:"Required"`
 	LastName string `json:"lastName" valid:"Required"`
 	IdentityCode string `json:"identityCode" valid:"Required"` // documento	
@@ -80,13 +80,86 @@ func NewBillingDetails() *BillingDetails {
 	return &BillingDetails{ Language: "PT", Category: "PRIVATE", Country: "BR" }
 }
 
+type ShippingDetails struct {
+	Category string `json:"category,omitempty"` // PRIVATE or COMPANY
+	FirstName string `json:"firstName" valid:"Required"`
+	LastName string `json:"lastName" valid:"Required"`
+	PhoneNumber string `json:"phoneNumber,omitempty"`
+	StreetNumber string `json:"streetNumber" valid:""`
+	Address string `json:"address" valid:"Required"`
+	Address2 string `json:"address2,omitempty"`
+	District string `json:"district" valid:"Required"`
+	ZipCode string `json:"zipCode" valid:""`
+	City string `json:"city" valid:"Required"`
+	State string `json:"state" valid:"Required"`
+	Country string `json:"country" valid:"Required"`
+	DeliveryCompanyName string `json:"deliveryCompanyName,omitempty"` // PRIVATE or COMPANY
+	ShippingSpeed string `json:"shippingSpeed,omitempty"` // STANDARD EXPRESS PRIORITY
+	ShippingMethod string `json:"shippingMethod,omitempty"` // RECLAIM_IN_SHOP (retirada na loja) VERIFIED_ADDRESS (entrega no endereço)
+	LegalName string `json:"legalName,omitempty"`
+	IdentityCode string `json:"identityCode,omitempty"`
+}
+
+func NewShippingDetails() *ShippingDetails{
+	return &ShippingDetails{}
+}
+
+type CartItemInfo struct {
+	ProductLabel string `json:"productLabel,omitempty"`
+
+	/*
+		FOOD_AND_GROCERY 	Produtos alimentares e de mercearia
+		AUTOMOTIVE 	Automóvel / Moto
+		ENTERTAINMENT 	Lazer / Cultura
+		HOME_AND_GARDEN 	Casa e jardim
+		HOME_APPLIANCE 	Equipamentos para a casa
+		AUCTION_AND_GROUP_BUYING 	Leilões e compras em grupo
+		FLOWERS_AND_GIFTS 	Flores e presentes
+		COMPUTER_AND_SOFTWARE 	Computadores e softwares
+		HEALTH_AND_BEAUTY 	Saúde e beleza
+		SERVICE_FOR_INDIVIDUAL 	Serviços para pessoa física
+		SERVICE_FOR_BUSINESS 	Serviços para pessoa jurídica
+		SPORTS 	Esportes
+		CLOTHING_AND_ACCESSORIES 	Roupas e acessórios
+		TRAVEL 	Viagem
+		HOME_AUDIO_PHOTO_VIDEO 	Som, imagem e vídeo
+		TELEPHONY 	Telefonia 
+	*/
+	ProductType string `json:"productType,omitempty"`
+
+	ProductRef string `json:"productRef,omitempty"`
+	ProductQty string `json:"productQty,omitempty"`
+	ProductAmount string `json:"productAmount,omitempty"`
+	ProductVat string `json:"productVat,omitempty"` // imposto
+}
+
+func NewCartItemInfo() *CartItemInfo{
+	return &CartItemInfo{}
+}
+
+type ShoppingCart struct {
+	InsuranceAmount string `json:"insuranceAmount,omitempty"` // seguro
+	ShippingAmount string `json:"shippingAmount,omitempty"` // despesas
+	TaxAmount string `json:"taxAmount,omitempty"` // impostos
+	CartItemInfo []*CartItemInfo `json:"cartItemInfo"`
+} 
+
+func NewShoppingCart() *ShoppingCart{
+	return &ShoppingCart{ CartItemInfo: []*CartItemInfo{} }
+}
+
+
 type Customer struct {
 	Email string `json:"email" valid:"Required"`
+	IpAddress string `json:"ipAddress,omitempty"`
+	Reference string `json:"reference,omitempty"`
 	BillingDetails *BillingDetails `json:"billingDetails"`	
+	ShippingDetails *ShippingDetails `json:"shippingDetails"`
+	ShoppingCart *ShoppingCart `json:"shoppingCart"`
 }
 
 func NewCustomer() *Customer {
-	return &Customer{ BillingDetails: NewBillingDetails() }
+	return &Customer{ BillingDetails: NewBillingDetails(), ShoppingCart: NewShoppingCart(), ShippingDetails: NewShippingDetails() }
 }
 
 type CardOptions struct {
@@ -158,7 +231,8 @@ type Payment struct {
 	FormAction string `json:"formAction" valid:"Required"` // PAYMENT
 	PaymentForms []*Card `json:"paymentForms"` 
 	Device *Device `json:"device"`
-	
+	Metadata map[string]string `json:"metadata,omitempty"`
+	FingerPrintId string `json:"fingerPrintId,omitempty"`
 	Card *Card `json:"-"`
 }
 
@@ -176,6 +250,7 @@ func NewPayment(amount float64) *Payment {
 		Card: card, 
 		PaymentForms: []*Card{ card }, 
 		Device: NewDevice(),
+		Metadata: map[string]string{},
 	}
 }
 
@@ -192,6 +267,7 @@ type Subscription struct {
 	InitialAmount int64 `json:"initialAmount,omitempty"` // Valor das primeiras parcelas. O valor deve ser um número inteiro positivo (ex: 1234 para R$ 12,34).
 	InitialAmountNumber int64 `json:"initialAmountNumber,omitempty"` // Quantidade de parcelas às quais aplicar o valor definido em initialAmount.
 	Metadata map[string]string `json:"metadata,omitempty"`
+	FingerPrintId string `json:"fingerPrintId,omitempty"`
 	Rrule string `json:"rrule" valid:"Required"`	
 
 	TransactionOptions *TransactionOptions `json:"transactionOptions,omitempty"`
