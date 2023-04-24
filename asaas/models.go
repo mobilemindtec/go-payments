@@ -430,7 +430,7 @@ func NewPaymenInstallmenttWithBoleto(customerId string, orderId string, value fl
 
 func NewPaymentWithPix(customerId string, orderId string, dueDate time.Time, value float64) *Payment {
 	return &Payment{
-		BillingType: BillingUndefined,
+		BillingType: BillingPix,
 		Value: value,
   	Customer: customerId,
   	ExternalReference: orderId,

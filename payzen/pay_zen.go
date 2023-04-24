@@ -69,10 +69,10 @@ func (this *PayZen) PaymentUpdate(payment *api.Payment) (*api.PaymentResult, err
 
 	valid := this.onValidOther(payment, func (validator *validation.Validation) {
 		if len(payment.TransactionUuid) == 0 {
-			validator.SetError("TransactionUuid", this.getMessage("Pagarme.rquired"))
+			validator.SetError("TransactionUuid", this.getMessage("Pagarme.required"))
 		}
 		if payment.Amount <= 0 {
-			validator.SetError("Amount", this.getMessage("Pagarme.rquired"))
+			validator.SetError("Amount", this.getMessage("Pagarme.required"))
 		}
 	})
 
@@ -91,7 +91,7 @@ func (this *PayZen) PaymentCancel(paymentFind *api.PaymentFind) (*api.PaymentRes
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.TransactionUuid) == 0 {
-			validator.SetError("TransactionUuid", this.getMessage("Pagarme.rquired"))
+			validator.SetError("TransactionUuid", this.getMessage("Pagarme.required"))
 		}
 	})
 
@@ -119,7 +119,7 @@ func (this *PayZen) PaymentValidate(paymentFind *api.PaymentFind) (*api.PaymentR
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.TransactionUuid) == 0 {
-			validator.SetError("TransactionUuid", this.getMessage("Pagarme.rquired"))
+			validator.SetError("TransactionUuid", this.getMessage("Pagarme.required"))
 		}
 	})
 
@@ -136,13 +136,13 @@ func (this *PayZen) PaymentDuplicate(payment *api.Payment) (*api.PaymentResult, 
 
 	valid := this.onValidOther(payment, func (validator *validation.Validation) {
 		if len(payment.TransactionUuid) == 0 {
-			validator.SetError("TransactionUuid", this.getMessage("Pagarme.rquired"))
+			validator.SetError("TransactionUuid", this.getMessage("Pagarme.required"))
 		}
 		if len(payment.OrderId) == 0 {
-			validator.SetError("OrderId", this.getMessage("Pagarme.rquired"))
+			validator.SetError("OrderId", this.getMessage("Pagarme.required"))
 		}
 		if payment.Amount <= 0 {
-			validator.SetError("Amount", this.getMessage("Pagarme.rquired"))
+			validator.SetError("Amount", this.getMessage("Pagarme.required"))
 		}
 	})
 
@@ -161,10 +161,10 @@ func (this *PayZen) PaymentRefund(payment *api.Payment) (*api.PaymentResult, err
 
 	valid := this.onValidOther(payment, func (validator *validation.Validation) {
 		if len(payment.TransactionUuid) == 0 {
-			validator.SetError("TransactionUuid", this.getMessage("Pagarme.rquired"))
+			validator.SetError("TransactionUuid", this.getMessage("Pagarme.required"))
 		}
 		if payment.Amount <= 0 {
-			validator.SetError("Amount", this.getMessage("Pagarme.rquired"))
+			validator.SetError("Amount", this.getMessage("Pagarme.required"))
 		}
 	})
 
@@ -202,7 +202,7 @@ func (this *PayZen) PaymentTokenUpdate(payment *api.Payment) (*api.PaymentResult
 
 	valid := this.onValidOther(payment, func (validator *validation.Validation) {
 		if len(payment.Card.Token) == 0 {
-			validator.SetError("Token", this.getMessage("Pagarme.rquired"))
+			validator.SetError("Token", this.getMessage("Pagarme.required"))
 			return
 		}
 	})
@@ -259,7 +259,7 @@ func (this *PayZen) PaymentFind(paymentFind *api.PaymentFind) (*api.PaymentResul
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.OrderId) == 0 {
-			validator.SetError("OrderId", this.getMessage("Pagarme.rquired"))
+			validator.SetError("OrderId", this.getMessage("Pagarme.required"))
 			return
 		}
 	})
@@ -278,7 +278,7 @@ func (this *PayZen) PaymentGetDetails(paymentFind *api.PaymentFind) (*api.Paymen
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.TransactionUuid) == 0 {
-			validator.SetError("TransactionUuid", this.getMessage("Pagarme.rquired"))
+			validator.SetError("TransactionUuid", this.getMessage("Pagarme.required"))
 			return
 		}
 	})
@@ -297,7 +297,7 @@ func (this *PayZen) PaymentGetDetailsWithNsu(paymentFind *api.PaymentFind) (*api
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.TransactionUuid) == 0 {
-			validator.SetError("TransactionUuid", this.getMessage("Pagarme.rquired"))
+			validator.SetError("TransactionUuid", this.getMessage("Pagarme.required"))
 			return
 		}
 	})
@@ -327,11 +327,11 @@ func (this *PayZen) PaymentGetDetailsSubscription(paymentFind *api.PaymentFind) 
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.SubscriptionId) == 0 {
-			validator.SetError("SubscriptionId", this.getMessage("Pagarme.rquired"))
+			validator.SetError("SubscriptionId", this.getMessage("Pagarme.required"))
 			return
 		}
 		if len(paymentFind.Token) == 0 {
-			validator.SetError("Token", this.getMessage("Pagarme.rquired"))
+			validator.SetError("Token", this.getMessage("Pagarme.required"))
 			return
 		}
 	})
@@ -349,11 +349,11 @@ func (this *PayZen) PaymentCancelSubscription(paymentFind *api.PaymentFind) (*ap
 
 	valid := this.onValidOther(paymentFind, func (validator *validation.Validation) {
 		if len(paymentFind.SubscriptionId) == 0 {
-			validator.SetError("SubscriptionId", this.getMessage("Pagarme.rquired"))
+			validator.SetError("SubscriptionId", this.getMessage("Pagarme.required"))
 			return
 		}
 		if len(paymentFind.Token) == 0 {
-			validator.SetError("Token", this.getMessage("Pagarme.rquired"))
+			validator.SetError("Token", this.getMessage("Pagarme.required"))
 			return
 		}
 	})
@@ -375,11 +375,11 @@ func (this *PayZen) PaymentUpdateSubscription(subscription *api.Subscription) (*
 
 	valid := this.onValidOther(subscription, func (validator *validation.Validation) {
 		if len(subscription.SubscriptionId) == 0 {
-			validator.SetError("SubscriptionId", this.getMessage("Pagarme.rquired"))
+			validator.SetError("SubscriptionId", this.getMessage("Pagarme.required"))
 			return
 		}
 		if len(subscription.Token) == 0 {
-			validator.SetError("Token", this.getMessage("Pagarme.rquired"))
+			validator.SetError("Token", this.getMessage("Pagarme.required"))
 			return
 		}
 	})
@@ -450,19 +450,19 @@ func (this *PayZen) onValidSubscription(subscription *api.Subscription) bool {
   	if len(subscription.Rule) == 0 {
 
   		if subscription.EffectDate.IsZero() {
-  			validator.SetError("EffectDate", this.getMessage("Pagarme.rquired"))
+  			validator.SetError("EffectDate", this.getMessage("Pagarme.required"))
   		}
 
   		if subscription.InitialAmountNumber > 0 && subscription.InitialAmount == 0.0 {
-  			validator.SetError("InitialAmount", this.getMessage("Pagarme.rquired"))
+  			validator.SetError("InitialAmount", this.getMessage("Pagarme.required"))
   		}
 
   		if subscription.InitialAmountNumber == 0 && subscription.InitialAmount > 0.0 {
-  			validator.SetError("InitialAmountNumber", this.getMessage("Pagarme.rquired"))
+  			validator.SetError("InitialAmountNumber", this.getMessage("Pagarme.required"))
   		}
 
   		if subscription.Amount <= 0 {
-  			validator.SetError("Amount", this.getMessage("Pagarme.rquired"))
+  			validator.SetError("Amount", this.getMessage("Pagarme.required"))
   		}
 
   	}
@@ -484,28 +484,28 @@ func (this *PayZen) onValid(payment *api.Payment) bool {
   	if !payment.TokenOperation {
 
 			if len(strings.TrimSpace(payment.OrderId)) == 0 {
-				validator.SetError(this.getMessage("Pagarme.OrderId"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.OrderId"), this.getMessage("Pagarme.required"))
 			}
 
 			if payment.Installments <= 0 {
-				validator.SetError(this.getMessage("Pagarme.Installments"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.Installments"), this.getMessage("Pagarme.required"))
 			}
 
 			if payment.Amount <= 0 {
-				validator.SetError(this.getMessage("Pagarme.Amount"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.Amount"), this.getMessage("Pagarme.required"))
 			}
 
 			if payment.Card == nil {
-				validator.SetError(this.getMessage("Pagarme.Card"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.Card"), this.getMessage("Pagarme.required"))
 			}
 
 			if payment.Customer == nil {
-				validator.SetError(this.getMessage("Pagarme.Customer"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.Customer"), this.getMessage("Pagarme.required"))
 			} else {
 			
 				if payment.Card.Scheme == SchemeBoleto {
 					if len(strings.TrimSpace(payment.Customer.IdentityCode)) == 0 {
-						validator.SetError(this.getMessage("Pagarme.IdentityCode"), this.getMessage("Pagarme.rquired"))
+						validator.SetError(this.getMessage("Pagarme.IdentityCode"), this.getMessage("Pagarme.required"))
 					}
 				}
 
@@ -552,32 +552,32 @@ func (this *PayZen) onValid(payment *api.Payment) bool {
   	if len(strings.TrimSpace(payment.Card.Token)) == 0 && payment.Card.Scheme != SchemeBoleto {
 
 			if len(strings.TrimSpace(payment.Card.Number)) == 0 {
-				validator.SetError(this.getMessage("Pagarme.Number"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.Number"), this.getMessage("Pagarme.required"))
 			}
 
 			if len(strings.TrimSpace(payment.Card.Scheme)) == 0 {
-				validator.SetError(this.getMessage("Pagarme.Scheme"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.Scheme"), this.getMessage("Pagarme.required"))
 			}
 
 			if len(strings.TrimSpace(payment.Card.ExpiryMonth)) == 0 {
-				validator.SetError(this.getMessage("Pagarme.ExpiryMonth"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.ExpiryMonth"), this.getMessage("Pagarme.required"))
 			}
 
 			if len(strings.TrimSpace(payment.Card.ExpiryYear)) == 0 {
-				validator.SetError(this.getMessage("Pagarme.ExpiryYear"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.ExpiryYear"), this.getMessage("Pagarme.required"))
 			}
 
 			/*
 			if len(strings.TrimSpace(payment.Card.Number)) == 0 {
-				validator.SetError("Number", this.getMessage("Pagarme.rquired"))
+				validator.SetError("Number", this.getMessage("Pagarme.required"))
 			}*/
 
 			if len(strings.TrimSpace(payment.Card.CardSecurityCode)) == 0 {
-				validator.SetError(this.getMessage("Pagarme.CardSecurityCode"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.CardSecurityCode"), this.getMessage("Pagarme.required"))
 			}
 
 			if len(strings.TrimSpace(payment.Card.CardHolderName)) == 0 {
-				validator.SetError(this.getMessage("Pagarme.CardHolderName"), this.getMessage("Pagarme.rquired"))
+				validator.SetError(this.getMessage("Pagarme.CardHolderName"), this.getMessage("Pagarme.required"))
 			}
   	}
 

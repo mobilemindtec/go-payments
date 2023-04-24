@@ -36,6 +36,7 @@ var (
 
   // asaas
   AsaasAccessToken = ""
+  AsaasApiMode = api.AsaasModeTest
 )
 
 func init(){
@@ -93,10 +94,11 @@ func init(){
   asaasObj := jsonParser.GetJsonObject(mobilemindObj, "asaas")
   AsaasAccessToken = jsonParser.GetJsonString(asaasObj, "api_key")
 
-  fmt.Printf("init picpay token = %v, sallerToken = %v", Token, SallerToken)
-  fmt.Printf("init payzen data: Mode = %v, ShopId = %v, Cert = %v", Mode, ShopId, Cert)
-  fmt.Printf("init pagarme toApiKey = %v, CryptoKey = %v", Token, CryptoKey)  
-  fmt.Printf("init payzen v4 data: Mode = %v, username = %v, Password = %v", ApiMode, username, passwordTest)
+  fmt.Printf("init picpay token = %v, sallerToken = %v\n", Token, SallerToken)
+  fmt.Printf("init payzen data: Mode = %v, ShopId = %v, Cert = %v\n", Mode, ShopId, Cert)
+  fmt.Printf("init pagarme toApiKey = %v, CryptoKey = %v\n", Token, CryptoKey)  
+  fmt.Printf("init payzen v4 data: Mode = %v, username = %v, Password = %v\n", ApiMode, username, passwordTest)
+  fmt.Printf("init asaas: Token = %v\n", AsaasAccessToken)
 }
 
 func GetHostIp() (string) {

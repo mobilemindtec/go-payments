@@ -8,10 +8,6 @@ import (
 	"fmt"
 )
 
-var (  
-  AsaasApiMode = api.AsaasModeTest
-)
-
 
 func fillAsaasCard(payment *asaas.Payment) {
   payment.Card.HolderName = "Ricardo Bocchi"
@@ -111,17 +107,18 @@ func TestAsaasCustomerGet(t *testing.T) {
   Asaas := asaas.NewAsaas("pt-BR", AsaasAccessToken, AsaasApiMode)
   Asaas.Debug = true
 
+  //id := "REF-1429"
   id, _ := client.Get("ClientId").Result()
 
   result, err := Asaas.CustomerGet(id)
 
   if err != nil {
-    t.Errorf("Erro ao criar Customer: %v", err)
+    t.Errorf("Erro ao buscar Customer: %v", err)
     return
   }
 
   if result.Error {
-    t.Errorf("Erro ao criar Customer: %v", result.Message)
+    t.Errorf("Erro ao buscar Customer: %v", result.Message)
     return
   }
 
