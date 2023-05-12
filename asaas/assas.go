@@ -620,7 +620,7 @@ func (this *Asaas) TransferList(filter *DefaultFilter) (*Response, error) {
 func (this *Asaas) AccountCreate(account *Account) (*Response, error) {
   this.Log("Call AccountCreate")
 
-  if !this.onValidAccount(account) {
+  if !this.onValidAccount(account, true) {
     return nil, errors.New(this.getMessage("Asaas.ValidationError"))       
   }
 
@@ -636,6 +636,44 @@ func (this *Asaas) AccountCreate(account *Account) (*Response, error) {
   }
 
   return this.post(account, "accounts", resultProcessor)
+}
+
+func (this *Asaas) AccountUpdate(account *Account) (*Response, error) {
+  this.Log("Call AccountUpdate")
+
+  if !this.onValidAccount(account, false) {
+    return nil, errors.New(this.getMessage("Asaas.ValidationError"))       
+  }
+
+  resultProcessor := func(data []byte, response *Response) error {    
+    accountResult := NewAccount(nil)
+    err := json.Unmarshal(data, accountResult)
+
+    if err == nil {
+      response.AccountResults.Data = append(response.AccountResults.Data, accountResult)
+    }
+
+    return err 
+  }
+
+  return this.post(account, "myAccount/commercialInfo", resultProcessor)
+}
+
+func (this *Asaas) AccountGet() (*Response, error) {
+  this.Log("Call AccountGet")
+
+  resultProcessor := func(data []byte, response *Response) error {    
+    accountResult := NewAccount(nil)
+    err := json.Unmarshal(data, accountResult)
+
+    if err == nil {
+      response.AccountResults.Data = append(response.AccountResults.Data, accountResult)
+    }
+
+    return err
+  }
+
+  return this.get("myAccount/commercialInfo", resultProcessor)
 }
 
 func (this *Asaas) AccountList() (*Response, error) {
@@ -826,7 +864,7 @@ func (this *Asaas) onValid(entity interface{}) bool {
   return true
 }
 
-func (this *Asaas) onValidAccount(account *Account) bool {
+func (this *Asaas) onValidAccount(account *Account, validateBankAccount bool) bool {
 
   items := []interface{}{
     account,    
@@ -839,13 +877,24 @@ func (this *Asaas) onValidAccount(account *Account) bool {
 
   this.EntityValidatorResult, _ = this.EntityValidator.ValidMult(items, func (validator *validation.Validation) {
 
-    if account.BankAccount == nil {
-      validator.SetError("BankAccount", this.getMessage("Asaas.rquired")) 
-      validator.SetError("Bank", this.getMessage("Asaas.rquired")) 
-    }
+    if validateBankAccount {
+      if account.BankAccount == nil {
+        validator.SetError("BankAccount", this.getMessage("Asaas.rquired")) 
+        validator.SetError("Bank", this.getMessage("Asaas.rquired")) 
+      }
 
-    if account.BankAccount != nil && len(account.BankAccount.Bank) == 0 {
-      validator.SetError("Bank", this.getMessage("Asaas.rquired")) 
+      if account.BankAccount != nil && len(account.BankAccount.Bank) == 0 {
+        validator.SetError("Bank", this.getMessage("Asaas.rquired")) 
+      }
+
+      if len(account.LoginEmail) == 0 {
+        validator.SetError("LoginEmail", this.getMessage("Asaas.rquired"))  
+      }
+
+    } else { 
+      if len(account.PersonType) == 0 {
+       validator.SetError("PersonType", this.getMessage("Asaas.rquired"))  
+      }
     }
 
   })

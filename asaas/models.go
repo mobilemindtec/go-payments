@@ -70,6 +70,13 @@ const (
 	ASSOCIATION CompanyType = "ASSOCIATION"
 )
 
+type PersonType string 
+
+const (
+	FISICA PersonType = "FISICA"
+	JURIDICA PersonType = "JURIDICA"
+)
+
 type WebhookObject struct {
   Url string `json:"url" valid:"Required"`
   Email string `json:"email" valid:"Required"`
@@ -131,7 +138,7 @@ func NewBankAccountSimple(bank string, bankAccountType api.BankAccountType) *Ban
 type Account struct {
 	Name string `json:"name" valid:"Required"`
 	Email string `json:"email" valid:"Required"`
-	LoginEmail string `json:"loginEmail" valid:"Required"`
+	LoginEmail string `json:"loginEmail,omitempty" valid:""`
 	CpfCnpj string `json:"cpfCnpj" valid:"Required"`
 	CompanyType CompanyType `json:"companyType"`
 	Phone string `json:"phone" valid:"Required"`
@@ -141,14 +148,20 @@ type Account struct {
 	Complement string `json:"complement"`
 	Province string `json:"province" valid:"Required"` // bairro
 	PostalCode string `json:"postalCode" valid:"Required"` // bairro
-	BankAccount *BankAccountSimple `json:"bankAccount" valid:"Required"`
+	BankAccount *BankAccountSimple `json:"bankAccount,omitempty" valid:""`
 	// result
 	WalletId string `json:"walletId,omitempty"`
 	ApiKey string `json:"apiKey,omitempty"`
 	//City string `json:"city,omitempty"`
 	State string `json:"state,omitempty"`
 	Country string `json:"country,omitempty"`
-	PersonType string `json:"personType,omitempty"`	
+	//PersonType string `json:"personType,omitempty"`	
+
+	CompanyName string `json:"companyName,omitempty"`
+
+	PersonType PersonType `json:"personType,omitempty"`
+
+	//DenialReason string `json:"denialReason,omitempty"`
 }
 
 func NewAccount(bankAccount *BankAccountSimple) *Account{
