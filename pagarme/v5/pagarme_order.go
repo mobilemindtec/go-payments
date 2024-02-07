@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/mobilemindtec/go-utils/beego/validator"
 	"github.com/mobilemindtec/go-utils/v2/either"
@@ -26,14 +25,9 @@ func (this *PagarmeOrder) Create(order *Order) *either.Either[*ErrorResponse, *O
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Order)
-		return json.Unmarshal(data, response.Content)
-	}
-
 	return either.
 		MapIf(
-			this.post(order, "/orders", parser),
+			this.post("/orders", order, createParser[Order]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -44,21 +38,15 @@ func (this *PagarmeOrder) Create(order *Order) *either.Either[*ErrorResponse, *O
 
 func (this *PagarmeOrder) Get(orderId string) *either.Either[*ErrorResponse, OrderPtr] {
 
-	if len(orderId) == 0 {
-		return either.Left[*ErrorResponse, OrderPtr](
-			NewErrorResponse("order id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Order)
-		return json.Unmarshal(data, response.Content)
+	if empty, left := checkEmpty[OrderPtr]("order id", orderId); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/orders/%v", orderId)
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParser[Order]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -69,16 +57,11 @@ func (this *PagarmeOrder) Get(orderId string) *either.Either[*ErrorResponse, Ord
 
 func (this *PagarmeOrder) List(query *OrderQuery) *either.Either[*ErrorResponse, Orders] {
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Content[Orders])
-		return json.Unmarshal(data, response.Content)
-	}
-
 	uri := fmt.Sprintf("/orders/?%v", url.QueryEscape(query.UrlQuery()))
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParserContent[Orders]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},

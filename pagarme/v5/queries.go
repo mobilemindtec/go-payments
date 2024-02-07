@@ -127,3 +127,18 @@ func (this *ChargeQuery) UrlQuery() string {
 func NewChargeQuery() *ChargeQuery {
 	return &ChargeQuery{}
 }
+
+type TransferQuery struct {
+	Status       ChargeStatus `jsonp:"status,omitempty"`
+	CreatedSince time.Time    `jsonp:"created_since,date,omitempty"`
+	CreatedUntil time.Time    `jsonp:"created_until,date,omitempty"`
+}
+
+func (this *TransferQuery) UrlQuery() string {
+	m, _ := json.EncodeAsMap(this)
+	return maps.ToUrlQuery(m)
+}
+
+func NewTransferQuery() *TransferQuery {
+	return &TransferQuery{}
+}

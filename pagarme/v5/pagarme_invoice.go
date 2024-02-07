@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/mobilemindtec/go-utils/v2/either"
 )
@@ -18,21 +17,15 @@ func NewPagarmeInvoice(lang string, auth *Authentication) *PagarmeInvoice {
 
 func (this *PagarmeInvoice) Get(id string) *either.Either[*ErrorResponse, InvoicePtr] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, InvoicePtr](
-			NewErrorResponse("invoice id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Invoice)
-		return json.Unmarshal(data, response.Content)
+	if empty, left := checkEmpty[InvoicePtr]("invoice id", id); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/customers/%v/invoices/%v", id)
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParser[Invoice]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -42,17 +35,11 @@ func (this *PagarmeInvoice) Get(id string) *either.Either[*ErrorResponse, Invoic
 }
 
 func (this *PagarmeInvoice) List(query *InvoiceQuery) *either.Either[*ErrorResponse, Invoices] {
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Content[Invoices])
-		return json.Unmarshal(data, response.Content)
-	}
-
 	uri := fmt.Sprintf("/invoices?%v", query.UrlQuery())
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParserContent[Invoices]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},

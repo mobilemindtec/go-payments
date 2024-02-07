@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/mobilemindtec/go-utils/v2/either"
 	"github.com/mobilemindtec/go-utils/v2/maps"
@@ -20,14 +19,8 @@ func NewPagarmeCharge(lang string, auth *Authentication) *PagarmeCharge {
 
 func (this *PagarmeCharge) Capture(id string, code string) *either.Either[*ErrorResponse, ChargePtr] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, ChargePtr](
-			NewErrorResponse("charge id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Charge)
-		return json.Unmarshal(data, response.Content)
+	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/charges/%v/capture", id)
@@ -36,7 +29,7 @@ func (this *PagarmeCharge) Capture(id string, code string) *either.Either[*Error
 
 	return either.
 		MapIf(
-			this.post(payload, uri, parser),
+			this.post(uri, payload, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -47,21 +40,15 @@ func (this *PagarmeCharge) Capture(id string, code string) *either.Either[*Error
 
 func (this *PagarmeCharge) Get(id string) *either.Either[*ErrorResponse, ChargePtr] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, ChargePtr](
-			NewErrorResponse("charge id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Charge)
-		return json.Unmarshal(data, response.Content)
+	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/charges/%v", id)
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -72,9 +59,8 @@ func (this *PagarmeCharge) Get(id string) *either.Either[*ErrorResponse, ChargeP
 
 func (this *PagarmeCharge) UpdateCard(id string, updateData ChargeUpdate) *either.Either[*ErrorResponse, ChargePtr] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, ChargePtr](
-			NewErrorResponse("charge id is required"))
+	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+		return left
 	}
 
 	if (len(updateData.CardId) == 0 && len(updateData.CardToken) == 0 && updateData.Card == nil) ||
@@ -83,16 +69,11 @@ func (this *PagarmeCharge) UpdateCard(id string, updateData ChargeUpdate) *eithe
 			NewErrorResponse("card id, card token or card is required"))
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Charge)
-		return json.Unmarshal(data, response.Content)
-	}
-
 	uri := fmt.Sprintf("/charges/%v/card", id)
 
 	return either.
 		MapIf(
-			this.patch(uri, updateData, parser),
+			this.patch(uri, updateData, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -103,9 +84,8 @@ func (this *PagarmeCharge) UpdateCard(id string, updateData ChargeUpdate) *eithe
 
 func (this *PagarmeCharge) UpdateDueDate(id string, dueDate time.Time) *either.Either[*ErrorResponse, ChargePtr] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, ChargePtr](
-			NewErrorResponse("charge id is required"))
+	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+		return left
 	}
 
 	if dueDate.IsZero() {
@@ -113,17 +93,12 @@ func (this *PagarmeCharge) UpdateDueDate(id string, dueDate time.Time) *either.E
 			NewErrorResponse("dueDate id is required"))
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Charge)
-		return json.Unmarshal(data, response.Content)
-	}
-
 	payload := maps.JSON("due_date", dueDate.Format(DateLayout))
 	uri := fmt.Sprintf("/charges/%v/due-date", id)
 
 	return either.
 		MapIf(
-			this.patch(uri, payload, parser),
+			this.patch(uri, payload, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -134,21 +109,15 @@ func (this *PagarmeCharge) UpdateDueDate(id string, dueDate time.Time) *either.E
 
 func (this *PagarmeCharge) Cancel(id string) *either.Either[*ErrorResponse, ChargePtr] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, ChargePtr](
-			NewErrorResponse("charge id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Charge)
-		return json.Unmarshal(data, response.Content)
+	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/charges/%v", id)
 
 	return either.
 		MapIf(
-			this.delete(uri, parser),
+			this.delete(uri, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -159,14 +128,8 @@ func (this *PagarmeCharge) Cancel(id string) *either.Either[*ErrorResponse, Char
 
 func (this *PagarmeCharge) ConfirmPayment(id string, code string, description string) *either.Either[*ErrorResponse, ChargePtr] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, ChargePtr](
-			NewErrorResponse("charge id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Charge)
-		return json.Unmarshal(data, response.Content)
+	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/charges/%v/confirm-payment", id)
@@ -175,7 +138,7 @@ func (this *PagarmeCharge) ConfirmPayment(id string, code string, description st
 
 	return either.
 		MapIf(
-			this.post(payload, uri, parser),
+			this.post(uri, payload, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -186,14 +149,8 @@ func (this *PagarmeCharge) ConfirmPayment(id string, code string, description st
 
 func (this *PagarmeCharge) Retry(id string) *either.Either[*ErrorResponse, ChargePtr] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, ChargePtr](
-			NewErrorResponse("charge id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Charge)
-		return json.Unmarshal(data, response.Content)
+	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/charges/%v/retry", id)
@@ -202,7 +159,7 @@ func (this *PagarmeCharge) Retry(id string) *either.Either[*ErrorResponse, Charg
 
 	return either.
 		MapIf(
-			this.post(payload, uri, parser),
+			this.post(uri, payload, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -211,22 +168,17 @@ func (this *PagarmeCharge) Retry(id string) *either.Either[*ErrorResponse, Charg
 			})
 }
 
-func (this *PagarmeCharge) List(query *ChargeQuery) *either.Either[*ErrorResponse, ChargePtr] {
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Content[Charges])
-		return json.Unmarshal(data, response.Content)
-	}
+func (this *PagarmeCharge) List(query *ChargeQuery) *either.Either[*ErrorResponse, Charges] {
 
 	uri := fmt.Sprintf("/charges?%v", query.UrlQuery())
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParserContent[Charges]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) ChargePtr {
-				return e.UnwrapRight().Content.(ChargePtr)
+			func(e *either.Either[error, *Response]) Charges {
+				return e.UnwrapRight().Content.(*Content[Charges]).Data
 			})
 }

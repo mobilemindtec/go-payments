@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/mobilemindtec/go-utils/beego/validator"
 	"github.com/mobilemindtec/go-utils/v2/either"
@@ -34,14 +33,9 @@ func (this *PagarmeSubscription) Create(subscription SubscriptionPtr) *either.Ei
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Subscription)
-		return json.Unmarshal(data, response.Content)
-	}
-
 	return either.
 		MapIf(
-			this.post(subscription, "/subscriptions", parser),
+			this.post("/subscriptions", subscription, createParser[Subscription]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -52,21 +46,15 @@ func (this *PagarmeSubscription) Create(subscription SubscriptionPtr) *either.Ei
 
 func (this *PagarmeSubscription) Get(id string) *either.Either[*ErrorResponse, SubscriptionPtr] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, SubscriptionPtr](
-			NewErrorResponse("subscription id is required"))
+	if empty, left := checkEmpty[SubscriptionPtr]("subscription id", id); empty {
+		return left
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Subscription)
-		return json.Unmarshal(data, response.Content)
-	}
-
-	url := fmt.Sprintf("/subscriptions/%v", id)
+	uri := fmt.Sprintf("/subscriptions/%v", id)
 
 	return either.
 		MapIf(
-			this.get(url, parser),
+			this.get(uri, createParser[Subscription]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -77,16 +65,11 @@ func (this *PagarmeSubscription) Get(id string) *either.Either[*ErrorResponse, S
 
 func (this *PagarmeSubscription) List(query *SubscriptionQuery) *either.Either[*ErrorResponse, *Content[Subscriptions]] {
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Content[Subscriptions])
-		return json.Unmarshal(data, response.Content)
-	}
-
-	url := fmt.Sprintf("/subscriptions/?%v", query.UrlQuery())
+	uri := fmt.Sprintf("/subscriptions/?%v", query.UrlQuery())
 
 	return either.
 		MapIf(
-			this.get(url, parser),
+			this.get(uri, createParserContent[Subscriptions]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -97,16 +80,11 @@ func (this *PagarmeSubscription) List(query *SubscriptionQuery) *either.Either[*
 
 func (this *PagarmeSubscription) ListItems(id string) *either.Either[*ErrorResponse, *Content[SubscriptionItems]] {
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Content[SubscriptionItems])
-		return json.Unmarshal(data, response.Content)
-	}
-
-	url := fmt.Sprintf("/subscriptions/%v/items", id)
+	uri := fmt.Sprintf("/subscriptions/%v/items", id)
 
 	return either.
 		MapIf(
-			this.get(url, parser),
+			this.get(uri, createParserContent[SubscriptionItems]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -117,17 +95,16 @@ func (this *PagarmeSubscription) ListItems(id string) *either.Either[*ErrorRespo
 
 func (this *PagarmeSubscription) Cancel(id string, cancelPendingInvoices CancelPendingInvoices) *either.Either[*ErrorResponse, bool] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, bool](
-			NewErrorResponse("subscription id is required"))
+	if empty, left := checkEmpty[bool]("subscription id", id); empty {
+		return left
 	}
 
-	url := fmt.Sprintf("/subscriptions/%v", id)
+	uri := fmt.Sprintf("/subscriptions/%v", id)
 	payload := maps.JSON("cancel_pending_invoices", cancelPendingInvoices)
 
 	return either.
 		MapIf(
-			this.delete(url, payload),
+			this.delete(uri, payload),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -138,9 +115,8 @@ func (this *PagarmeSubscription) Cancel(id string, cancelPendingInvoices CancelP
 
 func (this *PagarmeSubscription) UpdateCard(updateData *SubscriptionUpdate) *either.Either[*ErrorResponse, bool] {
 
-	if len(updateData.Id) == 0 {
-		return either.Left[*ErrorResponse, bool](
-			NewErrorResponse("subscription id is required"))
+	if empty, left := checkEmpty[bool]("subscription id", updateData.Id); empty {
+		return left
 	}
 
 	if (len(updateData.CardId) == 0 && updateData.Card == nil) || (len(updateData.CardId) > 0 && updateData.Card != nil) {
@@ -148,11 +124,11 @@ func (this *PagarmeSubscription) UpdateCard(updateData *SubscriptionUpdate) *eit
 			NewErrorResponse("card id or card is required"))
 	}
 
-	url := fmt.Sprintf("/subscriptions/%v/card", updateData.Id)
+	uri := fmt.Sprintf("/subscriptions/%v/card", updateData.Id)
 
 	return either.
 		MapIf(
-			this.patch(url, updateData),
+			this.patch(uri, updateData),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -163,9 +139,8 @@ func (this *PagarmeSubscription) UpdateCard(updateData *SubscriptionUpdate) *eit
 
 func (this *PagarmeSubscription) UpdatePaymentMethod(updateData *SubscriptionUpdate) *either.Either[*ErrorResponse, bool] {
 
-	if len(updateData.Id) == 0 {
-		return either.Left[*ErrorResponse, bool](
-			NewErrorResponse("subscription id is required"))
+	if empty, left := checkEmpty[bool]("subscription id", updateData.Id); empty {
+		return left
 	}
 
 	if len(updateData.PaymentMethod) == 0 {
@@ -178,11 +153,11 @@ func (this *PagarmeSubscription) UpdatePaymentMethod(updateData *SubscriptionUpd
 			NewErrorResponse("card is or card token is required"))
 	}
 
-	url := fmt.Sprintf("/subscriptions/%v/payment-method", updateData.Id)
+	uri := fmt.Sprintf("/subscriptions/%v/payment-method", updateData.Id)
 
 	return either.
 		MapIf(
-			this.patch(url, updateData),
+			this.patch(uri, updateData),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -193,26 +168,15 @@ func (this *PagarmeSubscription) UpdatePaymentMethod(updateData *SubscriptionUpd
 
 func (this *PagarmeSubscription) UpdateItem(subscriptionId string, itemId string, item SubscriptionItemPtr) *either.Either[*ErrorResponse, SubscriptionItemPtr] {
 
-	if len(subscriptionId) == 0 {
-		return either.Left[*ErrorResponse, SubscriptionItemPtr](
-			NewErrorResponse("subscription id is required"))
+	if empty, left := checkEmpty[SubscriptionItemPtr]("subscription id and subscription item id", subscriptionId, itemId); empty {
+		return left
 	}
 
-	if len(itemId) == 0 {
-		return either.Left[*ErrorResponse, SubscriptionItemPtr](
-			NewErrorResponse("subscription item id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(SubscriptionItem)
-		return json.Unmarshal(data, response.Content)
-	}
-
-	url := fmt.Sprintf("/subscriptions/%v/items/%v", subscriptionId, itemId)
+	uri := fmt.Sprintf("/subscriptions/%v/items/%v", subscriptionId, itemId)
 
 	return either.
 		MapIf(
-			this.put(item, url, parser),
+			this.put(uri, item, createParser[SubscriptionPtr]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},

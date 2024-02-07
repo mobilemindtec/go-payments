@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/mobilemindtec/go-utils/beego/validator"
 	"github.com/mobilemindtec/go-utils/v2/either"
@@ -22,9 +21,8 @@ func NewPagarmeCard(lang string, auth *Authentication) *PagarmeCard {
 
 func (this *PagarmeCard) Create(customerId string, card CardPtr) *either.Either[*ErrorResponse, CardPtr] {
 
-	if len(customerId) == 0 {
-		return either.Left[*ErrorResponse, CardPtr](
-			NewErrorResponse("customer id is required"))
+	if empty, left := checkEmpty[CardPtr](customerId, "customer id"); empty {
+		return left
 	}
 
 	if !this.validate(card) {
@@ -32,16 +30,11 @@ func (this *PagarmeCard) Create(customerId string, card CardPtr) *either.Either[
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Card)
-		return json.Unmarshal(data, response.Content)
-	}
-
 	uri := fmt.Sprintf("/customers/%v/cards", customerId)
 
 	return either.
 		MapIf(
-			this.post(card, uri, parser),
+			this.post(uri, card, createParser[Card]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -52,21 +45,15 @@ func (this *PagarmeCard) Create(customerId string, card CardPtr) *either.Either[
 
 func (this *PagarmeCard) Get(customerId string, cardId string) *either.Either[*ErrorResponse, CardPtr] {
 
-	if len(customerId) == 0 || len(cardId) == 0 {
-		return either.Left[*ErrorResponse, CardPtr](
-			NewErrorResponse("customer id and card id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Card)
-		return json.Unmarshal(data, response.Content)
+	if empty, left := checkEmpty[CardPtr]("customer id and card id", customerId, cardId); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/customers/%v/cards/%v", customerId, cardId)
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParser[Card]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -77,21 +64,15 @@ func (this *PagarmeCard) Get(customerId string, cardId string) *either.Either[*E
 
 func (this *PagarmeCard) List(customerId string) *either.Either[*ErrorResponse, Cards] {
 
-	if len(customerId) == 0 {
-		return either.Left[*ErrorResponse, Cards](
-			NewErrorResponse("customer id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Content[Cards])
-		return json.Unmarshal(data, response.Content)
+	if empty, left := checkEmpty[Cards]("customer id", customerId); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/customers/%v/cards", customerId)
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParserContent[Cards]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -102,14 +83,8 @@ func (this *PagarmeCard) List(customerId string) *either.Either[*ErrorResponse, 
 
 func (this *PagarmeCard) Update(customerId string, card CardPtr) *either.Either[*ErrorResponse, CardPtr] {
 
-	if len(customerId) == 0 {
-		return either.Left[*ErrorResponse, CardPtr](
-			NewErrorResponse("customer id is required"))
-	}
-
-	if len(card.Id) == 0 {
-		return either.Left[*ErrorResponse, CardPtr](
-			NewErrorResponse("card id is required"))
+	if empty, left := checkEmpty[CardPtr]("customer id and card id", customerId, card.Id); empty {
+		return left
 	}
 
 	if !this.validate(card) {
@@ -117,16 +92,11 @@ func (this *PagarmeCard) Update(customerId string, card CardPtr) *either.Either[
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Card)
-		return json.Unmarshal(data, response.Content)
-	}
-
 	uri := fmt.Sprintf("/customers/%v/cards/%v", customerId, card.Id)
 
 	return either.
 		MapIf(
-			this.put(card, uri, parser),
+			this.put(uri, card, createParser[Card]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -137,9 +107,8 @@ func (this *PagarmeCard) Update(customerId string, card CardPtr) *either.Either[
 
 func (this *PagarmeCard) Delete(customerId string, cardId string) *either.Either[*ErrorResponse, bool] {
 
-	if len(customerId) == 0 || len(cardId) == 0 {
-		return either.Left[*ErrorResponse, bool](
-			NewErrorResponse("customer id and card id is required"))
+	if empty, left := checkEmpty[bool]("customer id and card id", customerId, cardId); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/customers/%v/cards/%v", customerId, cardId)
@@ -157,16 +126,15 @@ func (this *PagarmeCard) Delete(customerId string, cardId string) *either.Either
 
 func (this *PagarmeCard) Renew(customerId string, cardId string) *either.Either[*ErrorResponse, bool] {
 
-	if len(customerId) == 0 || len(cardId) == 0 {
-		return either.Left[*ErrorResponse, bool](
-			NewErrorResponse("customer id and card id is required"))
+	if empty, left := checkEmpty[bool]("customer id and card id", customerId, cardId); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/customers/%v/cards/%v/renew", customerId, cardId)
 
 	return either.
 		MapIf(
-			this.post(nil, uri),
+			this.post(uri, nil),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},

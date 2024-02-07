@@ -23,6 +23,8 @@ type SchemeType string
 type OperationType string
 type InvoiceStatus string
 type ChargeStatus string
+type TransferInterval string
+type BankAccountType string
 
 const (
 	BRL        Currency = "BRL"
@@ -123,6 +125,17 @@ const (
 	ChargeFailed     ChargeStatus = "failed"
 	ChargeOverpaid   ChargeStatus = "overpaid"
 	ChargeUnderpaid  ChargeStatus = "underpaid"
+)
+
+const (
+	Daily   TransferInterval = "daily"
+	Weekly  TransferInterval = "weekly"
+	Monthly TransferInterval = "monthly"
+)
+
+const (
+	Checking BankAccountType = "checking" // corrente
+	Savings  BankAccountType = "savings"  // poupança
 )
 
 type Order struct {
@@ -762,6 +775,68 @@ type LastTransaction struct {
 	AntifraudResponse   *AntifraudResponse `json:"antifraud_response"`
 	Metadata            map[string]string  `json:"metadata"`
 }
+
+type TransferSettings struct {
+	TransferEnabled  bool             `json:"transfer_enabled"`
+	TransferInterval TransferInterval `json:"transfer_interval"`
+	TransferDay      int64            `json:"transfer_day,omitempty"`
+}
+
+type BankAccount struct {
+	HolderName        string          `json:"holder_name" valid:"Required;MaxSize(30)"`
+	Bank              string          `json:"bank" valid:"Required;MaxSize(3)"`
+	BranchNumber      string          `json:"branch_number" valid:"Required;MaxSize(4)"`
+	BranchCheckDigit  string          `json:"branch_check_digit" valid:"Required;MaxSize(1)"`
+	AccountNumber     string          `json:"account_number" valid:"Required;MaxSize(13)"`
+	AccountCheckDigit string          `json:"account_check_digit" valid:"Required;MaxSize(2)"`
+	HolderType        CustomerType    `json:"holder_type" valid:"Required"`
+	HolderDocument    string          `json:"holder_document" valid:"Required"`
+	Type              BankAccountType `json:"type" valid:"Required"`
+}
+
+type Recipient struct {
+	Id                 string            `json:"id,omitempty"`
+	Name               string            `json:"name" valid:"Required;MaxSize(128)"`
+	Email              string            `json:"email" valid:"Required;MaxSize(64)"`
+	Description        string            `json:"description" valid:"Required;MaxSize(256)"`
+	Document           string            `json:"document" valid:"Required;MaxSize(16)"`
+	Type               CustomerType      `json:"type" valid:"Required"`
+	Code               string            `json:"code" valid:"Required"`
+	TransferSettings   *TransferSettings `json:"transfer_settings" valid:"Required"`
+	DefaultBankAccount BankAccount       `json:"default_bank_account" valid:"Required"`
+	Metadata           map[string]string `json:"metadata"`
+}
+
+type RecipientPtr = *Recipient
+type Recipients = []RecipientPtr
+
+type RecipientUpdate struct {
+	Email       string       `json:"email" valid:"Required;MaxSize(64)"`
+	Description string       `json:"description" valid:"Required;MaxSize(256)"`
+	Type        CustomerType `json:"type" valid:"Required"`
+}
+
+type Balance struct {
+	Currency           string `json:"currency"`
+	AvailableAmount    int64  `json:"available_amount"`
+	WaitingFundsAmount int64  `json:"waiting_funds_amount"`
+	TransferredAmount  int64  `json:"transferred_amount"`
+}
+
+type BalancePtr = *Balance
+
+type Transfer struct {
+	Id          string       `json:"id"`
+	Amount      int64        `json:"amount"`
+	Status      string       `json:"status"`
+	CreatedAt   string       `json:"created_at"`
+	UpdatedAt   string       `json:"updated_at"`
+	BankAccount *BankAccount `json:"bank_account"`
+	Recipient   *Recipient   `json:"recipient"`
+}
+
+type TransferPtr = *Transfer
+type Transfers = []TransferPtr
 
 type GatewayResponse struct {
 	Code   string   `json:"code"`

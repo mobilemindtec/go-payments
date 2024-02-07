@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/mobilemindtec/go-utils/v2/either"
 	"net/url"
@@ -24,14 +23,9 @@ func (this *PagarmeCustomer) Create(customer CustomerPtr) *either.Either[*ErrorR
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Customer)
-		return json.Unmarshal(data, response.Content)
-	}
-
 	return either.
 		MapIf(
-			this.post(customer, "/customers", parser),
+			this.post("/customers", customer, createParser[Customer]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -47,19 +41,15 @@ func (this *PagarmeCustomer) Update(customer CustomerPtr) *either.Either[*ErrorR
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
-	if len(customer.Id) == 0 {
-		return either.Left[*ErrorResponse, CustomerPtr](
-			NewErrorResponse("id is required"))
+	if empty, left := checkEmpty[CustomerPtr]("customer id", customer.Id); empty {
+		return left
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Customer)
-		return json.Unmarshal(data, response.Content)
-	}
+	uri := fmt.Sprintf("/customers/%v", customer.Id)
 
 	return either.
 		MapIf(
-			this.put(customer, fmt.Sprintf("/customers/%v", customer.Id), parser),
+			this.put(uri, customer, createParser[Customer]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -70,19 +60,15 @@ func (this *PagarmeCustomer) Update(customer CustomerPtr) *either.Either[*ErrorR
 
 func (this *PagarmeCustomer) Get(customerId string) *either.Either[*ErrorResponse, CustomerPtr] {
 
-	if len(customerId) == 0 {
-		return either.Left[*ErrorResponse, CustomerPtr](
-			NewErrorResponse("id is required"))
+	if empty, left := checkEmpty[CustomerPtr]("customer id", customerId); empty {
+		return left
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Customer)
-		return json.Unmarshal(data, response.Content)
-	}
+	uri := fmt.Sprintf("/customers/%v", customerId)
 
 	return either.
 		MapIf(
-			this.get(fmt.Sprintf("/customers/%v", customerId), parser),
+			this.get(uri, createParser[Customer]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -93,16 +79,11 @@ func (this *PagarmeCustomer) Get(customerId string) *either.Either[*ErrorRespons
 
 func (this *PagarmeCustomer) List(query *CustomerQuery) *either.Either[*ErrorResponse, Customers] {
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Content[Customers])
-		return json.Unmarshal(data, response.Content)
-	}
-
 	uri := fmt.Sprintf("/customers/?%v", url.QueryEscape(query.UrlQuery()))
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParserContent[Customers]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},

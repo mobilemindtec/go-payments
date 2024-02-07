@@ -1,7 +1,6 @@
 package v5
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/mobilemindtec/go-utils/beego/validator"
 	"github.com/mobilemindtec/go-utils/lists"
@@ -27,14 +26,9 @@ func (this *PagarmePlan) Create(plan *Plan) *either.Either[*ErrorResponse, PlanP
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Plan)
-		return json.Unmarshal(data, response.Content)
-	}
-
 	return either.
 		MapIf(
-			this.post(plan, "/plans", parser),
+			this.post("/plans", plan, createParser[Plan]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -45,21 +39,15 @@ func (this *PagarmePlan) Create(plan *Plan) *either.Either[*ErrorResponse, PlanP
 
 func (this *PagarmePlan) Get(id string) *either.Either[*ErrorResponse, PlanPtr] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, PlanPtr](
-			NewErrorResponse("plan id is required"))
-	}
-
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Plan)
-		return json.Unmarshal(data, response.Content)
+	if empty, left := checkEmpty[PlanPtr]("plan id", id); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/plans/%v", id)
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParser[Plan]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -70,16 +58,11 @@ func (this *PagarmePlan) Get(id string) *either.Either[*ErrorResponse, PlanPtr] 
 
 func (this *PagarmePlan) List(query *PlanQuery) *either.Either[*ErrorResponse, Plans] {
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Content[Plans])
-		return json.Unmarshal(data, response.Content)
-	}
-
 	uri := fmt.Sprintf("/plans/?%v", url.QueryEscape(query.UrlQuery()))
 
 	return either.
 		MapIf(
-			this.get(uri, parser),
+			this.get(uri, createParserContent[Plan]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -90,9 +73,8 @@ func (this *PagarmePlan) List(query *PlanQuery) *either.Either[*ErrorResponse, P
 
 func (this *PagarmePlan) Update(plan PlanPtr) *either.Either[*ErrorResponse, PlanPtr] {
 
-	if len(plan.Id) == 0 {
-		return either.Left[*ErrorResponse, PlanPtr](
-			NewErrorResponse("plan id is required"))
+	if empty, left := checkEmpty[PlanPtr]("plan id", plan.Id); empty {
+		return left
 	}
 
 	if !this.validate(plan) {
@@ -100,16 +82,11 @@ func (this *PagarmePlan) Update(plan PlanPtr) *either.Either[*ErrorResponse, Pla
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
-	parser := func(data []byte, response *Response) error {
-		response.Content = new(Plan)
-		return json.Unmarshal(data, response.Content)
-	}
-
 	uri := fmt.Sprintf("/plans/%v", plan.Id)
 
 	return either.
 		MapIf(
-			this.put(plan, uri, parser),
+			this.put(uri, plan, createParser[Plan]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
@@ -120,9 +97,8 @@ func (this *PagarmePlan) Update(plan PlanPtr) *either.Either[*ErrorResponse, Pla
 
 func (this *PagarmePlan) Delete(id string) *either.Either[*ErrorResponse, bool] {
 
-	if len(id) == 0 {
-		return either.Left[*ErrorResponse, bool](
-			NewErrorResponse("customer id and card id is required"))
+	if empty, left := checkEmpty[bool]("plan id", id); empty {
+		return left
 	}
 
 	uri := fmt.Sprintf("/plans/%v", id)

@@ -7,6 +7,8 @@ type PagarmeApi struct {
 	Plan         *PagarmePlan
 	Subscription *PagarmeSubscription
 	Invoice      *PagarmeInvoice
+	Charge       *PagarmeCharge
+	Recipient    *PagarmeRecipient
 }
 
 func NewPagarmeApi(lang string, auth *Authentication) *PagarmeApi {
@@ -28,6 +30,12 @@ func NewPagarmeApi(lang string, auth *Authentication) *PagarmeApi {
 	invoice := &PagarmeInvoice{}
 	invoice.Pagarme.init(lang, auth)
 
+	charge := &PagarmeCharge{}
+	charge.Pagarme.init(lang, auth)
+
+	recipient := &PagarmeRecipient{}
+	recipient.Pagarme.init(lang, auth)
+
 	return &PagarmeApi{
 		Card:         card,
 		Customer:     customer,
@@ -35,6 +43,8 @@ func NewPagarmeApi(lang string, auth *Authentication) *PagarmeApi {
 		Plan:         plan,
 		Subscription: subscription,
 		Invoice:      invoice,
+		Charge:       charge,
+		Recipient:    recipient,
 	}
 }
 

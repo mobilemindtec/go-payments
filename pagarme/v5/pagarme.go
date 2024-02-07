@@ -72,29 +72,29 @@ func (this *Pagarme) init(lang string, auth *Authentication) *Pagarme {
 // HTTP
 func (this *Pagarme) get(
 	action string, parsers ...ResponseParser) *either.Either[error, *Response] {
-	return this.request(nil, action, "GET", tryParser(parsers))
+	return this.request("GET", action, nil, tryParser(parsers))
 }
 
 func (this *Pagarme) delete(action string, payloads ...interface{}) *either.Either[error, *Response] {
-	return this.request(tryPayload(payloads), action, "DELETE", nil)
+	return this.request("DELETE", action, tryPayload(payloads), nil)
 }
 
 func (this *Pagarme) patch(action string, payload interface{}, parsers ...ResponseParser) *either.Either[error, *Response] {
-	return this.request(payload, action, "PATCH", tryParser(parsers))
+	return this.request("PATCH", action, payload, tryParser(parsers))
 }
 
 func (this *Pagarme) post(
-	data interface{}, action string, parsers ...ResponseParser) *either.Either[error, *Response] {
-	return this.request(data, action, "POST", tryParser(parsers))
+	action string, data interface{}, parsers ...ResponseParser) *either.Either[error, *Response] {
+	return this.request("POST", action, data, tryParser(parsers))
 }
 
 func (this *Pagarme) put(
-	data interface{}, action string, parsers ...ResponseParser) *either.Either[error, *Response] {
-	return this.request(data, action, "PUT", tryParser(parsers))
+	action string, data interface{}, parsers ...ResponseParser) *either.Either[error, *Response] {
+	return this.request("PUT", action, data, tryParser(parsers))
 }
 
 func (this *Pagarme) request(
-	data interface{}, action string, method string, parser ResponseParser) *either.Either[error, *Response] {
+	method string, action string, data interface{}, parser ResponseParser) *either.Either[error, *Response] {
 
 	response := NewResponse()
 
@@ -293,4 +293,28 @@ func tryParser(parsers []ResponseParser) ResponseParser {
 		parser = parsers[0]
 	}
 	return parser
+}
+
+func createParser[T any]() func([]byte, *Response) error {
+	return func(data []byte, response *Response) error {
+		response.Content = new(T)
+		return json.Unmarshal(data, response.Content)
+	}
+}
+
+func createParserContent[T any]() func([]byte, *Response) error {
+	return func(data []byte, response *Response) error {
+		response.Content = new(Content[T])
+		return json.Unmarshal(data, response.Content)
+	}
+}
+
+func checkEmpty[T any](label string, values ...string) (bool, *either.Either[*ErrorResponse, T]) {
+	for _, value := range values {
+		if len(value) == 0 {
+			return true, either.Left[*ErrorResponse, T](
+				NewErrorResponse(fmt.Sprintf("%v is required", label)))
+		}
+	}
+	return false, nil
 }
