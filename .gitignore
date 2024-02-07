@@ -3,3 +3,4 @@
 .keys
 go.sum
 certs.json
+.idea
