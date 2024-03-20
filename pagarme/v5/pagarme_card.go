@@ -9,6 +9,11 @@ import (
 	"reflect"
 )
 
+type SuccessCard = *Success[CardPtr]
+type SuccessCards = *Success[Cards]
+
+type SuccessBool = *Success[bool]
+
 type PagarmeCard struct {
 	Pagarme
 }
@@ -19,14 +24,14 @@ func NewPagarmeCard(lang string, auth *Authentication) *PagarmeCard {
 	return p
 }
 
-func (this *PagarmeCard) Create(customerId string, card CardPtr) *either.Either[*ErrorResponse, CardPtr] {
+func (this *PagarmeCard) Create(customerId string, card CardPtr) *either.Either[*ErrorResponse, SuccessCard] {
 
-	if empty, left := checkEmpty[CardPtr](customerId, "customer id"); empty {
+	if empty, left := checkEmpty[SuccessCard](customerId, "customer id"); empty {
 		return left
 	}
 
 	if !this.validate(card) {
-		return either.Left[*ErrorResponse, CardPtr](
+		return either.Left[*ErrorResponse, SuccessCard](
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
@@ -38,14 +43,14 @@ func (this *PagarmeCard) Create(customerId string, card CardPtr) *either.Either[
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) CardPtr {
-				return e.UnwrapRight().Content.(CardPtr)
+			func(e *either.Either[error, *Response]) SuccessCard {
+				return NewSuccess[CardPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCard) Get(customerId string, cardId string) *either.Either[*ErrorResponse, CardPtr] {
+func (this *PagarmeCard) Get(customerId string, cardId string) *either.Either[*ErrorResponse, SuccessCard] {
 
-	if empty, left := checkEmpty[CardPtr]("customer id and card id", customerId, cardId); empty {
+	if empty, left := checkEmpty[SuccessCard]("customer id and card id", customerId, cardId); empty {
 		return left
 	}
 
@@ -57,14 +62,14 @@ func (this *PagarmeCard) Get(customerId string, cardId string) *either.Either[*E
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) CardPtr {
-				return e.UnwrapRight().Content.(CardPtr)
+			func(e *either.Either[error, *Response]) SuccessCard {
+				return NewSuccess[CardPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCard) List(customerId string) *either.Either[*ErrorResponse, Cards] {
+func (this *PagarmeCard) List(customerId string) *either.Either[*ErrorResponse, SuccessCards] {
 
-	if empty, left := checkEmpty[Cards]("customer id", customerId); empty {
+	if empty, left := checkEmpty[SuccessCards]("customer id", customerId); empty {
 		return left
 	}
 
@@ -76,19 +81,19 @@ func (this *PagarmeCard) List(customerId string) *either.Either[*ErrorResponse, 
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) Cards {
-				return e.UnwrapRight().Content.(*Content[Cards]).Data
+			func(e *either.Either[error, *Response]) SuccessCards {
+				return NewSuccessSlice[Cards](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCard) Update(customerId string, card CardPtr) *either.Either[*ErrorResponse, CardPtr] {
+func (this *PagarmeCard) Update(customerId string, card CardPtr) *either.Either[*ErrorResponse, SuccessCard] {
 
-	if empty, left := checkEmpty[CardPtr]("customer id and card id", customerId, card.Id); empty {
+	if empty, left := checkEmpty[SuccessCard]("customer id and card id", customerId, card.Id); empty {
 		return left
 	}
 
 	if !this.validate(card) {
-		return either.Left[*ErrorResponse, CardPtr](
+		return either.Left[*ErrorResponse, SuccessCard](
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
@@ -100,14 +105,14 @@ func (this *PagarmeCard) Update(customerId string, card CardPtr) *either.Either[
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) CardPtr {
-				return e.UnwrapRight().Content.(CardPtr)
+			func(e *either.Either[error, *Response]) SuccessCard {
+				return NewSuccess[CardPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCard) Delete(customerId string, cardId string) *either.Either[*ErrorResponse, bool] {
+func (this *PagarmeCard) Delete(customerId string, cardId string) *either.Either[*ErrorResponse, SuccessBool] {
 
-	if empty, left := checkEmpty[bool]("customer id and card id", customerId, cardId); empty {
+	if empty, left := checkEmpty[SuccessBool]("customer id and card id", customerId, cardId); empty {
 		return left
 	}
 
@@ -119,14 +124,14 @@ func (this *PagarmeCard) Delete(customerId string, cardId string) *either.Either
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) bool {
-				return true
+			func(e *either.Either[error, *Response]) SuccessBool {
+				return NewSuccessWithValue[bool](e.UnwrapRight(), true)
 			})
 }
 
-func (this *PagarmeCard) Renew(customerId string, cardId string) *either.Either[*ErrorResponse, bool] {
+func (this *PagarmeCard) Renew(customerId string, cardId string) *either.Either[*ErrorResponse, SuccessBool] {
 
-	if empty, left := checkEmpty[bool]("customer id and card id", customerId, cardId); empty {
+	if empty, left := checkEmpty[SuccessBool]("customer id and card id", customerId, cardId); empty {
 		return left
 	}
 
@@ -138,8 +143,8 @@ func (this *PagarmeCard) Renew(customerId string, cardId string) *either.Either[
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) bool {
-				return true
+			func(e *either.Either[error, *Response]) SuccessBool {
+				return NewSuccessWithValue[bool](e.UnwrapRight(), true)
 			})
 }
 

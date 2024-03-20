@@ -2,17 +2,16 @@ package api
 
 import (
 	"time"
-
 )
 
 type Gateway string
 
 const (
-  GatewayNone Gateway = ""
-  GatewayPagarme Gateway = "Pagarme"
-  GatewayPayZen Gateway = "PayZen"
-  GatewayAsaas Gateway = "Asaas"
-  GatewayPicPay Gateway = "PicPay"
+	GatewayNone    Gateway = ""
+	GatewayPagarme Gateway = "Pagarme"
+	GatewayPayZen  Gateway = "PayZen"
+	GatewayAsaas   Gateway = "Asaas"
+	GatewayPicPay  Gateway = "PicPay"
 )
 
 type PaymentStatus int
@@ -35,18 +34,18 @@ const (
 type PaymentStatusLabel string
 
 const (
-	PaymentInitialLabel PaymentStatusLabel = "initial"
-	PaymentWaitingPaymentLabel  PaymentStatusLabel = "waiting_payment"
-	PaymentPaidLabel PaymentStatusLabel = "paid"
-	PaymentRefusedLabel  PaymentStatusLabel = "refused"
-	PaymentCancelledLabel  PaymentStatusLabel = "cancelled"
-	PaymentRefoundLabel  PaymentStatusLabel = "refound"
-	PaymentExpiredLabel  PaymentStatusLabel = "expired"
-	PaymentChargebackLabel PaymentStatusLabel = "changeback"
-	PaymentOtherLabel PaymentStatusLabel = "other"
-	PaymentSuccessLabel PaymentStatusLabel = "success"
-	PaymentErrorLabel  PaymentStatusLabel = "error"
-	PaymentCreatedLabel  PaymentStatusLabel = "created"
+	PaymentInitialLabel        PaymentStatusLabel = "initial"
+	PaymentWaitingPaymentLabel PaymentStatusLabel = "waiting_payment"
+	PaymentPaidLabel           PaymentStatusLabel = "paid"
+	PaymentRefusedLabel        PaymentStatusLabel = "refused"
+	PaymentCancelledLabel      PaymentStatusLabel = "cancelled"
+	PaymentRefoundLabel        PaymentStatusLabel = "refound"
+	PaymentExpiredLabel        PaymentStatusLabel = "expired"
+	PaymentChargebackLabel     PaymentStatusLabel = "changeback"
+	PaymentOtherLabel          PaymentStatusLabel = "other"
+	PaymentSuccessLabel        PaymentStatusLabel = "success"
+	PaymentErrorLabel          PaymentStatusLabel = "error"
+	PaymentCreatedLabel        PaymentStatusLabel = "created"
 )
 
 type PaymentEvent string
@@ -55,48 +54,47 @@ const (
 
 	/*
 
-	Asaas Events 
+		Asaas Events
 
-	PAYMENT_CREATED - Geração de nova cobrança.
-	PAYMENT_UPDATED - Alteração no vencimento ou valor de cobrança existente.
-	PAYMENT_CONFIRMED - Cobrança confirmada (pagamento efetuado, porém o saldo ainda não foi disponibilizado).
-	PAYMENT_RECEIVED - Cobrança recebida.
-	PAYMENT_OVERDUE - Cobrança vencida.
-	PAYMENT_DELETED - Cobrança removida.
-	PAYMENT_RESTORED - Cobrança restaurada.
-	PAYMENT_REFUNDED - Cobrança estornada.
-	PAYMENT_RECEIVED_IN_CASH_UNDONE - Recebimento em dinheiro desfeito.
-	PAYMENT_CHARGEBACK_REQUESTED - Recebido chargeback.
-	PAYMENT_CHARGEBACK_DISPUTE - Em disputa de chargeback (caso sejam apresentados documentos para contestação).
-	PAYMENT_AWAITING_CHARGEBACK_REVERSAL - Disputa vencida, aguardando repasse da adquirente.
-	PAYMENT_DUNNING_RECEIVED - Recebimento de recuperação.
-	PAYMENT_DUNNING_REQUESTED - Requisição de recuperação.
-	*/	
-	
-	PaymentEventCreated PaymentEvent = "PAYMENT_CREATED"
-	PaymentEventUpdated PaymentEvent = "PAYMENT_UPDATED"
-	PaymentEventConfirmed PaymentEvent = "PAYMENT_CONFIRMED"
-	PaymentEventReceived PaymentEvent = "PAYMENT_RECEIVED"
-	PaymentEventOverdue PaymentEvent = "PAYMENT_OVERDUE"
-	PaymentEventDeleted PaymentEvent = "PAYMENT_DELETED"
-	PaymentEventRestored PaymentEvent = "PAYMENT_RESTORED"
-	PaymentEventRefunded PaymentEvent = "PAYMENT_REFUNDED"
-	PaymentEventReceivedInCashUndone PaymentEvent = "PAYMENT_RECEIVED_IN_CASH_UNDONE"
-	PaymentEventChargebackRequested PaymentEvent = "PAYMENT_CHARGEBACK_REQUESTED"
-	PaymentEventChargebackDispute PaymentEvent = "PAYMENT_CHARGEBACK_DISPUTE"
+		PAYMENT_CREATED - Geração de nova cobrança.
+		PAYMENT_UPDATED - Alteração no vencimento ou valor de cobrança existente.
+		PAYMENT_CONFIRMED - Cobrança confirmada (pagamento efetuado, porém o saldo ainda não foi disponibilizado).
+		PAYMENT_RECEIVED - Cobrança recebida.
+		PAYMENT_OVERDUE - Cobrança vencida.
+		PAYMENT_DELETED - Cobrança removida.
+		PAYMENT_RESTORED - Cobrança restaurada.
+		PAYMENT_REFUNDED - Cobrança estornada.
+		PAYMENT_RECEIVED_IN_CASH_UNDONE - Recebimento em dinheiro desfeito.
+		PAYMENT_CHARGEBACK_REQUESTED - Recebido chargeback.
+		PAYMENT_CHARGEBACK_DISPUTE - Em disputa de chargeback (caso sejam apresentados documentos para contestação).
+		PAYMENT_AWAITING_CHARGEBACK_REVERSAL - Disputa vencida, aguardando repasse da adquirente.
+		PAYMENT_DUNNING_RECEIVED - Recebimento de recuperação.
+		PAYMENT_DUNNING_REQUESTED - Requisição de recuperação.
+	*/
+
+	PaymentEventCreated                    PaymentEvent = "PAYMENT_CREATED"
+	PaymentEventUpdated                    PaymentEvent = "PAYMENT_UPDATED"
+	PaymentEventConfirmed                  PaymentEvent = "PAYMENT_CONFIRMED"
+	PaymentEventReceived                   PaymentEvent = "PAYMENT_RECEIVED"
+	PaymentEventOverdue                    PaymentEvent = "PAYMENT_OVERDUE"
+	PaymentEventDeleted                    PaymentEvent = "PAYMENT_DELETED"
+	PaymentEventRestored                   PaymentEvent = "PAYMENT_RESTORED"
+	PaymentEventRefunded                   PaymentEvent = "PAYMENT_REFUNDED"
+	PaymentEventReceivedInCashUndone       PaymentEvent = "PAYMENT_RECEIVED_IN_CASH_UNDONE"
+	PaymentEventChargebackRequested        PaymentEvent = "PAYMENT_CHARGEBACK_REQUESTED"
+	PaymentEventChargebackDispute          PaymentEvent = "PAYMENT_CHARGEBACK_DISPUTE"
 	PaymentEventAwaitingChargebackReversal PaymentEvent = "PAYMENT_AWAITING_CHARGEBACK_REVERSAL"
-	PaymentEventDunningReceived PaymentEvent = "PAYMENT_DUNNING_RECEIVED"
-	PaymentEventDunningRequested PaymentEvent = "PAYMENT_DUNNING_REQUESTED"	
-	PaymentEventPaymentStatusChanged PaymentEvent = "PAYMENT_STATUS_CHANGED"	
-	PaymentEventSubscriptionStatusChanged PaymentEvent = "SUBSCRIPTION_STATUS_CHANGED"	
-	PaymentEventRecipientStatusChanged PaymentEvent = "RECIPIENT_STATUS_CHANGED"	
-	PaymentEventTransactionCreated PaymentEvent = "TRANSACTION_CREATED"	
-	PaymentEventPicPayStatusChanged PaymentEvent = "PICPAY_STATUS_CHANGED"	
-	PaymentEventNotFound PaymentEvent = "EVENT_NOT_FOUND"	
+	PaymentEventDunningReceived            PaymentEvent = "PAYMENT_DUNNING_RECEIVED"
+	PaymentEventDunningRequested           PaymentEvent = "PAYMENT_DUNNING_REQUESTED"
+	PaymentEventPaymentStatusChanged       PaymentEvent = "PAYMENT_STATUS_CHANGED"
+	PaymentEventSubscriptionStatusChanged  PaymentEvent = "SUBSCRIPTION_STATUS_CHANGED"
+	PaymentEventRecipientStatusChanged     PaymentEvent = "RECIPIENT_STATUS_CHANGED"
+	PaymentEventTransactionCreated         PaymentEvent = "TRANSACTION_CREATED"
+	PaymentEventPicPayStatusChanged        PaymentEvent = "PICPAY_STATUS_CHANGED"
+	PaymentEventNotFound                   PaymentEvent = "EVENT_NOT_FOUND"
 
 	//
 )
-
 
 /*
 INITIAL Em andamento. Status temporário. O status definitivo será retornado assim que a sincronização for realizada.
@@ -105,12 +103,11 @@ AUTHORISED Captura em andamento. A transação foi aceita e será capturada auto
 AUTHORISED_TO_VALIDATE Para ser aprovado. A transação, criada em validação manual, foi autorizada. O vendedor deve validar manualmente a captura no banco. A transação pode ser aprovada enquanto a data de captura não for vencida. Se esta data estiver vencida, então o pagamento tem o status Expirado (status definitivo).
 WAITING_AUTHORISATION Autorização em andamento. A data de captura solicitada é superior à data de fim de validade da solicitação de autorização. Uma autorização de 1 BRL foi efetuada e aceita pelo banco emissor. A solicitado de autorização e a captura no banco serão acionadas automaticamente.
 WAITING_AUTHORISATION_TO_VALIDATE Para ser aprovado e autorizado. A data de captura solicitada é superior à data de fim de validade da solicitação de autorização. Uma autorização de 1 BRL foi efetuada e aceita pelo banco emissor. A solicitação de autorização será automaticamente efetuada a D-1 antes da data de captura no banco. O pagamento poderá ser aceito ou recusado. Captura automática no banco.
-REFUSED Recusada. A transação foi recusada.	
+REFUSED Recusada. A transação foi recusada.
 CAPTURED A transação foi capturada no banco.
 CANCELLED Cancelada. A transação foi cancelada pelo vendedor.
 EXPIRED Expirada. A date de captura foi atingida mas o vendedor não validou a transação.
 UNDER_VERIFICATION (Específico a PayPal) Verificação por PayPal em andamento. Este valor significa que Paypal segura a transação por causa de uma suspeita de fraude. O pagamento fica então na aba Pagamento em andamento.
-
 */
 type TransactionStatus int
 
@@ -127,13 +124,13 @@ const (
 	Expired
 	UnderVerification
 	PartiallyAuthorised
-	Refunded //pickpay,pagarme, asaas
-	Created //pickpay, pagarme
-	Chargeback //pickpay,pagarme,asaas
+	Refunded       //pickpay,pagarme, asaas
+	Created        //pickpay, pagarme
+	Chargeback     //pickpay,pagarme,asaas
 	WaitingPayment //pagarme, asaas
-	PendingRefund //pagarme, asaas
-	Analyzing //pagarme
-	PendingReview //pagarme
+	PendingRefund  //pagarme, asaas
+	Analyzing      //pagarme
+	PendingReview  //pagarme
 	ReceivedInCash // asaas
 	Other
 	Canceled
@@ -159,13 +156,13 @@ pending_review	Transação pendente de revisão manual por parte do lojista. Uma
 */
 
 const (
-  PagarmeProcessing PagarmeStatus = 1 + iota
-  PagarmeAuthorized         
-  PagarmePaid 
-  PagarmeRefunded
-  PagarmeWaitingPayment 
-  PagarmePendingRefund 
-  PagarmeRefused
+	PagarmeProcessing PagarmeStatus = 1 + iota
+	PagarmeAuthorized
+	PagarmePaid
+	PagarmeRefunded
+	PagarmeWaitingPayment
+	PagarmePendingRefund
+	PagarmeRefused
 	PagarmeChargedback
 	PagarmeAnalyzing
 	PagarmePendingReview
@@ -176,6 +173,75 @@ const (
 	PagarmeUnpaid
 )
 
+type PagarmeV5Status string
+
+const (
+	PagarmeV5None PagarmeV5Status = "none"
+
+	// Card
+	// 	Authorized pending capture
+	PagarmeV5AuthorizedPendingCapture PagarmeV5Status = "authorized_pending_capture"
+	// 	Not allowed
+	PagarmeV5NotAuthorized PagarmeV5Status = "not_authorized"
+	// 	Captured
+	PagarmeV5Captured PagarmeV5Status = "captured"
+	// 	Partially Captured
+	PagarmeV5PartialCapture PagarmeV5Status = "partial_capture"
+	// 	Waiting for capture
+	PagarmeV5WaitingCapture PagarmeV5Status = "waiting_capture"
+	// 	Reversed
+	PagarmeV5Refunded PagarmeV5Status = "refunded"
+	// 	Canceled
+	PagarmeV5Voided PagarmeV5Status = "voided"
+	// 	Partially reversed
+	PagarmeV5PartialRefunded PagarmeV5Status = "partial_refunded"
+	// 	Partially canceled
+	PagarmeV5PartialVoid PagarmeV5Status = "partial_void"
+	// 	Cancellation error
+	PagarmeV5ErrorOnVoiding PagarmeV5Status = "error_on_voiding"
+	// 	Error in refund
+	PagarmeV5ErrorOnRefunding PagarmeV5Status = "error_on_refunding"
+	// 	Awaiting cancellation
+	PagarmeV5WaitingCancellation PagarmeV5Status = "waiting_cancellation"
+	// 	With error
+	PagarmeV5WithError PagarmeV5Status = "with_error"
+	// 	Failure
+	PagarmeV5Failed PagarmeV5Status = "failed"
+
+	// Pix
+	//Aguardando pagamento
+	PagarmeV5WaitingPayment PagarmeV5Status = "waiting_payment"
+	//Paid out
+	PagarmeV5Paid PagarmeV5Status = "paid"
+	//Aguardando estorno
+	PagarmeV5PendingRefund PagarmeV5Status = "pending_refund"
+	//Estornado
+	//Refunded PagarmeV5Status = "refunded"
+	//With error
+	//WithError PagarmeV5Status = "with_error"
+	//Failure
+	//Failed PagarmeV5Status = "failed"
+
+	// Boleto
+	//Generated
+	PagarmeV5Generated PagarmeV5Status = "generated"
+	//Home
+	PagarmeV5Viewed PagarmeV5Status = "viewed"
+	//Payment to less
+	PagarmeV5Underpaid PagarmeV5Status = "underpaid"
+	//Highest payment
+	PagarmeV5Overpaid PagarmeV5Status = "overpaid"
+	//Paid out
+	//PagarmeV5Paid PagarmeV5Status = "paid"
+	//Canceled
+	//Voided PagarmeV5Status = "voided"
+	//With error
+	//WithError PagarmeV5Status = "with_error"
+	//Failure
+	//Failed PagarmeV5Status = "failed"
+	//Boleto ainda está em etapa de criação
+	PagarmeV5Processing PagarmeV5Status = "processing"
+)
 
 /*
   "created": registro criado
@@ -185,19 +251,19 @@ const (
   "completed": pago e saldo disponível
   "refunded": pago e devolvido
   "chargeback": pago e com chargeback
-*/  
+*/
 
 type PicPayStatus int64
 
 const (
-  PicPayCreated PicPayStatus = 1 + iota
-  PicPayExpired
-  PicPayAnalysis
-  PicPayPaid
-  PicPayCompleted
-  PicPayRefunded
-  PicPayChargeback
-  PicPayCancelled
+	PicPayCreated PicPayStatus = 1 + iota
+	PicPayExpired
+	PicPayAnalysis
+	PicPayPaid
+	PicPayCompleted
+	PicPayRefunded
+	PicPayChargeback
+	PicPayCancelled
 )
 
 // ASAAS STATUS
@@ -205,21 +271,21 @@ const (
 type AsaasStatus int64
 
 const (
-	AsaasPending AsaasStatus = iota + 1 //- Aguardando pagamento
-	AsaasReceived //- Recebida (saldo já creditado na conta)
-	AsaasConfirmed //- Pagamento confirmado (saldo ainda não creditado)
-	AsaasOverdue //- Vencida
-	AsaasRefunded //- Estornada
-	AsaasReceivedInCash //- Recebida em dinheiro (não gera saldo na conta)
-	AsaasRefundRequested //- Estorno Solicitado
-	AsaasChargebackRequested //- Recebido chargeback
-	AsaasChargebackDispute //- Em disputa de chargeback (caso sejam apresentados documentos para contestação)
-	AsaasAwaitingChargebackReversal //- Disputa vencida, aguardando repasse da adquirente
-	AsaasDunningRequested //- Em processo de recuperação
-	AsaasDunningReceived //- Recuperada
-	AsaasAwaitingRiskAnalysis //- Pagamento em análise
-	AsaasActive // subscription
-	AsaasExpired // subscription
+	AsaasPending                    AsaasStatus = iota + 1 //- Aguardando pagamento
+	AsaasReceived                                          //- Recebida (saldo já creditado na conta)
+	AsaasConfirmed                                         //- Pagamento confirmado (saldo ainda não creditado)
+	AsaasOverdue                                           //- Vencida
+	AsaasRefunded                                          //- Estornada
+	AsaasReceivedInCash                                    //- Recebida em dinheiro (não gera saldo na conta)
+	AsaasRefundRequested                                   //- Estorno Solicitado
+	AsaasChargebackRequested                               //- Recebido chargeback
+	AsaasChargebackDispute                                 //- Em disputa de chargeback (caso sejam apresentados documentos para contestação)
+	AsaasAwaitingChargebackReversal                        //- Disputa vencida, aguardando repasse da adquirente
+	AsaasDunningRequested                                  //- Em processo de recuperação
+	AsaasDunningReceived                                   //- Recuperada
+	AsaasAwaitingRiskAnalysis                              //- Pagamento em análise
+	AsaasActive                                            // subscription
+	AsaasExpired                                           // subscription
 	AsaasDeleted
 	AsaasSuccess
 )
@@ -228,23 +294,23 @@ type PayZenPaymentValidationType int
 
 const (
 	Automatica PayZenPaymentValidationType = 0 + iota
-	Manual 
+	Manual
 )
 
 type BoletoOnlineTipo string
 
 const (
-	BoletoOnline BoletoOnlineTipo = "BOLETO"
-	BoletoOnlineItauIb BoletoOnlineTipo = "ITAU_IB"
-	BoletoOnlineItauBoleto BoletoOnlineTipo = "ITAU_BOLETO"
+	BoletoOnline               BoletoOnlineTipo = "BOLETO"
+	BoletoOnlineItauIb         BoletoOnlineTipo = "ITAU_IB"
+	BoletoOnlineItauBoleto     BoletoOnlineTipo = "ITAU_BOLETO"
 	BoletoOnlineBradescoBoleto BoletoOnlineTipo = "BRADESCO_BOLETO"
-	BoletoOnlineNenhum BoletoOnlineTipo = "NENHUM"
+	BoletoOnlineNenhum         BoletoOnlineTipo = "NENHUM"
 )
 
 type PayZenApiVersion string
 
 const (
-	PayZenApiSOAP PayZenApiVersion = "SOAP"
+	PayZenApiSOAP   PayZenApiVersion = "SOAP"
 	PayZenApiRestV4 PayZenApiVersion = "RESTFul.v4"
 )
 
@@ -252,12 +318,21 @@ type SubscriptionCycle string
 
 const (
 	SubscriptionCycleNone SubscriptionCycle = ""
-	Weekly SubscriptionCycle = "WEEKLY" // semanal
-	Biweekly SubscriptionCycle = "BIWEEKLY" // quinzenal
-	Monthly SubscriptionCycle = "MONTHLY" // mensal
-	Quarterly SubscriptionCycle = "QUARTERLY" // trimestral
-	Semiannually SubscriptionCycle = "SEMIANNUALLY" // semestral
-	Yearly SubscriptionCycle = "YEARLY" // anual
+	Weekly                SubscriptionCycle = "WEEKLY"       // semanal
+	Biweekly              SubscriptionCycle = "BIWEEKLY"     // quinzenal
+	Monthly               SubscriptionCycle = "MONTHLY"      // mensal
+	Quarterly             SubscriptionCycle = "QUARTERLY"    // trimestral
+	Semiannually          SubscriptionCycle = "SEMIANNUALLY" // semestral
+	Yearly                SubscriptionCycle = "YEARLY"       // anual
+)
+
+type IntervalRule string
+
+const (
+	Day   IntervalRule = "day"
+	Week  IntervalRule = "week"
+	Month IntervalRule = "month"
+	Year  IntervalRule = "year"
 )
 
 //type PaymentMethod string // Pagarme
@@ -271,34 +346,33 @@ const (
 type PaymentType string
 
 const (
-	PaymentTypeNone PaymentType = ""
-	PaymentTypeCreditCard PaymentType = "credit_card"	
-	PaymentTypeDebitCard PaymentType = "debit_card"	
-	PaymentTypeBoleto PaymentType = "boleto"	
-	PaymentTypePix PaymentType = "pix"	
-	PaymentTypePicPay PaymentType = "picpay"	
-	PaymentTypeTransfer PaymentType = "transfer"	
-	PaymentTypeDeposit PaymentType = "deposit"	
-	PaymentTypeUndefined PaymentType = "undefined"	
+	PaymentTypeNone       PaymentType = ""
+	PaymentTypeCreditCard PaymentType = "credit_card"
+	PaymentTypeDebitCard  PaymentType = "debit_card"
+	PaymentTypeBoleto     PaymentType = "boleto"
+	PaymentTypePix        PaymentType = "pix"
+	PaymentTypePicPay     PaymentType = "picpay"
+	PaymentTypeTransfer   PaymentType = "transfer"
+	PaymentTypeDeposit    PaymentType = "deposit"
+	PaymentTypeUndefined  PaymentType = "undefined"
 )
 
 type BankAccountType string
 
 const (
 	BankAccountTypeNone BankAccountType = ""
-	ContaCorrente BankAccountType = "CONTA_CORRENTE"
-	ContaPoupanca BankAccountType = "CONTA_POUPANCA"
+	ContaCorrente       BankAccountType = "CONTA_CORRENTE"
+	ContaPoupanca       BankAccountType = "CONTA_POUPANCA"
 )
 
-type TransferStatus string 
+type TransferStatus string
 
 const (
-	TransferPending TransferStatus	 = "PENDING"
-	TransferBankProcessing TransferStatus	 = "BANK_PROCESSING"
-	TransferDone TransferStatus	 = "DONE"
-	TransferCancelled TransferStatus	 = "CANCELLED"
-	TransferFailed TransferStatus	 = "FAILED"
-
+	TransferPending        TransferStatus = "PENDING"
+	TransferBankProcessing TransferStatus = "BANK_PROCESSING"
+	TransferDone           TransferStatus = "DONE"
+	TransferCancelled      TransferStatus = "CANCELLED"
+	TransferFailed         TransferStatus = "FAILED"
 )
 
 type AsaasMode int64
@@ -309,20 +383,20 @@ const (
 )
 
 type Filter struct {
-	Limit int64 `jsonp:""`
-	Offset int64 `jsonp:""`
-	StartDate string `jsonp:""`
-	FinishDate string`jsonp:""`
-	
+	Limit      int64  `jsonp:""`
+	Offset     int64  `jsonp:""`
+	StartDate  string `jsonp:""`
+	FinishDate string `jsonp:""`
+
 	DateCreated string `jsonp:""` // transfer filter asaas
 
-	Status string `jsonp:""` // pagarme
-	BankAccountId string `jsonp:""`	//pagarme
+	Status        string `jsonp:""` // pagarme
+	BankAccountId string `jsonp:""` //pagarme
 
 	RecebedorId string `jsonp:""`
 }
 
-func NewFilter() *Filter{
+func NewFilter() *Filter {
 	return &Filter{}
 }
 
@@ -330,42 +404,41 @@ type Bank struct {
 	Code string `jsonp:""`
 }
 
-func NewBank() *Bank{
+func NewBank() *Bank {
 	return &Bank{}
 }
 
 type BankAccount struct {
-	Bank *Bank `jsonp:""`
+	Bank        *Bank  `jsonp:""`
 	AccountName string `jsonp:""`
-	OwnerName string `jsonp:""`
-	//Data de nascimento do proprietário da conta. 
+	OwnerName   string `jsonp:""`
+	//Data de nascimento do proprietário da conta.
 	//Somente quando a conta bancária não pertencer ao mesmo CPF ou CNPJ da conta Asaas.
-	OwnerBirthDate string `jsonp:""`
-	CpfCnpj string `jsonp:""`
-	Agency string `jsonp:""`
-	Account string `jsonp:""`
-	AccountDigit string `jsonp:""`
+	OwnerBirthDate  string          `jsonp:""`
+	CpfCnpj         string          `jsonp:""`
+	Agency          string          `jsonp:""`
+	Account         string          `jsonp:""`
+	AccountDigit    string          `jsonp:""`
 	BankAccountType BankAccountType `jsonp:""`
 }
 
-func NewBankAccount() *BankAccount{
+func NewBankAccount() *BankAccount {
 	return &BankAccount{}
 }
 
 type Transfer struct {
-	Amount float64 `jsonp:""`
-	BankAccountId int64 `jsonp:""`
-	BankAccount *BankAccount `jsonp:""`
+	Amount        float64      `jsonp:""`
+	BankAccountId int64        `jsonp:""`
+	BankAccount   *BankAccount `jsonp:""`
 }
 
-func NewTransfer() *Transfer{
+func NewTransfer() *Transfer {
 	return &Transfer{}
 }
 
-
 type BoletoFine struct {
-	Days int64 `jsonp:""`
-	Amount float64 `jsonp:""`
+	Days       int64   `jsonp:""`
+	Amount     float64 `jsonp:""`
 	Percentage float64 `jsonp:""`
 }
 
@@ -374,8 +447,8 @@ func NewBoletoFine() *BoletoFine {
 }
 
 type BoletoInterest struct {
-	Days int64 `jsonp:""`
-	Amount float64 `jsonp:""`
+	Days       int64   `jsonp:""`
+	Amount     float64 `jsonp:""`
 	Percentage float64 `jsonp:""`
 }
 
@@ -384,8 +457,8 @@ func NewBoletoInterest() *BoletoInterest {
 }
 
 type BoletoDiscount struct {
-	Days int64 `jsonp:""`
-	Amount float64 `jsonp:""`
+	Days       int64   `jsonp:""`
+	Amount     float64 `jsonp:""`
 	Percentage float64 `jsonp:""`
 }
 
@@ -394,73 +467,75 @@ func NewBoletoDiscount() *BoletoFine {
 }
 
 type Plan struct {
-	Id string `jsonp:""`
-	Amount float64 `jsonp:""`
-	Days int64 `jsonp:""` // Prazo, em dias, para cobrança das parcelas
-	Name string `jsonp:""`
-	TrialDays int64 `jsonp:""`
-	PaymentMethods []PaymentType `jsonp:""`
-	Charges int64 `jsonp:""`
-	InvoiceReminder int64 `jsonp:""` 
-	Installments int64 `jsonp:""` 
+	Id              string        `jsonp:""`
+	Amount          float64       `jsonp:""`
+	Days            int64         `jsonp:""` // Prazo, em dias, para cobrança das parcelas
+	Name            string        `jsonp:""`
+	TrialDays       int64         `jsonp:""`
+	PaymentMethods  []PaymentType `jsonp:""`
+	Charges         int64         `jsonp:""`
+	InvoiceReminder int64         `jsonp:""`
+	Installments    int64         `jsonp:""`
+
+	IntervalRule  IntervalRule `jsonp:""` // usado no pagarme v5
+	IntervalCount int64        `jsonp:""` // usado no pagarme v5
 }
 
 func NewPlan() *Plan {
-	return &Plan{ PaymentMethods: []PaymentType{} }
+	return &Plan{PaymentMethods: []PaymentType{}}
 }
 
 type PayZenAccount struct {
 	ShopId string `valid:"Required"`
-	Mode string `valid:"Required"`
-	Cert string `valid:"Required"`
+	Mode   string `valid:"Required"`
+	Cert   string `valid:"Required"`
 }
 
 type Card struct {
-	Number string `valid:"" jsonp:""`
-	Scheme string `valid:"" jsonp:"brand"`
-	ExpiryMonth string `valid:"" jsonp:"expiry_month"`
-	ExpiryYear string `valid:"" jsonp:"expiry_year"`
-	CardSecurityCode string `valid:"" jsonp:"cvv"`
+	Number             string `valid:"" jsonp:""`
+	Scheme             string `valid:"" jsonp:"brand"`
+	ExpiryMonth        string `valid:"" jsonp:"expiry_month"`
+	ExpiryYear         string `valid:"" jsonp:"expiry_year"`
+	CardSecurityCode   string `valid:"" jsonp:"cvv"`
 	CardHolderBirthDay string `valid:""`
-	CardHolderName string `valid:"" jsonp:"holder_name"`
-	Token string`valid:"" jsonp:""`
+	CardHolderName     string `valid:"" jsonp:"holder_name"`
+	Token              string `valid:"" jsonp:""`
 }
 
 type Customer struct {
-	Id string `jsonp:""`
-	FirstName string `valid:"Required" jsonp:""`
-	LastName string `valid:"" jsonp:""`
-	PhoneNumber string `valid:"" jsonp:""`
-	CellPhoneNumber string `valid:"" jsonp:""`
-	Address2 string `valid:"" jsonp:""`
-	Email string `valid:"Required" jsonp:""`
-	StreetNumber string `valid:"" jsonp:""`
-	Address string `valid:"" jsonp:""`
-	District string `valid:"" jsonp:""`
-	ZipCode string `valid:"" jsonp:""`
-	City string `valid:"" jsonp:""`
-	State string `valid:"" jsonp:""`
-	Country string `valid:"Required" jsonp:""`
-	IdentityCode string `valid:"Required" jsonp:"document"`
-	ExternalReference string `jsonp:""`
-	NotificationDisabled bool `jsonp:""`
-	IpAddress string `jsonp:""`
+	Id                   string `jsonp:""`
+	FirstName            string `valid:"Required" jsonp:""`
+	LastName             string `valid:"" jsonp:""`
+	PhoneNumber          string `valid:"" jsonp:""`
+	CellPhoneNumber      string `valid:"" jsonp:""`
+	Address2             string `valid:"" jsonp:""`
+	Email                string `valid:"Required" jsonp:""`
+	StreetNumber         string `valid:"" jsonp:""`
+	Address              string `valid:"" jsonp:""`
+	District             string `valid:"" jsonp:""`
+	ZipCode              string `valid:"" jsonp:""`
+	City                 string `valid:"" jsonp:""`
+	State                string `valid:"" jsonp:""`
+	Country              string `valid:"Required" jsonp:""`
+	IdentityCode         string `valid:"Required" jsonp:"document"`
+	ExternalReference    string `jsonp:""`
+	NotificationDisabled bool   `jsonp:""`
+	IpAddress            string `jsonp:""`
 }
 
 func (this *Customer) IsCreated() bool {
-	return len(this.Id) > 0 
+	return len(this.Id) > 0
 }
 
-func NewCustomer() *Customer{
+func NewCustomer() *Customer {
 	return &Customer{}
 }
 
-type Subscription struct{
-
-	OrderId string `valid:"Required" jsonp:""`
+type Subscription struct {
+	OrderId        string `valid:"Required" jsonp:""`
 	SubscriptionId string `valid:"Required" jsonp:""`
-	TransactionId string `valid:"" jsonp:""`
-	Description string `valid:"Required" jsonp:""`
+	TransactionId  string `valid:"" jsonp:""`
+	Description    string `valid:"Required" jsonp:""`
 
 	// valor da recorrência
 	Amount float64 `valid:"Required" jsonp:""`
@@ -474,26 +549,25 @@ type Subscription struct{
 	EffectDate time.Time `valid:"Required" jsonp:""`
 	// cobrar no último dia do mês
 
-	Count int64 `jsonp:""`
-	Cycle SubscriptionCycle `jsonp:""`
-	PaymentAtLastDayOfMonth bool `jsonp:""`
-	PaymentAtDayOfMonth int64 `jsonp:""`
+	Count                   int64             `jsonp:""`
+	Cycle                   SubscriptionCycle `jsonp:""`
+	PaymentAtLastDayOfMonth bool              `jsonp:""`
+	PaymentAtDayOfMonth     int64             `jsonp:""`
 
 	Rule string `jsonp:""`
 
-	
 	Account *PayZenAccount `valid:"Required"`
-	Token string `valid:"" jsonp:""`
+	Token   string         `valid:"" jsonp:""`
 
-	BoletoFine *BoletoFine `jsonp:""`
-	BoletoInterest *BoletoInterest `jsonp:""`
-	BoletoDiscount *BoletoDiscount `jsonp:""`
-	Card *Card `valid:"" jsonp:""`
-	PostbackUrl string `jsonp:""`
-	WebhookUrl string `jsonp:""`
-	PaymentType PaymentType `jsonp:""` // pagarme/asaas
-	PlanId string `jsonp:""` // pagarme
-	Customer *Customer `jsonp:""`
+	BoletoFine     *BoletoFine            `jsonp:""`
+	BoletoInterest *BoletoInterest        `jsonp:""`
+	BoletoDiscount *BoletoDiscount        `jsonp:""`
+	Card           *Card                  `valid:"" jsonp:""`
+	PostbackUrl    string                 `jsonp:""`
+	WebhookUrl     string                 `jsonp:""`
+	PaymentType    PaymentType            `jsonp:""` // pagarme/asaas
+	PlanId         string                 `jsonp:""` // pagarme
+	Customer       *Customer              `jsonp:""`
 	AdditionalInfo map[string]interface{} `jsonp:""`
 
 	UpdatePendingPayments bool
@@ -501,78 +575,77 @@ type Subscription struct{
 	Order *Order `jsonp:""`
 }
 
-type Payment struct{
-	OrderId string `valid:"" jsonp:""`
-	Installments int64 `valid:"" jsonp:""`
-	Amount float64 `valid:"" jsonp:""`
-	Customer *Customer `valid:"" jsonp:""`
-	Card *Card `valid:"" jsonp:""`
-	Account *PayZenAccount `valid:"Required"`
-	TokenOperation bool 
-	TransactionUuid string `jsonp:""`
-	VadsTransId string`jsonp:"payzen_vads_trans_id"`
-	ValidationType PayZenPaymentValidationType	`jsonp:"payzen_validation_type"`
-	
+type Payment struct {
+	OrderId         string         `valid:"" jsonp:""`
+	Installments    int64          `valid:"" jsonp:""`
+	Amount          float64        `valid:"" jsonp:""`
+	Customer        *Customer      `valid:"" jsonp:""`
+	Card            *Card          `valid:"" jsonp:""`
+	Account         *PayZenAccount `valid:"Required"`
+	TokenOperation  bool
+	TransactionUuid string                      `jsonp:""`
+	VadsTransId     string                      `jsonp:"payzen_vads_trans_id"`
+	ValidationType  PayZenPaymentValidationType `jsonp:"payzen_validation_type"`
+
 	PaymentType PaymentType `jsonp:""`
 
 	// pagarme
-	PostbackUrl string `valid:"" jsonp:""` 
-	SoftDescriptor string `valid:"" jsonp:""` 	
-	//Metadata map[string]interface{} `valid:"" jsonp:"pagarme_metadata"` 
+	PostbackUrl    string `valid:"" jsonp:""`
+	SoftDescriptor string `valid:"" jsonp:""`
+	//Metadata map[string]interface{} `valid:"" jsonp:"pagarme_metadata"`
 	SaveBoletoAtPath string
-	BoletoFine *BoletoFine `jsonp:""`
-	BoletoInterest *BoletoInterest `jsonp:""`
-	BoletoDiscount *BoletoDiscount `jsonp:""`
-	WebhookUrl string `jsonp:""`
+	BoletoFine       *BoletoFine     `jsonp:""`
+	BoletoInterest   *BoletoInterest `jsonp:""`
+	BoletoDiscount   *BoletoDiscount `jsonp:""`
+	WebhookUrl       string          `jsonp:""`
 
 	//PicPay
-  ReturnUrl string `json:"" jsonp:"picpay_return_url"`
-  Plugin string `json:"" jsonp:"" picpay_plugin`
-  AdditionalInfo map[string]interface{} `json:"" jsonp:""`
-  
-  ExpiresAt time.Time `json:"" jsonp:"expires_at"`
+	ReturnUrl      string                 `json:"" jsonp:"picpay_return_url"`
+	Plugin         string                 `json:"" jsonp:"picpay_plugin"`
+	AdditionalInfo map[string]interface{} `json:"" jsonp:""`
 
-	BoletoOnline BoletoOnlineTipo `valid:"" `	
+	ExpiresAt time.Time `json:"" jsonp:"expires_at"`
+
+	BoletoOnline BoletoOnlineTipo `valid:"" `
 	//dalay para pagemento do boleto (válido apenas para itaú. O bradesco deve ser configurado na plataforma)
-	BoletoOnlineDaysDalay int `jsonp:""`// Obs.: Não suportado para boletos online Bradesco.
+	BoletoOnlineDaysDalay int `jsonp:""` // Obs.: Não suportado para boletos online Bradesco.
 
-	BoletoOnlineTexto string  `jsonp:"payzen_boleto_text"`
+	BoletoOnlineTexto  string `jsonp:"payzen_boleto_text"`
 	BoletoOnlineTexto2 string `jsonp:"payzen_boleto_tex2"`
 	BoletoOnlineTexto3 string `jsonp:"payzen_boleto_text3"`
 
 	BoletoInstructions string `jsonp:"boleto_instructions"`
 
 	Order *Order `jsonp:""`
-
 }
 
 type PaymentCapture struct {
 	TransactionUuids string `valid:"Required" jsonp:""`
-	Commission float64 
-	Account *PayZenAccount `valid:"Required"`
+	Commission       float64
+	Account          *PayZenAccount `valid:"Required"`
 }
 
 type PaymentToken struct {
-	Token string `valid:"Required" jsonp:""`
+	Token   string         `valid:"Required" jsonp:""`
 	Account *PayZenAccount `valid:"Required"`
 }
 
 type PaymentFind struct {
 	//TransactionId string `jsonp:""`
-	TransactionUuid string `jsonp:""`
-	OrderId string `jsonp:""`
-	SubscriptionId string `jsonp:""`
-	Amount float64 `valid:"" jsonp:""`
-	Token string `jsonp:""`
-	AuthorizationId string `jsonp:""`
-	Account *PayZenAccount `valid:"Required"`
-	
+	TransactionUuid string         `jsonp:""`
+	OrderId         string         `jsonp:""`
+	SubscriptionId  string         `jsonp:""`
+	Amount          float64        `valid:"" jsonp:""`
+	Token           string         `jsonp:""`
+	AuthorizationId string         `jsonp:""`
+	Account         *PayZenAccount `valid:"Required"`
+
 	PaymentType PaymentType `jsonp:""` // picpay, pix
 }
 
 func NewSubscriptionWithShopId(shopId string, mode string, cert string) *Subscription {
 	subscription := new(Subscription)
-	subscription.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
+	subscription.Account = &PayZenAccount{ShopId: shopId, Mode: mode, Cert: cert}
 	return subscription
 }
 
@@ -583,43 +656,43 @@ func NewSubscription() *Subscription {
 
 func NewPaymentFindWithShopId(shopId string, mode string, cert string) *PaymentFind {
 	find := new(PaymentFind)
-	find.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
+	find.Account = &PayZenAccount{ShopId: shopId, Mode: mode, Cert: cert}
 	return find
 }
 
 func NewPaymentFind() *PaymentFind {
 	find := new(PaymentFind)
-	find.Account = &PayZenAccount{ }
+	find.Account = &PayZenAccount{}
 	return find
 }
 
 func NewPaymentTokenWithShopId(shopId string, mode string, cert string) *PaymentToken {
 	tokenPayment := new(PaymentToken)
-	tokenPayment.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
+	tokenPayment.Account = &PayZenAccount{ShopId: shopId, Mode: mode, Cert: cert}
 	return tokenPayment
 }
 
 func NewPaymentToken() *PaymentToken {
 	tokenPayment := new(PaymentToken)
-	tokenPayment.Account = &PayZenAccount{  }
-	return tokenPayment	
+	tokenPayment.Account = &PayZenAccount{}
+	return tokenPayment
 }
 
 func NewPaymentCaptureWithShopId(shopId string, mode string, cert string) *PaymentCapture {
 	capturePayment := new(PaymentCapture)
-	capturePayment.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
+	capturePayment.Account = &PayZenAccount{ShopId: shopId, Mode: mode, Cert: cert}
 	return capturePayment
 }
 
 func NewPaymentCapture() *PaymentCapture {
 	capturePayment := new(PaymentCapture)
-	capturePayment.Account = &PayZenAccount{  }
+	capturePayment.Account = &PayZenAccount{}
 	return capturePayment
 }
 
 func NewPaymentWithShopId(shopId string, mode string, cert string) *Payment {
 	payment := new(Payment)
-	payment.Account = &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
+	payment.Account = &PayZenAccount{ShopId: shopId, Mode: mode, Cert: cert}
 	payment.Customer = new(Customer)
 	payment.Card = new(Card)
 	payment.Installments = 1
@@ -636,110 +709,109 @@ func NewPayment() *Payment {
 }
 
 func NewPayZenAccount(shopId string, mode string, cert string) *PayZenAccount {
-	return &PayZenAccount{ ShopId: shopId, Mode: mode, Cert: cert }
+	return &PayZenAccount{ShopId: shopId, Mode: mode, Cert: cert}
 }
 
 type OrderItem struct {
-	Id int64 `jsonp:""`
-	Description string `jsonp:""`
-	Type string `jsonp:""`
-	Reference string `jsonp:""`
-	Quantity int64 `jsonp:""`
-	Amount float64 `jsonp:""` 	
+	Id          int64   `jsonp:""`
+	Description string  `jsonp:""`
+	Type        string  `jsonp:""`
+	Reference   string  `jsonp:""`
+	Quantity    int64   `jsonp:""`
+	Amount      float64 `jsonp:""`
 }
 
-func NewOrderItem() *OrderItem{
+func NewOrderItem() *OrderItem {
 	return &OrderItem{}
 }
 
-type OrderDeliveryAddress struct{
-	StreetNumber string `jsonp:""`
-	Address string `jsonp:""`
-	Address2 string `jsonp:""`
-	District string `jsonp:""`
-	ZipCode string `jsonp:""`
-	City string `jsonp:""`
-	State string `jsonp:""`
-	Country string `jsonp:""`
-	ReclaimInShop bool `jsonp:""`
+type OrderDeliveryAddress struct {
+	StreetNumber  string `jsonp:""`
+	Address       string `jsonp:""`
+	Address2      string `jsonp:""`
+	District      string `jsonp:""`
+	ZipCode       string `jsonp:""`
+	City          string `jsonp:""`
+	State         string `jsonp:""`
+	Country       string `jsonp:""`
+	ReclaimInShop bool   `jsonp:""`
 }
 
-func NewOrderDeliveryAddress() *OrderDeliveryAddress{
+func NewOrderDeliveryAddress() *OrderDeliveryAddress {
 	return &OrderDeliveryAddress{}
 }
 
 type Order struct {
-	Id int64 `jsonp:""`
-	DeliveryCost float64 `jsonp:""` 
-	FirstName string `jsonp:""`
-	LastName string `jsonp:""`
-	PhoneNumber string `jsonp:""`
+	Id              int64                 `jsonp:""`
+	DeliveryCost    float64               `jsonp:""`
+	FirstName       string                `jsonp:""`
+	LastName        string                `jsonp:""`
+	PhoneNumber     string                `jsonp:""`
 	DeliveryAddress *OrderDeliveryAddress `jsonp:""`
-	Items []*OrderItem `jsonp:""`
+	Items           []*OrderItem          `jsonp:""`
 }
 
 func NewOrder() *Order {
-	return &Order { DeliveryAddress: NewOrderDeliveryAddress(),  Items: []*OrderItem{} }
-} 
-
+	return &Order{DeliveryAddress: NewOrderDeliveryAddress(), Items: []*OrderItem{}}
+}
 
 type TokenInfo struct {
-	Token string `jsonp:""`
-	Number string `jsonp:""`
-	Brand string `jsonp:""`
-	CreationDate time.Time 
+	Token            string `jsonp:""`
+	Number           string `jsonp:""`
+	Brand            string `jsonp:""`
+	CreationDate     time.Time
 	CancellationDate time.Time
-	Cancelled bool `jsonp:""`
-	Active bool `jsonp:""`
-	NotFound bool `jsonp:""`
+	Cancelled        bool `jsonp:""`
+	Active           bool `jsonp:""`
+	NotFound         bool `jsonp:""`
 }
 
 type SubscriptionResult struct {
 	SubscriptionId string `jsonp:""`
 
-	PastPaymentsNumber int64 `jsonp:""`
-	TotalPaymentsNumber int64 `jsonp:""`
-	EffectDate time.Time `jsonp:""`
-	CancelDate time.Time `jsonp:""`
-	InitialAmountNumber int64 `jsonp:""`
-	InitialAmount int64 `jsonp:""`
-	Rule string `jsonp:""`
-	Description string `jsonp:""`
+	PastPaymentsNumber  int64     `jsonp:""`
+	TotalPaymentsNumber int64     `jsonp:""`
+	EffectDate          time.Time `jsonp:""`
+	CancelDate          time.Time `jsonp:""`
+	InitialAmountNumber int64     `jsonp:""`
+	InitialAmount       int64     `jsonp:""`
+	Rule                string    `jsonp:""`
+	Description         string    `jsonp:""`
 
-	Active bool `jsonp:""`
+	Active    bool `jsonp:""`
 	Cancelled bool `jsonp:""`
-	Started bool `jsonp:""`
+	Started   bool `jsonp:""`
 
 	Token string `jsonp:""`
 }
 
-
 type TransactionItemResult struct {
 	TransactionUuid string `jsonp:""`
-	TransactionId string `jsonp:""`
+	TransactionId   string `jsonp:""`
 	AuthorizationId string `jsonp:""`
-	CancellationId string `jsonp:""`
-	
-	PagarmeStatus PagarmeStatus `jsonp:"pagarme_status"`
-	PicPayStatus PicPayStatus `jsonp:"picpay_status"`
-	TransactionStatus TransactionStatus `jsonp:"payzen_status"`
-	PayZenV4Status string `jsonp:"payzen_v4_status"`
-	AsaasStatus AsaasStatus `jsonp:"asaas_status"`
+	CancellationId  string `jsonp:""`
 
-	TransactionStatusLabel string `jsonp:""`
-	ExternalTransactionId string `jsonp:""`
-	Nsu string `jsonp:""`
-	Amount float64 `jsonp:""`
-	ExpectedCaptureDate time.Time `jsonp:""`
-	CreationDate time.Time `jsonp:""`
-	Status PaymentStatus `jsonp:""`
-	StatusLabel PaymentStatusLabel `jsonp:""`	
+	PagarmeStatus     PagarmeStatus     `jsonp:"pagarme_status"`
+	PagarmeV5Status   PagarmeV5Status   `jsonp:"pagarme_v5_status"`
+	PicPayStatus      PicPayStatus      `jsonp:"picpay_status"`
+	TransactionStatus TransactionStatus `jsonp:"payzen_status"`
+	PayZenV4Status    string            `jsonp:"payzen_v4_status"`
+	AsaasStatus       AsaasStatus       `jsonp:"asaas_status"`
+
+	TransactionStatusLabel string             `jsonp:""`
+	ExternalTransactionId  string             `jsonp:""`
+	Nsu                    string             `jsonp:""`
+	Amount                 float64            `jsonp:""`
+	ExpectedCaptureDate    time.Time          `jsonp:""`
+	CreationDate           time.Time          `jsonp:""`
+	Status                 PaymentStatus      `jsonp:""`
+	StatusLabel            PaymentStatusLabel `jsonp:""`
 
 	Platform Gateway `jsonp:""`
 }
 
 func NewTransactionItemResult(platform Gateway) *TransactionItemResult {
-	return &TransactionItemResult{ Platform: platform }
+	return &TransactionItemResult{Platform: platform}
 }
 
 func (this *TransactionItemResult) isPagarme() bool {
@@ -761,105 +833,105 @@ func (this *TransactionItemResult) isAsaas() bool {
 func (this *TransactionItemResult) BuildStatus() {
 
 	switch this.TransactionStatus {
-		case Initial:
-			this.Status = PaymentInitial
-			this.StatusLabel = PaymentInitialLabel
-			break
-		case NotCreated:
-			this.Status = PaymentInitial
-			this.StatusLabel = PaymentInitialLabel
-			break
-		case Authorised:
-			if this.isPayZen() {			
-				this.Status = PaymentPaid
-				this.StatusLabel = PaymentPaidLabel
-			} else {
-				this.Status = PaymentWaitingPayment
-				this.StatusLabel = PaymentWaitingPaymentLabel
-			}
-			break
-		case AuthorisedToValidate:
-			this.Status = PaymentWaitingPayment
-			this.StatusLabel = PaymentWaitingPaymentLabel
-			break
-		case WaitingAuthorisation:
-			this.Status = PaymentWaitingPayment
-			this.StatusLabel = PaymentWaitingPaymentLabel
-			break
-		case WaitingAuthorisationToValidate:
-			this.Status = PaymentWaitingPayment
-			this.StatusLabel = PaymentWaitingPaymentLabel
-			break
-		case Refused:
-			this.Status = PaymentRefused
-			this.StatusLabel = PaymentRefusedLabel
-			break
-		case Captured:
+	case Initial:
+		this.Status = PaymentInitial
+		this.StatusLabel = PaymentInitialLabel
+		break
+	case NotCreated:
+		this.Status = PaymentInitial
+		this.StatusLabel = PaymentInitialLabel
+		break
+	case Authorised:
+		if this.isPayZen() {
 			this.Status = PaymentPaid
 			this.StatusLabel = PaymentPaidLabel
-			break
-		case Cancelled:
-			this.Status = PaymentCancelled
-			this.StatusLabel = PaymentCancelledLabel
-			break			
-		case Expired:
-			this.Status = PaymentExpired
-			this.StatusLabel = PaymentCancelledLabel
-			break			
-		case UnderVerification:
-			this.Status = PaymentOther
-			this.StatusLabel = PaymentOtherLabel
-			break						
-		case PartiallyAuthorised:
-			this.Status = PaymentOther
-			this.StatusLabel = PaymentOtherLabel
-			break						
-		case Refunded:
-			this.Status = PaymentRefound
-			this.StatusLabel = PaymentRefoundLabel
-			break						
-		case Created:
+		} else {
 			this.Status = PaymentWaitingPayment
 			this.StatusLabel = PaymentWaitingPaymentLabel
-			break			
-		case Chargeback:
-			this.Status = PaymentChargeback
-			this.StatusLabel = PaymentChargebackLabel
-			break			
-		case WaitingPayment:
-			this.Status = PaymentWaitingPayment
-			this.StatusLabel = PaymentWaitingPaymentLabel
-			break			
-		case PendingRefund:
-			this.Status = PaymentOther
-			this.StatusLabel = PaymentOtherLabel
-			break			
-		case Analyzing:
-			this.Status = PaymentOther
-			this.StatusLabel = PaymentOtherLabel
-			break			
-		case PendingReview:
-			this.Status = PaymentOther
-			this.StatusLabel = PaymentOtherLabel
-			break						
-		case Success:
-			this.Status = PaymentSuccess
-			this.StatusLabel = PaymentSuccessLabel
-			break						
-		default:
-			this.Status = PaymentError
-			this.StatusLabel = PaymentErrorLabel
-			break						
-	}	
+		}
+		break
+	case AuthorisedToValidate:
+		this.Status = PaymentWaitingPayment
+		this.StatusLabel = PaymentWaitingPaymentLabel
+		break
+	case WaitingAuthorisation:
+		this.Status = PaymentWaitingPayment
+		this.StatusLabel = PaymentWaitingPaymentLabel
+		break
+	case WaitingAuthorisationToValidate:
+		this.Status = PaymentWaitingPayment
+		this.StatusLabel = PaymentWaitingPaymentLabel
+		break
+	case Refused:
+		this.Status = PaymentRefused
+		this.StatusLabel = PaymentRefusedLabel
+		break
+	case Captured:
+		this.Status = PaymentPaid
+		this.StatusLabel = PaymentPaidLabel
+		break
+	case Cancelled:
+		this.Status = PaymentCancelled
+		this.StatusLabel = PaymentCancelledLabel
+		break
+	case Expired:
+		this.Status = PaymentExpired
+		this.StatusLabel = PaymentCancelledLabel
+		break
+	case UnderVerification:
+		this.Status = PaymentOther
+		this.StatusLabel = PaymentOtherLabel
+		break
+	case PartiallyAuthorised:
+		this.Status = PaymentOther
+		this.StatusLabel = PaymentOtherLabel
+		break
+	case Refunded:
+		this.Status = PaymentRefound
+		this.StatusLabel = PaymentRefoundLabel
+		break
+	case Created:
+		this.Status = PaymentWaitingPayment
+		this.StatusLabel = PaymentWaitingPaymentLabel
+		break
+	case Chargeback:
+		this.Status = PaymentChargeback
+		this.StatusLabel = PaymentChargebackLabel
+		break
+	case WaitingPayment:
+		this.Status = PaymentWaitingPayment
+		this.StatusLabel = PaymentWaitingPaymentLabel
+		break
+	case PendingRefund:
+		this.Status = PaymentOther
+		this.StatusLabel = PaymentOtherLabel
+		break
+	case Analyzing:
+		this.Status = PaymentOther
+		this.StatusLabel = PaymentOtherLabel
+		break
+	case PendingReview:
+		this.Status = PaymentOther
+		this.StatusLabel = PaymentOtherLabel
+		break
+	case Success:
+		this.Status = PaymentSuccess
+		this.StatusLabel = PaymentSuccessLabel
+		break
+	default:
+		this.Status = PaymentError
+		this.StatusLabel = PaymentErrorLabel
+		break
+	}
 }
 
 type PaymentResultValidationError struct {
-	Error bool `jsonp:""`
-	Message string `jsonp:""`
+	Error            bool              `jsonp:""`
+	Message          string            `jsonp:""`
 	ValidationErrors map[string]string `jsonp:""`
 }
 
-func (this *PaymentResultValidationError) AddError(key string, value string) *PaymentResultValidationError{
+func (this *PaymentResultValidationError) AddError(key string, value string) *PaymentResultValidationError {
 	if this.ValidationErrors == nil {
 		this.ValidationErrors = make(map[string]string)
 	}
@@ -870,40 +942,40 @@ func (this *PaymentResultValidationError) AddError(key string, value string) *Pa
 
 type Balance struct {
 	WaitingFunds float64 `jsonp:""`
-	Available float64 `jsonp:""`
-	Transferred float64 `jsonp:""`  	
+	Available    float64 `jsonp:""`
+	Transferred  float64 `jsonp:""`
 }
 
-func NewBalance() *Balance{
+func NewBalance() *Balance {
 	return &Balance{}
 }
 
 type Movement struct {
-	Id string `jsonp:""`
-	Amount float64 `jsonp:""`
-	Type string `jsonp:""`
-	Date string `jsonp:""`  	
-	Status string `jsonp:""`
-	TransactionId string `jsonp:""`	
+	Id            string  `jsonp:""`
+	Amount        float64 `jsonp:""`
+	Type          string  `jsonp:""`
+	Date          string  `jsonp:""`
+	Status        string  `jsonp:""`
+	TransactionId string  `jsonp:""`
 }
 
-func NewMovement() *Movement{
+func NewMovement() *Movement {
 	return &Movement{}
 }
 
 type TransferResult struct {
-  Id string `jsonp:""` 
-  DateCreated string `jsonp:""` 
-  Status TransferStatus `jsonp:""` 
-  EffectiveDate string `jsonp:""` 
-  Type string `jsonp:""` 
-  Value float64 `jsonp:""` 
-  NetValue float64 `jsonp:""` 
-  TransferFee float64 `jsonp:""` 
-  ScheduleDate string `jsonp:""` 
-  Authorized bool `jsonp:""` 
-  TransactionReceiptUrl string `jsonp:""` 
-  TransactionId string `jsonp:""`
+	Id                    string         `jsonp:""`
+	DateCreated           string         `jsonp:""`
+	Status                TransferStatus `jsonp:""`
+	EffectiveDate         string         `jsonp:""`
+	Type                  string         `jsonp:""`
+	Value                 float64        `jsonp:""`
+	NetValue              float64        `jsonp:""`
+	TransferFee           float64        `jsonp:""`
+	ScheduleDate          string         `jsonp:""`
+	Authorized            bool           `jsonp:""`
+	TransactionReceiptUrl string         `jsonp:""`
+	TransactionId         string         `jsonp:""`
 }
 
 func NewTransferResult() *TransferResult {
@@ -911,56 +983,57 @@ func NewTransferResult() *TransferResult {
 }
 
 type PaymentResult struct {
-	Error bool `jsonp:""`
-	Message string `jsonp:""`
-	Request string `jsonp:""`
+	Error    bool   `jsonp:""`
+	Message  string `jsonp:""`
+	Request  string `jsonp:""`
 	Response string `jsonp:""`
 
-	CaptureRequest string 
+	CaptureRequest  string
 	CaptureResponse string
 
-	PagarmeStatus PagarmeStatus `jsonp:"pagarme_status"`
-	PicPayStatus PicPayStatus `jsonp:"picpay_status"`
+	PagarmeStatus     PagarmeStatus     `jsonp:"pagarme_status"`
+	PagarmeV5Status   PagarmeV5Status   `jsonp:"pagarme_v5_status"`
+	PicPayStatus      PicPayStatus      `jsonp:"picpay_status"`
 	TransactionStatus TransactionStatus `jsonp:"payzen_status"`
-	PayZenV4Status string `jsonp:"payzen_v4_status"`
-	AsaasStatus AsaasStatus `jsonp:"asaas_status"`
-	
-	Status PaymentStatus `jsonp:""`
+	PayZenV4Status    string            `jsonp:"payzen_v4_status"`
+	AsaasStatus       AsaasStatus       `jsonp:"asaas_status"`
+
+	Status      PaymentStatus      `jsonp:""`
 	StatusLabel PaymentStatusLabel `jsonp:""`
 
 	//v4
 
 	TransactionStatusLabel string `jsonp:""`
 
-	TransactionId string `jsonp:""`
+	TransactionId   string `jsonp:""`
 	TransactionUuid string `jsonp:""`
 	//ExternalTransactionId string
 
-  ResponseCode string `jsonp:""`
-  ResponseCodeDetail string `jsonp:""`
+	ResponseCode       string `jsonp:""`
+	ResponseCodeDetail string `jsonp:""`
 
-  //v4
-  ErroCode string `jsonp:""`
-  ErroCodeDetail string `jsonp:""`
+	//v4
+	ErroCode       string `jsonp:""`
+	ErroCodeDetail string `jsonp:""`
 
-	BoletoUrl string `jsonp:""`
+	BoletoUrl    string `jsonp:""`
 	BoletoNumber string `jsonp:""`
 
-	PaymentType PaymentType `jsonp:""`
+	PaymentType  PaymentType  `jsonp:""`
 	PaymentEvent PaymentEvent `jsonp:""`
 
 	SubscriptionId string `jsonp:""`
 
-	InstallmentId string `jsonp:""`
-	InstallmentCount int64 `jsonp:""`
-	Amount float64 `jsonp:""`
+	InstallmentId    string  `jsonp:""`
+	InstallmentCount int64   `jsonp:""`
+	Amount           float64 `jsonp:""`
 
 	TokenInfo *TokenInfo `jsonp:""`
 
-	PaymentNotFound bool `jsonp:""`
-	SubscriptionInvalid bool `jsonp:""`
+	PaymentNotFound        bool `jsonp:""`
+	SubscriptionInvalid    bool `jsonp:""`
 	SubscriptionIdNotFound bool `jsonp:""`
-	PaymentTokenNotFound bool `jsonp:""`
+	PaymentTokenNotFound   bool `jsonp:""`
 
 	Transactions []*TransactionItemResult `jsonp:""`
 
@@ -970,36 +1043,36 @@ type PaymentResult struct {
 
 	Plan *Plan `jsonp:""`
 
-	Platform Gateway `jsonp:""`
-	Nsu string	`jsonp:""`
-	BoletoOutputContent []byte	`json:"-"`
-	BoletoFileName string `json:"-"`
+	Platform            Gateway `jsonp:""`
+	Nsu                 string  `jsonp:""`
+	BoletoOutputContent []byte  `json:"-"`
+	BoletoFileName      string  `json:"-"`
 
-	QrCode string `jsonp:"qrcode"`
-	QrCodeUrl string `jsonp:"qrcode_url"`
-	QrPayload string `jsonp:"qrcode_payload"`
+	QrCode           string `jsonp:"qrcode"`
+	QrCodeUrl        string `jsonp:"qrcode_url"`
+	QrPayload        string `jsonp:"qrcode_payload"`
 	QrExpirationDate string `jsonp:"qrcode_expiration_date"`
-	PaymentUrl string `jsonp:"payment_url"`
+	PaymentUrl       string `jsonp:"payment_url"`
 
-	InvoiceUrl string `jsonp:""` // url da fatura
+	InvoiceUrl  string `jsonp:""` // url da fatura
 	PaymentLink string `jsonp:""` // identificador do link de pagamento
 
-  AuthorizationId string `jsonp:"picpay_authorization_id"`
-  CancellationId string `jsonp:"picpay_cancellation_id"`
-  ReferenceId string `jsonp:"picpay_reference_id"`
+	AuthorizationId string `jsonp:"picpay_authorization_id"`
+	CancellationId  string `jsonp:"picpay_cancellation_id"`
+	ReferenceId     string `jsonp:"picpay_reference_id"`
 
-  IsPagarme bool `jsonp:"is_pagarme"`
-  IsPicPay bool `jsonp:"is_picpay"`
-  IsPayZen bool `jsonp:"is_payzen"`
-  IsAsaas bool `jsonp:"is_asaas"`
+	IsPagarme bool `jsonp:"is_pagarme"`
+	IsPicPay  bool `jsonp:"is_picpay"`
+	IsPayZen  bool `jsonp:"is_payzen"`
+	IsAsaas   bool `jsonp:"is_asaas"`
 
-  Balance *Balance `jsonp:""`
-  Movements []*Movement `jsonp:""`
-  Transfers []*TransferResult `jsonp:""`
+	Balance   *Balance          `jsonp:""`
+	Movements []*Movement       `jsonp:""`
+	Transfers []*TransferResult `jsonp:""`
 
-  Customer *Customer `jsonp:""`
+	Customer *Customer `jsonp:""`
 
-  Tag interface{}
+	Tag interface{}
 }
 
 func (this *PaymentResult) isPagarme() bool {
@@ -1034,96 +1107,96 @@ func (this *PaymentResult) BuildStatus() {
 	this.IsPagarme = this.isAsaas()
 
 	switch this.TransactionStatus {
-		case Initial:
-			this.Status = PaymentInitial
-			this.StatusLabel = PaymentInitialLabel
-			break
-		case NotCreated:
-			this.Status = PaymentInitial
-			this.StatusLabel = PaymentInitialLabel
-			break
-		case Authorised:
-			if this.IsPayZen {			
-				this.Status = PaymentPaid
-				this.StatusLabel = PaymentPaidLabel
-			} else {
-				this.Status = PaymentWaitingPayment
-				this.StatusLabel = PaymentWaitingPaymentLabel
-			}
-			break
-		case AuthorisedToValidate:
-			this.Status = PaymentWaitingPayment
-			this.StatusLabel = PaymentWaitingPaymentLabel
-			break
-		case WaitingAuthorisation:
-			this.Status = PaymentWaitingPayment
-			this.StatusLabel = PaymentWaitingPaymentLabel
-			break
-		case WaitingAuthorisationToValidate:
-			this.Status = PaymentWaitingPayment
-			this.StatusLabel = PaymentWaitingPaymentLabel
-			break
-		case Refused:
-			this.Status = PaymentRefused
-			this.StatusLabel = PaymentRefusedLabel
-			break
-		case Captured:
+	case Initial:
+		this.Status = PaymentInitial
+		this.StatusLabel = PaymentInitialLabel
+		break
+	case NotCreated:
+		this.Status = PaymentInitial
+		this.StatusLabel = PaymentInitialLabel
+		break
+	case Authorised:
+		if this.IsPayZen {
 			this.Status = PaymentPaid
 			this.StatusLabel = PaymentPaidLabel
-			break
-		case Cancelled:
-			this.Status = PaymentCancelled
-			this.StatusLabel = PaymentCancelledLabel
-			break			
-		case Expired:
-			this.Status = PaymentExpired
-			this.StatusLabel = PaymentCancelledLabel
-			break			
-		case UnderVerification:
-			this.Status = PaymentOther
-			this.StatusLabel = PaymentOtherLabel
-			break						
-		case PartiallyAuthorised:
-			this.Status = PaymentOther
-			this.StatusLabel = PaymentOtherLabel
-			break						
-		case Refunded:
-			this.Status = PaymentRefound
-			this.StatusLabel = PaymentRefoundLabel
-			break						
-		case Created:
+		} else {
 			this.Status = PaymentWaitingPayment
 			this.StatusLabel = PaymentWaitingPaymentLabel
-			break			
-		case Chargeback:
-			this.Status = PaymentChargeback
-			this.StatusLabel = PaymentChargebackLabel
-			break			
-		case WaitingPayment:
-			this.Status = PaymentWaitingPayment
-			this.StatusLabel = PaymentWaitingPaymentLabel
-			break			
-		case PendingRefund:
-			this.Status = PaymentOther
-			this.StatusLabel = PaymentOtherLabel
-			break			
-		case Analyzing:
-			this.Status = PaymentOther
-			this.StatusLabel = PaymentOtherLabel
-			break			
-		case PendingReview:
-			this.Status = PaymentOther
-			this.StatusLabel = PaymentOtherLabel
-			break						
-		case Success:
-			this.Status = PaymentSuccess
-			this.StatusLabel = PaymentSuccessLabel
-			break						
-		default:
-			this.Status = PaymentError
-			this.StatusLabel = PaymentErrorLabel
-			break						
-	}	
+		}
+		break
+	case AuthorisedToValidate:
+		this.Status = PaymentWaitingPayment
+		this.StatusLabel = PaymentWaitingPaymentLabel
+		break
+	case WaitingAuthorisation:
+		this.Status = PaymentWaitingPayment
+		this.StatusLabel = PaymentWaitingPaymentLabel
+		break
+	case WaitingAuthorisationToValidate:
+		this.Status = PaymentWaitingPayment
+		this.StatusLabel = PaymentWaitingPaymentLabel
+		break
+	case Refused:
+		this.Status = PaymentRefused
+		this.StatusLabel = PaymentRefusedLabel
+		break
+	case Captured:
+		this.Status = PaymentPaid
+		this.StatusLabel = PaymentPaidLabel
+		break
+	case Cancelled:
+		this.Status = PaymentCancelled
+		this.StatusLabel = PaymentCancelledLabel
+		break
+	case Expired:
+		this.Status = PaymentExpired
+		this.StatusLabel = PaymentCancelledLabel
+		break
+	case UnderVerification:
+		this.Status = PaymentOther
+		this.StatusLabel = PaymentOtherLabel
+		break
+	case PartiallyAuthorised:
+		this.Status = PaymentOther
+		this.StatusLabel = PaymentOtherLabel
+		break
+	case Refunded:
+		this.Status = PaymentRefound
+		this.StatusLabel = PaymentRefoundLabel
+		break
+	case Created:
+		this.Status = PaymentWaitingPayment
+		this.StatusLabel = PaymentWaitingPaymentLabel
+		break
+	case Chargeback:
+		this.Status = PaymentChargeback
+		this.StatusLabel = PaymentChargebackLabel
+		break
+	case WaitingPayment:
+		this.Status = PaymentWaitingPayment
+		this.StatusLabel = PaymentWaitingPaymentLabel
+		break
+	case PendingRefund:
+		this.Status = PaymentOther
+		this.StatusLabel = PaymentOtherLabel
+		break
+	case Analyzing:
+		this.Status = PaymentOther
+		this.StatusLabel = PaymentOtherLabel
+		break
+	case PendingReview:
+		this.Status = PaymentOther
+		this.StatusLabel = PaymentOtherLabel
+		break
+	case Success:
+		this.Status = PaymentSuccess
+		this.StatusLabel = PaymentSuccessLabel
+		break
+	default:
+		this.Status = PaymentError
+		this.StatusLabel = PaymentErrorLabel
+		break
+	}
 }
 
 func NewPaymentResult() *PaymentResult {
@@ -1154,7 +1227,7 @@ func NewPaymentResultValidationError(errors map[string]string) *PaymentResultVal
 
 func NewPaymentResultValidationErrorWithErrorKey(message string, key string, value string) *PaymentResultValidationError {
 	result := new(PaymentResultValidationError)
-	result.Error = true	
+	result.Error = true
 	return result.AddError(key, value)
 }
 

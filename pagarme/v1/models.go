@@ -757,7 +757,7 @@ func FormatAmount(amount float64) int64 {
 	return int64(val)
 }
 
-func FormatToFloat(amount int64) float64 {
+func FormatAmountToFloat(amount int64) float64 {
 
 	unformateed := accounting.UnformatNumber(fmt.Sprintf("%v", amount), 2, "BRL")
 	val, _ := strconv.ParseFloat(unformateed, 64)

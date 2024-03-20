@@ -76,13 +76,26 @@ const (
 	JURIDICA PersonType = "JURIDICA"
 )
 
+type WebhookType string
+
+const (
+	WebhookPayment             WebhookType = "PAYMENT"
+	WebhookInvoice             WebhookType = "INVOICE"
+	WebhookTransfer            WebhookType = "TRANSFER"
+	WebhookBill                WebhookType = "BILL"
+	WebhookAnticipation        WebhookType = "RECEIVABLE_ANTICIPATION"
+	WebhookMobilePhoneRecharge WebhookType = "MOBILE_PHONE_RECHARGE"
+	WebhookAccountStatus       WebhookType = "ACCOUNT_STATUS"
+)
+
 type WebhookObject struct {
-	Url         string `json:"url" valid:"Required"`
-	Email       string `json:"email" valid:"Required"`
-	Interrupted bool   `json:"interrupted" valid:"Required"`
-	Enabled     bool   `json:"enabled" valid:"Required"`
-	ApiVersion  int64  `json:"apiVersion" valid:"Required"`
-	AuthToken   string `json:"authToken" valid:"Required"`
+	Url         string      `json:"url" valid:"Required"`
+	Email       string      `json:"email" valid:"Required"`
+	Interrupted bool        `json:"interrupted" valid:"Required"`
+	Enabled     bool        `json:"enabled" valid:"Required"`
+	ApiVersion  int64       `json:"apiVersion" valid:"Required"`
+	AuthToken   string      `json:"authToken" valid:"Required"`
+	Type        WebhookType `json:"type" valid:"Required"`
 }
 
 func NewWebhookObject() *WebhookObject {
@@ -160,10 +173,58 @@ type Account struct {
 	PersonType PersonType `json:"personType,omitempty"`
 
 	//DenialReason string `json:"denialReason,omitempty"`
+
+	Webhooks []*WebhookObject `json:"webhooks"`
+}
+
+func (this *Account) AddWebhook(objects ...*WebhookObject) *Account {
+	for _, object := range objects {
+		this.Webhooks = append(this.Webhooks, object)
+	}
+	return this
 }
 
 func NewAccount(bankAccount *BankAccountSimple) *Account {
 	return &Account{BankAccount: bankAccount}
+}
+
+type AccountStatus struct {
+	Id             string `json:"id"`
+	CommercialInfo string `json:"commercialInfo"`
+	Documentation  string `json:"documentation"`
+	BankAccountInfo  string `json:"bankAccountInfo"`
+	General        string `json:"general"`
+}
+
+type AccountStatusEvent struct {
+	 Event string `json:"event"`
+	 Status *AccountStatus `json:"accountStatus"`
+}
+
+type DocumentResponsible struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+type DocumentEntry struct {
+	Id     string `json:"id"`
+	Status string `json:"status"`
+}
+
+type DocumentDescription struct {
+	Id            string               `json:"id"`
+	Status        string               `json:"status"`
+	Type          string               `json:"type"`
+	Title         string               `json:"title"`
+	Description   string               `json:"description"`
+	Responsible   *DocumentResponsible `json:"responsible"`
+	OnboardingUrl string               `json:"onboardingUrl"`
+	Documents     []*DocumentEntry     `json:"documents"`
+}
+
+type Documents struct {
+	RejectReasons string                 `json:"rejectReasons"`
+	Data          []*DocumentDescription `json:"data"`
 }
 
 type Transfer struct {
@@ -171,8 +232,34 @@ type Transfer struct {
 	BankAccount *BankAccount `json:"bankAccount" valid:"Required"`
 }
 
+
 func NewTransfer(bankAccount *BankAccount, value float64) *Transfer {
 	return &Transfer{Value: value, BankAccount: bankAccount}
+}
+
+type TransferEventData struct {
+	Object string `json:"object"`
+	Id string `json:"id"`
+	DateCreated string `json:"dateCreated"`
+	Status string `json:"status"`
+	EffectiveDate string `json:"effectiveDate"`
+	EndToEndIdentifier string `json:"endToEndIdentifier"`
+	Type string `json:"type"`
+	Value int64 `json:"value"`
+	NetValue int64 `json:"netValue"`
+	TransferFee int64 `json:"transferFee"`
+	ScheduleDate string `json:"scheduleDate"`
+	Authorized bool `json:"authorized"`
+	FailReason string `json:"failReason"`
+	TransactionReceiptUrl string `json:"transactionReceiptUrl"`
+	OperationType string `json:"operationType"`
+	Description string `json:"description"`
+	BankAccount *BankAccount `json:"bankAccount"`
+}
+
+type TransferEvent struct {
+	Event string `json:"event"`
+	Transfer *TransferEventData `json:"transfer"`
 }
 
 type DefaultFilter struct {
@@ -809,8 +896,10 @@ type Response struct {
 	BankAccount                 *BankAccount `json:"bankAccount,omitempty"`
 	TransferResults             *TransferResults
 	AccountResults              *AccountResults
+	AccountStatus               *AccountStatus
 	Webhook                     *WebhookObject
 	WalletResults               *WalletResults
+	Documents                   *Documents
 
 	EncodedImage   string `json:"encodedImage"`
 	Payload        string `json:"payload"`

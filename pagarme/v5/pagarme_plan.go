@@ -9,6 +9,9 @@ import (
 	"reflect"
 )
 
+type SuccessPlan = *Success[PlanPtr]
+type SuccessPlans = *Success[Plans]
+
 type PagarmePlan struct {
 	Pagarme
 }
@@ -19,10 +22,10 @@ func NewPagarmePlan(lang string, auth *Authentication) *PagarmePlan {
 	return p
 }
 
-func (this *PagarmePlan) Create(plan *Plan) *either.Either[*ErrorResponse, PlanPtr] {
+func (this *PagarmePlan) Create(plan *Plan) *either.Either[*ErrorResponse, SuccessPlan] {
 
 	if !this.validate(plan) {
-		return either.Left[*ErrorResponse, PlanPtr](
+		return either.Left[*ErrorResponse, SuccessPlan](
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
@@ -32,14 +35,14 @@ func (this *PagarmePlan) Create(plan *Plan) *either.Either[*ErrorResponse, PlanP
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) PlanPtr {
-				return e.UnwrapRight().Content.(PlanPtr)
+			func(e *either.Either[error, *Response]) SuccessPlan {
+				return NewSuccess[PlanPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmePlan) Get(id string) *either.Either[*ErrorResponse, PlanPtr] {
+func (this *PagarmePlan) Get(id string) *either.Either[*ErrorResponse, SuccessPlan] {
 
-	if empty, left := checkEmpty[PlanPtr]("plan id", id); empty {
+	if empty, left := checkEmpty[SuccessPlan]("plan id", id); empty {
 		return left
 	}
 
@@ -51,12 +54,12 @@ func (this *PagarmePlan) Get(id string) *either.Either[*ErrorResponse, PlanPtr] 
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) PlanPtr {
-				return e.UnwrapRight().Content.(PlanPtr)
+			func(e *either.Either[error, *Response]) SuccessPlan {
+				return NewSuccess[PlanPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmePlan) List(query *PlanQuery) *either.Either[*ErrorResponse, Plans] {
+func (this *PagarmePlan) List(query *PlanQuery) *either.Either[*ErrorResponse, SuccessPlans] {
 
 	uri := fmt.Sprintf("/plans/?%v", url.QueryEscape(query.UrlQuery()))
 
@@ -66,19 +69,19 @@ func (this *PagarmePlan) List(query *PlanQuery) *either.Either[*ErrorResponse, P
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) Plans {
-				return e.UnwrapRight().Content.(*Content[Plans]).Data
+			func(e *either.Either[error, *Response]) SuccessPlans {
+				return NewSuccessSlice[Plans](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmePlan) Update(plan PlanPtr) *either.Either[*ErrorResponse, PlanPtr] {
+func (this *PagarmePlan) Update(plan PlanPtr) *either.Either[*ErrorResponse, SuccessPlan] {
 
-	if empty, left := checkEmpty[PlanPtr]("plan id", plan.Id); empty {
+	if empty, left := checkEmpty[SuccessPlan]("plan id", plan.Id); empty {
 		return left
 	}
 
 	if !this.validate(plan) {
-		return either.Left[*ErrorResponse, PlanPtr](
+		return either.Left[*ErrorResponse, SuccessPlan](
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
@@ -90,14 +93,14 @@ func (this *PagarmePlan) Update(plan PlanPtr) *either.Either[*ErrorResponse, Pla
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) PlanPtr {
-				return e.UnwrapRight().Content.(PlanPtr)
+			func(e *either.Either[error, *Response]) SuccessPlan {
+				return NewSuccess[PlanPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmePlan) Delete(id string) *either.Either[*ErrorResponse, bool] {
+func (this *PagarmePlan) Delete(id string) *either.Either[*ErrorResponse, SuccessBool] {
 
-	if empty, left := checkEmpty[bool]("plan id", id); empty {
+	if empty, left := checkEmpty[SuccessBool]("plan id", id); empty {
 		return left
 	}
 
@@ -109,8 +112,8 @@ func (this *PagarmePlan) Delete(id string) *either.Either[*ErrorResponse, bool] 
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) bool {
-				return true
+			func(e *either.Either[error, *Response]) SuccessBool {
+				return NewSuccessWithValue(e.UnwrapRight(), true)
 			})
 }
 

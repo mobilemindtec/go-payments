@@ -7,6 +7,9 @@ import (
 	"time"
 )
 
+type SuccessCharge = *Success[ChargePtr]
+type SuccessCharges = *Success[Charges]
+
 type PagarmeCharge struct {
 	Pagarme
 }
@@ -17,9 +20,9 @@ func NewPagarmeCharge(lang string, auth *Authentication) *PagarmeCharge {
 	return p
 }
 
-func (this *PagarmeCharge) Capture(id string, code string) *either.Either[*ErrorResponse, ChargePtr] {
+func (this *PagarmeCharge) Capture(id string, code string) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
 		return left
 	}
 
@@ -33,14 +36,14 @@ func (this *PagarmeCharge) Capture(id string, code string) *either.Either[*Error
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) ChargePtr {
-				return e.UnwrapRight().Content.(ChargePtr)
+			func(e *either.Either[error, *Response]) SuccessCharge {
+				return NewSuccess[ChargePtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCharge) Get(id string) *either.Either[*ErrorResponse, ChargePtr] {
+func (this *PagarmeCharge) Get(id string) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
 		return left
 	}
 
@@ -52,20 +55,20 @@ func (this *PagarmeCharge) Get(id string) *either.Either[*ErrorResponse, ChargeP
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) ChargePtr {
-				return e.UnwrapRight().Content.(ChargePtr)
+			func(e *either.Either[error, *Response]) SuccessCharge {
+				return NewSuccess[ChargePtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCharge) UpdateCard(id string, updateData ChargeUpdate) *either.Either[*ErrorResponse, ChargePtr] {
+func (this *PagarmeCharge) UpdateCard(id string, updateData ChargeUpdate) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
 		return left
 	}
 
 	if (len(updateData.CardId) == 0 && len(updateData.CardToken) == 0 && updateData.Card == nil) ||
 		(len(updateData.CardId) > 0 && len(updateData.CardToken) > 0 && updateData.Card != nil) {
-		return either.Left[*ErrorResponse, ChargePtr](
+		return either.Left[*ErrorResponse, SuccessCharge](
 			NewErrorResponse("card id, card token or card is required"))
 	}
 
@@ -77,19 +80,19 @@ func (this *PagarmeCharge) UpdateCard(id string, updateData ChargeUpdate) *eithe
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) ChargePtr {
-				return e.UnwrapRight().Content.(ChargePtr)
+			func(e *either.Either[error, *Response]) SuccessCharge {
+				return NewSuccess[ChargePtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCharge) UpdateDueDate(id string, dueDate time.Time) *either.Either[*ErrorResponse, ChargePtr] {
+func (this *PagarmeCharge) UpdateDueDate(id string, dueDate time.Time) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
 		return left
 	}
 
 	if dueDate.IsZero() {
-		return either.Left[*ErrorResponse, ChargePtr](
+		return either.Left[*ErrorResponse, SuccessCharge](
 			NewErrorResponse("dueDate id is required"))
 	}
 
@@ -102,14 +105,14 @@ func (this *PagarmeCharge) UpdateDueDate(id string, dueDate time.Time) *either.E
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) ChargePtr {
-				return e.UnwrapRight().Content.(ChargePtr)
+			func(e *either.Either[error, *Response]) SuccessCharge {
+				return NewSuccess[ChargePtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCharge) Cancel(id string) *either.Either[*ErrorResponse, ChargePtr] {
+func (this *PagarmeCharge) Cancel(id string) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
 		return left
 	}
 
@@ -121,14 +124,14 @@ func (this *PagarmeCharge) Cancel(id string) *either.Either[*ErrorResponse, Char
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) ChargePtr {
-				return e.UnwrapRight().Content.(ChargePtr)
+			func(e *either.Either[error, *Response]) SuccessCharge {
+				return NewSuccess[ChargePtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCharge) ConfirmPayment(id string, code string, description string) *either.Either[*ErrorResponse, ChargePtr] {
+func (this *PagarmeCharge) ConfirmPayment(id string, code string, description string) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
 		return left
 	}
 
@@ -142,14 +145,14 @@ func (this *PagarmeCharge) ConfirmPayment(id string, code string, description st
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) ChargePtr {
-				return e.UnwrapRight().Content.(ChargePtr)
+			func(e *either.Either[error, *Response]) SuccessCharge {
+				return NewSuccess[ChargePtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCharge) Retry(id string) *either.Either[*ErrorResponse, ChargePtr] {
+func (this *PagarmeCharge) Retry(id string) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[ChargePtr]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
 		return left
 	}
 
@@ -163,12 +166,12 @@ func (this *PagarmeCharge) Retry(id string) *either.Either[*ErrorResponse, Charg
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) ChargePtr {
-				return e.UnwrapRight().Content.(ChargePtr)
+			func(e *either.Either[error, *Response]) SuccessCharge {
+				return NewSuccess[ChargePtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeCharge) List(query *ChargeQuery) *either.Either[*ErrorResponse, Charges] {
+func (this *PagarmeCharge) List(query *ChargeQuery) *either.Either[*ErrorResponse, SuccessCharges] {
 
 	uri := fmt.Sprintf("/charges?%v", query.UrlQuery())
 
@@ -178,7 +181,8 @@ func (this *PagarmeCharge) List(query *ChargeQuery) *either.Either[*ErrorRespons
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) Charges {
-				return e.UnwrapRight().Content.(*Content[Charges]).Data
+			func(e *either.Either[error, *Response]) SuccessCharges {
+
+				return NewSuccessSlice[Charges](e.UnwrapRight())
 			})
 }

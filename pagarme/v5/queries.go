@@ -132,6 +132,8 @@ type TransferQuery struct {
 	Status       ChargeStatus `jsonp:"status,omitempty"`
 	CreatedSince time.Time    `jsonp:"created_since,date,omitempty"`
 	CreatedUntil time.Time    `jsonp:"created_until,date,omitempty"`
+	Page         int          `jsonp:"page,omitempty"`
+	Size         int          `jsonp:"size,omitempty"`
 }
 
 func (this *TransferQuery) UrlQuery() string {
@@ -141,4 +143,22 @@ func (this *TransferQuery) UrlQuery() string {
 
 func NewTransferQuery() *TransferQuery {
 	return &TransferQuery{}
+}
+
+type BalanceQuery struct {
+	Status       ChargeStatus `jsonp:"status,omitempty"`
+	CreatedSince time.Time    `jsonp:"created_since,date,omitempty"`
+	CreatedUntil time.Time    `jsonp:"created_until,date,omitempty"`
+	RecipientId  string       `jsonp:"recipient_id"`
+	Page         int          `jsonp:"page,omitempty"`
+	Size         int          `jsonp:"size,omitempty"`
+}
+
+func (this *BalanceQuery) UrlQuery() string {
+	m, _ := json.EncodeAsMap(this)
+	return maps.ToUrlQuery(m)
+}
+
+func NewBalanceQuery() *BalanceQuery {
+	return &BalanceQuery{}
 }

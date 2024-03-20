@@ -8,6 +8,12 @@ import (
 	"reflect"
 )
 
+type SuccessSubscription = *Success[SubscriptionPtr]
+type SuccessSubscriptions = *Success[Subscriptions]
+
+type SuccessSubscriptionItem = *Success[SubscriptionItemPtr]
+type SuccessSubscriptionItems = *Success[SubscriptionItems]
+
 type CancelPendingInvoices bool
 type CardId string
 
@@ -26,10 +32,10 @@ func NewPagarmeSubscription(lang string, auth *Authentication) *PagarmeSubscript
 	return p
 }
 
-func (this *PagarmeSubscription) Create(subscription SubscriptionPtr) *either.Either[*ErrorResponse, SubscriptionPtr] {
+func (this *PagarmeSubscription) Create(subscription SubscriptionPtr) *either.Either[*ErrorResponse, SuccessSubscription] {
 
 	if !this.validate(subscription) {
-		return either.Left[*ErrorResponse, SubscriptionPtr](
+		return either.Left[*ErrorResponse, SuccessSubscription](
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
@@ -39,14 +45,14 @@ func (this *PagarmeSubscription) Create(subscription SubscriptionPtr) *either.Ei
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) SubscriptionPtr {
-				return e.UnwrapRight().Content.(SubscriptionPtr)
+			func(e *either.Either[error, *Response]) SuccessSubscription {
+				return NewSuccess[SubscriptionPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeSubscription) Get(id string) *either.Either[*ErrorResponse, SubscriptionPtr] {
+func (this *PagarmeSubscription) Get(id string) *either.Either[*ErrorResponse, SuccessSubscription] {
 
-	if empty, left := checkEmpty[SubscriptionPtr]("subscription id", id); empty {
+	if empty, left := checkEmpty[SuccessSubscription]("subscription id", id); empty {
 		return left
 	}
 
@@ -58,12 +64,12 @@ func (this *PagarmeSubscription) Get(id string) *either.Either[*ErrorResponse, S
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) SubscriptionPtr {
-				return e.UnwrapRight().Content.(SubscriptionPtr)
+			func(e *either.Either[error, *Response]) SuccessSubscription {
+				return NewSuccess[SubscriptionPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeSubscription) List(query *SubscriptionQuery) *either.Either[*ErrorResponse, *Content[Subscriptions]] {
+func (this *PagarmeSubscription) List(query *SubscriptionQuery) *either.Either[*ErrorResponse, SuccessSubscriptions] {
 
 	uri := fmt.Sprintf("/subscriptions/?%v", query.UrlQuery())
 
@@ -73,12 +79,12 @@ func (this *PagarmeSubscription) List(query *SubscriptionQuery) *either.Either[*
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) *Content[Subscriptions] {
-				return e.UnwrapRight().Content.(*Content[Subscriptions])
+			func(e *either.Either[error, *Response]) SuccessSubscriptions {
+				return NewSuccessSlice[Subscriptions](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeSubscription) ListItems(id string) *either.Either[*ErrorResponse, *Content[SubscriptionItems]] {
+func (this *PagarmeSubscription) ListItems(id string) *either.Either[*ErrorResponse, SuccessSubscriptionItems] {
 
 	uri := fmt.Sprintf("/subscriptions/%v/items", id)
 
@@ -88,14 +94,14 @@ func (this *PagarmeSubscription) ListItems(id string) *either.Either[*ErrorRespo
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) *Content[SubscriptionItems] {
-				return e.UnwrapRight().Content.(*Content[SubscriptionItems])
+			func(e *either.Either[error, *Response]) SuccessSubscriptionItems {
+				return NewSuccess[SubscriptionItems](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeSubscription) Cancel(id string, cancelPendingInvoices CancelPendingInvoices) *either.Either[*ErrorResponse, bool] {
+func (this *PagarmeSubscription) Cancel(id string, cancelPendingInvoices CancelPendingInvoices) *either.Either[*ErrorResponse, SuccessBool] {
 
-	if empty, left := checkEmpty[bool]("subscription id", id); empty {
+	if empty, left := checkEmpty[SuccessBool]("subscription id", id); empty {
 		return left
 	}
 
@@ -108,19 +114,19 @@ func (this *PagarmeSubscription) Cancel(id string, cancelPendingInvoices CancelP
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) bool {
-				return true
+			func(e *either.Either[error, *Response]) SuccessBool {
+				return NewSuccessWithValue[bool](e.UnwrapRight(), true)
 			})
 }
 
-func (this *PagarmeSubscription) UpdateCard(updateData *SubscriptionUpdate) *either.Either[*ErrorResponse, bool] {
+func (this *PagarmeSubscription) UpdateCard(updateData *SubscriptionUpdate) *either.Either[*ErrorResponse, SuccessBool] {
 
-	if empty, left := checkEmpty[bool]("subscription id", updateData.Id); empty {
+	if empty, left := checkEmpty[SuccessBool]("subscription id", updateData.Id); empty {
 		return left
 	}
 
 	if (len(updateData.CardId) == 0 && updateData.Card == nil) || (len(updateData.CardId) > 0 && updateData.Card != nil) {
-		return either.Left[*ErrorResponse, bool](
+		return either.Left[*ErrorResponse, SuccessBool](
 			NewErrorResponse("card id or card is required"))
 	}
 
@@ -132,24 +138,24 @@ func (this *PagarmeSubscription) UpdateCard(updateData *SubscriptionUpdate) *eit
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) bool {
-				return true
+			func(e *either.Either[error, *Response]) SuccessBool {
+				return NewSuccessWithValue[bool](e.UnwrapRight(), true)
 			})
 }
 
-func (this *PagarmeSubscription) UpdatePaymentMethod(updateData *SubscriptionUpdate) *either.Either[*ErrorResponse, bool] {
+func (this *PagarmeSubscription) UpdatePaymentMethod(updateData *SubscriptionUpdate) *either.Either[*ErrorResponse, SuccessBool] {
 
-	if empty, left := checkEmpty[bool]("subscription id", updateData.Id); empty {
+	if empty, left := checkEmpty[SuccessBool]("subscription id", updateData.Id); empty {
 		return left
 	}
 
 	if len(updateData.PaymentMethod) == 0 {
-		return either.Left[*ErrorResponse, bool](
+		return either.Left[*ErrorResponse, SuccessBool](
 			NewErrorResponse("payment_method is required"))
 	}
 
 	if (len(updateData.CardId) == 0 && len(updateData.CardToken) == 0) || (len(updateData.CardId) > 0 && len(updateData.CardToken) > 0) {
-		return either.Left[*ErrorResponse, bool](
+		return either.Left[*ErrorResponse, SuccessBool](
 			NewErrorResponse("card is or card token is required"))
 	}
 
@@ -161,14 +167,14 @@ func (this *PagarmeSubscription) UpdatePaymentMethod(updateData *SubscriptionUpd
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) bool {
-				return true
+			func(e *either.Either[error, *Response]) SuccessBool {
+				return NewSuccessWithValue[bool](e.UnwrapRight(), true)
 			})
 }
 
-func (this *PagarmeSubscription) UpdateItem(subscriptionId string, itemId string, item SubscriptionItemPtr) *either.Either[*ErrorResponse, SubscriptionItemPtr] {
+func (this *PagarmeSubscription) UpdateItem(subscriptionId string, itemId string, item SubscriptionItemPtr) *either.Either[*ErrorResponse, SuccessSubscriptionItem] {
 
-	if empty, left := checkEmpty[SubscriptionItemPtr]("subscription id and subscription item id", subscriptionId, itemId); empty {
+	if empty, left := checkEmpty[SuccessSubscriptionItem]("subscription id and subscription item id", subscriptionId, itemId); empty {
 		return left
 	}
 
@@ -180,8 +186,8 @@ func (this *PagarmeSubscription) UpdateItem(subscriptionId string, itemId string
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) SubscriptionItemPtr {
-				return e.UnwrapRight().Content.(SubscriptionItemPtr)
+			func(e *either.Either[error, *Response]) SuccessSubscriptionItem {
+				return NewSuccess[SubscriptionItemPtr](e.UnwrapRight())
 			})
 }
 

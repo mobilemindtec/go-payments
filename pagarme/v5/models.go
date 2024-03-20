@@ -2,10 +2,12 @@ package v5
 
 import (
 	"fmt"
+	"github.com/mobilemindtec/go-payments/api"
 	"log"
 	"time"
 
 	"github.com/beego/beego/v2/core/logs"
+	"github.com/mobilemindtec/go-utils/v2/optional"
 )
 
 type CustomerType string
@@ -27,8 +29,9 @@ type TransferInterval string
 type BankAccountType string
 
 const (
-	BRL        Currency = "BRL"
-	DateLayout          = "2006-01-02"
+	BRL            Currency = "BRL"
+	DateLayout              = "2006-01-02"
+	DateTimeLayout          = "2006-01-02T15:04:05"
 )
 
 const (
@@ -149,12 +152,51 @@ type Order struct {
 	SessionId        string       `json:"session_id"`
 	AntifraudEnabled bool         `json:"antifraud_enabled"`
 
-	Id        string      `json:"id,omitempty"`
+	Id     string `json:"id,omitempty"`
+	Amount int64  `json:"amount,omitempty"`
+
 	Status    string      `json:"status,omitempty"`
 	CreatedAt string      `json:"created_at,omitempty"`
 	UpdatedAt string      `json:"updated_at,omitempty"`
 	Charges   []*Charge   `json:"charges,omitempty"`
 	Checkouts []*Checkout `json:"checkouts,omitempty"`
+}
+
+func (this *Order) GetLastTransaction() *optional.Optional[LastTransactionPtr] {
+	if len(this.Charges) > 0 {
+		return optional.Of[LastTransactionPtr](this.Charges[len(this.Charges)-1].LastTransaction)
+	}
+	return optional.OfNone[LastTransactionPtr]()
+}
+
+func (this *Order) GetStatus() api.PagarmeV5Status {
+	return optional.Map[LastTransactionPtr, api.PagarmeV5Status](
+		this.GetLastTransaction(),
+		func(transaction LastTransactionPtr) *optional.Optional[api.PagarmeV5Status] {
+			return optional.Of[api.PagarmeV5Status](transaction.Status)
+		},
+	).
+		GetOrElse(api.PagarmeV5None)
+}
+
+func (this *Order) GetTranscationId() string {
+	return optional.Map[LastTransactionPtr, string](
+		this.GetLastTransaction(),
+		func(transaction LastTransactionPtr) *optional.Optional[string] {
+			return optional.Of[string](transaction.Id)
+		},
+	).
+		GetOrElse("")
+}
+
+func (this *Order) GetPayZenSOAPStatus() api.TransactionStatus {
+	return optional.Map[LastTransactionPtr, api.TransactionStatus](
+		this.GetLastTransaction(),
+		func(transaction LastTransactionPtr) *optional.Optional[api.TransactionStatus] {
+			return optional.Of[api.TransactionStatus](transaction.GetPayZenSOAPStatus())
+		},
+	).
+		GetOrElse(api.NotCreated)
 }
 
 type OrderPtr = *Order
@@ -173,6 +215,13 @@ func (this *Order) AddItem() *OrderItem {
 func (this *Order) AddPayment(amount int64, method PaymentMethod) *Order {
 	this.Payments = append(this.Payments, NewPayment(amount, method))
 	return this
+}
+
+func (this *Order) GetPayment() *Payment {
+	if len(this.Payments) > 0 {
+		return this.Payments[0]
+	}
+	return nil
 }
 
 func (this *Order) WithBoleto(cb func(*Boleto)) *Order {
@@ -349,8 +398,8 @@ type Boleto struct {
 	Bank           BankCode   `json:"bank" valid:"Required"`
 	Instructions   string     `json:"instructions" valid:"MaxSize(256)"`
 	DueAt          string     `json:"due_at"`
-	NossoNumero    string     `json:"nosso_numero"`
-	Type           BoletoType `json:"type"`
+	NossoNumero    string     `json:"nosso_numero,omitempty"`
+	Type           BoletoType `json:"type,omitempty"`
 	DocumentNumber string     `json:"document_number" valid:"MaxSize(16)"` // Identificador do boleto
 	Interest       *Interest  `json:"interest"`
 	Fine           *Fine      `json:"fine"`
@@ -363,19 +412,19 @@ func NewBoleto() *Boleto {
 type Interest struct {
 	Days   int64         `json:"days" valid:"Required"`
 	Type   OperationType `json:"type" valid:"Required"`
-	Amount string        `json:"amount" valid:"Required"` // Valor em porcentagem ou em centavos da taxa de juros que será cobrada ao mês.
+	Amount int64         `json:"amount" valid:"Required"` // Valor em porcentagem ou em centavos da taxa de juros que será cobrada ao mês.
 }
 
 type Fine struct {
 	Days   int64         `json:"days" valid:"Required"`
 	Type   OperationType `json:"type" valid:"Required"`
-	Amount string        `json:"amount" valid:"Required"` // Valor em porcentagem ou em centavos da taxa de juros que será cobrada ao mês.
+	Amount int64         `json:"amount" valid:"Required"` // Valor em porcentagem ou em centavos da taxa de juros que será cobrada ao mês.
 }
 
 type Pix struct {
 	ExpiresIn             int64                  `json:"expires_in" ` //Data de expiração do Pix em segundos.
 	ExpiresAt             string                 `json:"expires_at"`  // Data de expiração do Pix [Formato: YYYY-MM-DDThh:mm:ss] UTC
-	AdditionalInformation *AdditionalInformation `json:"additional_information"`
+	AdditionalInformation *AdditionalInformation `json:"additional_information,omitempty"`
 }
 
 func NewPix() *Pix {
@@ -446,6 +495,14 @@ func (this *Plan) SetIntervalRule(interval Interval, count int64) *Plan {
 	this.Interval = interval
 	this.IntervalCount = count
 	return this
+}
+
+func (this *Plan) GetAmount() int64 {
+	var amount int64
+	for _, it := range this.Items {
+		amount += it.PricingScheme.Price * it.Quantity
+	}
+	return amount
 }
 
 func NewPlan(name string) *Plan {
@@ -676,7 +733,7 @@ type ErrorResponse struct {
 }
 
 func (this *ErrorResponse) String() string {
-	return fmt.Sprint("%v - %v", this.Message, this.Errors)
+	return fmt.Sprint("State: %v: %v - %v", this.StatusCode, this.Message, this.Errors)
 }
 
 func NewErrorResponse(msg string) *ErrorResponse {
@@ -694,6 +751,36 @@ type Paging struct {
 type Content[T any] struct {
 	Paging *Paging `json:"paging"`
 	Data   T       `json:"data"`
+}
+
+type Success[T any] struct {
+	Data        T
+	RawResponse string
+	RawRequest  string
+}
+
+func NewSuccess[T any](response *Response) *Success[T] {
+	return &Success[T]{
+		Data:        response.Content.(T),
+		RawRequest:  response.RawRequest,
+		RawResponse: response.RawResponse,
+	}
+}
+
+func NewSuccessWithValue[T any](response *Response, val T) *Success[T] {
+	return &Success[T]{
+		Data:        val,
+		RawRequest:  response.RawRequest,
+		RawResponse: response.RawResponse,
+	}
+}
+
+func NewSuccessSlice[T any](response *Response) *Success[T] {
+	return &Success[T]{
+		Data:        response.Content.(*Content[T]).Data,
+		RawRequest:  response.RawRequest,
+		RawResponse: response.RawResponse,
+	}
 }
 
 type Response struct {
@@ -718,6 +805,27 @@ func (this *Response) HasError() bool {
 		return len(this.Error.Errors) > 0
 	}
 	return false
+}
+
+func (this *Response) HasErrors() bool {
+	if this.Error.Errors != nil {
+		return len(this.Error.Errors) > 0
+	}
+	return false
+}
+
+func (this *Response) GetErrros() map[string]string {
+	if this.Error.Errors != nil {
+		return this.Error.Errors
+	}
+	return make(map[string]string)
+}
+
+func (this *Response) GetMessage() string {
+	if len(this.Error.Message) > 0 {
+		return this.Error.Message
+	}
+	return ""
 }
 
 type Charge struct {
@@ -752,29 +860,67 @@ type Checkout struct {
 }
 
 type LastTransaction struct {
-	Id                  string             `json:"id"`
-	TransactionType     string             `json:"transaction_type"`
-	GatewayId           string             `json:"gateway_id"`
-	Amount              int64              `json:"amount"`
-	Status              string             `json:"status"`
-	Success             bool               `json:"success"`
-	Installments        int64              `json:"installments"`
-	StatementDescriptor string             `json:"statement_descriptor"`
-	AcquirerName        string             `json:"acquirer_name"`
-	AcquirerTID         string             `json:"acquirer_tid"`
-	AcquirerNSU         string             `json:"acquirer_nsu"`
-	AcquirerAuthCode    string             `json:"acquirer_auth_code"`
-	AcquirerMessage     string             `json:"acquirer_message"`
-	AcquirerReturnCode  string             `json:"acquirer_return_code"`
-	OperationType       string             `json:"operation_type"`
-	Card                *Card              `json:"card"`
-	FundingSource       string             `json:"funding_source"`
-	CreatedAt           string             `json:"created_at"`
-	UpdatedAt           string             `json:"updated_at"`
-	GatewayResponse     *GatewayResponse   `json:"gateway_response"`
-	AntifraudResponse   *AntifraudResponse `json:"antifraud_response"`
-	Metadata            map[string]string  `json:"metadata"`
+	Id                  string              `json:"id"`
+	TransactionType     string              `json:"transaction_type"`
+	GatewayId           string              `json:"gateway_id"`
+	Amount              int64               `json:"amount"`
+	Status              api.PagarmeV5Status `json:"status"`
+	Success             bool                `json:"success"`
+	Installments        int64               `json:"installments"`
+	StatementDescriptor string              `json:"statement_descriptor"`
+	AcquirerName        string              `json:"acquirer_name"`
+	AcquirerTID         string              `json:"acquirer_tid"`
+	AcquirerNSU         string              `json:"acquirer_nsu"`
+	AcquirerAuthCode    string              `json:"acquirer_auth_code"`
+	AcquirerMessage     string              `json:"acquirer_message"`
+	AcquirerReturnCode  string              `json:"acquirer_return_code"`
+	OperationType       string              `json:"operation_type"`
+	Card                *Card               `json:"card"`
+	FundingSource       string              `json:"funding_source"`
+	CreatedAt           string              `json:"created_at"`
+	UpdatedAt           string              `json:"updated_at"`
+	GatewayResponse     *GatewayResponse    `json:"gateway_response"`
+	AntifraudResponse   *AntifraudResponse  `json:"antifraud_response"`
+	Metadata            map[string]string   `json:"metadata"`
+
+	Url         string `json:"url,omitempty"`
+	Pdf         string `json:"pdf,omitempty"`
+	Line        string `json:"line,omitempty"`
+	Barcode     string `json:"barcode,omitempty"`
+	QrCode      string `json:"qr_code,omitempty"`
+	QrCodeUrl   string `json:"qr_code_url,omitempty"`
+	ExpiresAt   string `json:"expires_at,omitempty"`
+	NossoNumero string `json:"nosso_numero,omitempty"`
 }
+
+func (this *LastTransaction) GetPayZenSOAPStatus() api.TransactionStatus {
+	switch this.Status {
+	case api.PagarmeV5Generated:
+		return api.Created
+	case api.PagarmeV5AuthorizedPendingCapture, api.PagarmeV5WaitingCapture:
+		return api.Authorised
+	case api.PagarmeV5Captured, api.PagarmeV5PartialCapture:
+		return api.Captured
+	case api.PagarmeV5Refunded, api.PagarmeV5PartialRefunded:
+		return api.Refunded
+	case api.PagarmeV5WaitingPayment:
+		return api.WaitingPayment
+	case api.PagarmeV5PendingRefund:
+		return api.PendingRefund
+	case api.PagarmeV5NotAuthorized:
+		return api.Refused
+	case api.PagarmeV5Voided, api.PagarmeV5PartialVoid:
+		return api.Cancelled
+	case api.PagarmeV5Paid:
+		return api.Success
+	case api.PagarmeV5None:
+		return api.NotCreated
+	default:
+		return api.Error
+	}
+}
+
+type LastTransactionPtr = *LastTransaction
 
 type TransferSettings struct {
 	TransferEnabled  bool             `json:"transfer_enabled"`
@@ -824,6 +970,38 @@ type Balance struct {
 }
 
 type BalancePtr = *Balance
+
+type BalanceOperation struct {
+	Id             string `json:"id"`
+	Status         string `json:"status"`
+	BalanceAmount  int64  `json:"balance_amount"`
+	Type           string `json:"type"`
+	Amount         int64  `json:"amount"`
+	Fee            int64  `json:"fee"`
+	CreatedAt      string `json:"created_at"`
+	MovementObject string `json:"movement_object"`
+}
+
+type BalanceOperationPtr = *BalanceOperation
+type BalanceOperations = []BalanceOperationPtr
+
+type MovementObject struct {
+	Fee               int64  `json:"fee"`
+	AnticipationFee   int64  `json:"anticipation_fee"`
+	FraudCoverageFee  int64  `json:"fraud_coverage_fee"`
+	RecipientId       string `json:"recipient_id"`
+	OriginatorModel   string `json:"originator_model"`
+	OriginatorModelId string `json:"originator_model_id"`
+	PaymentDate       string `json:"payment_date"`
+	PaymentMethod     string `json:"payment_method"`
+	Object            string `json:"object"`
+	Id                string `json:"id"`
+	Status            string `json:"status"`
+	Amount            int64  `json:"amount"`
+	CreatedAt         string `json:"created_at"`
+	Type              string `json:"type"`
+	GatewayId         string `json:"gateway_id"`
+}
 
 type Transfer struct {
 	Id          string       `json:"id"`

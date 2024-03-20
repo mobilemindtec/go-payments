@@ -1,17 +1,16 @@
 package gopayments
 
 import (
-  "github.com/mobilemindtec/go-payments/picpay"
-  "github.com/mobilemindtec/go-payments/api"
+	"fmt"
+	"github.com/mobilemindtec/go-payments/api"
+	"github.com/mobilemindtec/go-payments/picpay"
 	"testing"
 	"time"
-	"fmt"
 )
 
-
-//go test -v  github.com/mobilemindtec/go-payments/tests -run TestPicPayCreateTransaction
+// go test -v  github.com/mobilemindtec/go-payments/tests -run TestPicPayCreateTransaction
 func TestPicPayCreateTransaction(t *testing.T) {
-		
+
 	Picpay := picpay.NewPicPay("pt-BR", Token, SallerToken)
 	Picpay.Debug = true
 
@@ -27,78 +26,73 @@ func TestPicPayCreateTransaction(t *testing.T) {
 	request.CallbackUrl = fmt.Sprintf("https://portal.appmobloja.com.br/gateway/picpay/postback/%v", request.ReferenceId)
 	request.ReturnUrl = fmt.Sprintf("https://portal.appmobloja.com.br/gateway/picpay/success/%v", request.ReferenceId)
 	request.Value = "5"
-	//request.Plugin = 
-	//request.AdditionalInfo = 
-	request.ExpiresAt	 = time.Now().Add(time.Duration(time.Hour * 48))
-	
+	//request.Plugin =
+	//request.AdditionalInfo =
+	request.ExpiresAt = time.Now().Add(time.Duration(time.Hour * 48))
 
 	result, err := Picpay.CreateTransaction(request)
-	
 
-  if err != nil {
-  	t.Errorf("Erro ao criar transacao: %v", err)
-  }else{
+	if err != nil {
+		t.Errorf("Erro ao criar transacao: %v", err)
+	} else {
 
-  	t.Log(fmt.Sprintf("result = %v", result))
-  }
+		t.Log(fmt.Sprintf("result = %v", result))
+	}
 
-  client.Set("ReferenceId", request.ReferenceId, 0)
+	CacheClient.Set("ReferenceId", request.ReferenceId, 0)
 }
 
-//go test -v  github.com/mobilemindtec/go-payments/tests -run TestPicPayCheckStatus
+// go test -v  github.com/mobilemindtec/go-payments/tests -run TestPicPayCheckStatus
 func TestPicPayCheckStatus(t *testing.T) {
-		
+
 	Picpay := picpay.NewPicPay("pt-BR", Token, SallerToken)
 	Picpay.Debug = true
 
-	referenceId, _ := client.Get("ReferenceId").Result()
+	referenceId, _ := CacheClient.Get("ReferenceId").Result()
 	result, err := Picpay.CheckStatus(referenceId)
-	
 
-  if err != nil {
-  	t.Errorf("Erro ao verificar status: %v", err)
-  }else{
+	if err != nil {
+		t.Errorf("Erro ao verificar status: %v", err)
+	} else {
 
-  	if result.Transaction.StatusText != "created" {
-  		t.Errorf("Status esperado: created, encontrado %v", result.Transaction.StatusText)
-  		return
-  	}
+		if result.Transaction.StatusText != "created" {
+			t.Errorf("Status esperado: created, encontrado %v", result.Transaction.StatusText)
+			return
+		}
 
-  	if result.Transaction.PicPayStatus != api.PicPayCreated {
-  		t.Errorf("Status esperado: PicPayCreated, encontrado %v", result.Transaction.PicPayStatus)
-  		return
-  	}
+		if result.Transaction.PicPayStatus != api.PicPayCreated {
+			t.Errorf("Status esperado: PicPayCreated, encontrado %v", result.Transaction.PicPayStatus)
+			return
+		}
 
-  	t.Log(fmt.Sprintf("result = %v", result))
-  }
+		t.Log(fmt.Sprintf("result = %v", result))
+	}
 }
 
-//go test -v  github.com/mobilemindtec/go-payments/tests -run TestPicPayCheckCancel
+// go test -v  github.com/mobilemindtec/go-payments/tests -run TestPicPayCheckCancel
 func TestPicPayCheckCancel(t *testing.T) {
-		
+
 	Picpay := picpay.NewPicPay("pt-BR", Token, SallerToken)
 	Picpay.Debug = true
 
-	referenceId, _ := client.Get("ReferenceId").Result()
+	referenceId, _ := CacheClient.Get("ReferenceId").Result()
 	result, err := Picpay.Cancel(referenceId, "")
-	
 
-  if err != nil {
-  	t.Errorf("Erro ao verificar status: %v", err)
-  }else{
+	if err != nil {
+		t.Errorf("Erro ao verificar status: %v", err)
+	} else {
 
-  	if result.Transaction.StatusText != "created" {
-  		t.Errorf("Status esperado: created, encontrado %v", result.Transaction.StatusText)
-  		return
-  	}
+		if result.Transaction.StatusText != "created" {
+			t.Errorf("Status esperado: created, encontrado %v", result.Transaction.StatusText)
+			return
+		}
 
-  	if result.Transaction.PicPayStatus != api.PicPayCreated {
-  		t.Errorf("Status esperado: PicPayCreated, encontrado %v", result.Transaction.PicPayStatus)
-  		return
-  	}
+		if result.Transaction.PicPayStatus != api.PicPayCreated {
+			t.Errorf("Status esperado: PicPayCreated, encontrado %v", result.Transaction.PicPayStatus)
+			return
+		}
 
-  	t.Log(fmt.Sprintf("result = %v", result))
-  }
-
+		t.Log(fmt.Sprintf("result = %v", result))
+	}
 
 }

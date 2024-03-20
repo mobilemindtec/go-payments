@@ -8,6 +8,15 @@ import (
 	"reflect"
 )
 
+type SuccessRecipient = *Success[RecipientPtr]
+type SuccessRecipients = *Success[Recipients]
+
+type SuccessBalance = *Success[BalancePtr]
+type SuccessBalanceOperations = *Success[BalanceOperations]
+
+type SuccessTransfer = *Success[TransferPtr]
+type SuccessTransfers = *Success[Transfers]
+
 type PagarmeRecipient struct {
 	Pagarme
 }
@@ -18,10 +27,10 @@ func NewPagarmeRecipient(lang string, auth *Authentication) *PagarmeRecipient {
 	return p
 }
 
-func (this *PagarmeRecipient) Create(recipient *Recipient) *either.Either[*ErrorResponse, RecipientPtr] {
+func (this *PagarmeRecipient) Create(recipient *Recipient) *either.Either[*ErrorResponse, SuccessRecipient] {
 
 	if !this.validate(recipient) {
-		return either.Left[*ErrorResponse, RecipientPtr](
+		return either.Left[*ErrorResponse, SuccessRecipient](
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
@@ -31,14 +40,14 @@ func (this *PagarmeRecipient) Create(recipient *Recipient) *either.Either[*Error
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) RecipientPtr {
-				return e.UnwrapRight().Content.(RecipientPtr)
+			func(e *either.Either[error, *Response]) SuccessRecipient {
+				return NewSuccess[RecipientPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeRecipient) Update(id string, recipient *RecipientUpdate) *either.Either[*ErrorResponse, RecipientPtr] {
+func (this *PagarmeRecipient) Update(id string, recipient *RecipientUpdate) *either.Either[*ErrorResponse, SuccessRecipient] {
 
-	if empty, left := checkEmpty[RecipientPtr]("recipiente id", id); empty {
+	if empty, left := checkEmpty[SuccessRecipient]("recipiente id", id); empty {
 		return left
 	}
 
@@ -50,14 +59,14 @@ func (this *PagarmeRecipient) Update(id string, recipient *RecipientUpdate) *eit
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) RecipientPtr {
-				return e.UnwrapRight().Content.(RecipientPtr)
+			func(e *either.Either[error, *Response]) SuccessRecipient {
+				return NewSuccess[RecipientPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeRecipient) Gt(id string) *either.Either[*ErrorResponse, RecipientPtr] {
+func (this *PagarmeRecipient) Gt(id string) *either.Either[*ErrorResponse, SuccessRecipient] {
 
-	if empty, left := checkEmpty[RecipientPtr]("recipiente id", id); empty {
+	if empty, left := checkEmpty[SuccessRecipient]("recipiente id", id); empty {
 		return left
 	}
 
@@ -69,34 +78,34 @@ func (this *PagarmeRecipient) Gt(id string) *either.Either[*ErrorResponse, Recip
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) RecipientPtr {
-				return e.UnwrapRight().Content.(RecipientPtr)
+			func(e *either.Either[error, *Response]) SuccessRecipient {
+				return NewSuccess[RecipientPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeRecipient) List() *either.Either[*ErrorResponse, Recipients] {
+func (this *PagarmeRecipient) List() *either.Either[*ErrorResponse, SuccessRecipients] {
 
 	return either.
 		MapIf(
-			this.get("/recipients", createParserContent[Recipients]()),
+			this.get("/recipients", createParserContent[SuccessRecipients]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) Recipients {
-				return e.UnwrapRight().Content.(Recipients)
+			func(e *either.Either[error, *Response]) SuccessRecipients {
+				return NewSuccessSlice[Recipients](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeRecipient) UpdateTransferSettings(id string, settings *TransferSettings) *either.Either[*ErrorResponse, bool] {
+func (this *PagarmeRecipient) UpdateTransferSettings(id string, settings *TransferSettings) *either.Either[*ErrorResponse, SuccessBool] {
 
-	if empty, left := checkEmpty[bool]("recipiente id", id); empty {
+	if empty, left := checkEmpty[SuccessBool]("recipiente id", id); empty {
 		return left
 	}
 
 	switch settings.TransferInterval {
 	case Daily:
 		if settings.TransferDay <= 0 {
-			return either.Left[*ErrorResponse, bool](
+			return either.Left[*ErrorResponse, SuccessBool](
 				NewErrorResponse("transfer day is required"))
 
 		}
@@ -110,14 +119,14 @@ func (this *PagarmeRecipient) UpdateTransferSettings(id string, settings *Transf
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) bool {
-				return true
+			func(e *either.Either[error, *Response]) SuccessBool {
+				return NewSuccessWithValue(e.UnwrapRight(), true)
 			})
 }
 
-func (this *PagarmeRecipient) UpdateBankAccount(id string, account BankAccount) *either.Either[*ErrorResponse, bool] {
+func (this *PagarmeRecipient) UpdateBankAccount(id string, account BankAccount) *either.Either[*ErrorResponse, SuccessBool] {
 
-	if empty, left := checkEmpty[bool]("recipiente id", id); empty {
+	if empty, left := checkEmpty[SuccessBool]("recipiente id", id); empty {
 		return left
 	}
 
@@ -129,14 +138,14 @@ func (this *PagarmeRecipient) UpdateBankAccount(id string, account BankAccount) 
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) bool {
-				return true
+			func(e *either.Either[error, *Response]) SuccessBool {
+				return NewSuccessWithValue(e.UnwrapRight(), true)
 			})
 }
 
-func (this *PagarmeRecipient) BalancePtr(recipientId string) *either.Either[*ErrorResponse, BalancePtr] {
+func (this *PagarmeRecipient) Balance(recipientId string) *either.Either[*ErrorResponse, SuccessBalance] {
 
-	if empty, left := checkEmpty[BalancePtr]("recipiente id", recipientId); empty {
+	if empty, left := checkEmpty[SuccessBalance]("recipiente id", recipientId); empty {
 		return left
 	}
 
@@ -148,14 +157,33 @@ func (this *PagarmeRecipient) BalancePtr(recipientId string) *either.Either[*Err
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) BalancePtr {
-				return e.UnwrapRight().Content.(BalancePtr)
+			func(e *either.Either[error, *Response]) SuccessBalance {
+				return NewSuccess[BalancePtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeRecipient) CreateTransfer(recipientId string, amount int64) *either.Either[*ErrorResponse, TransferPtr] {
+func (this *PagarmeRecipient) BalanceOperations(recipientId string, query *BalanceQuery) *either.Either[*ErrorResponse, SuccessBalanceOperations] {
 
-	if empty, left := checkEmpty[TransferPtr]("recipiente id", recipientId); empty {
+	if empty, left := checkEmpty[SuccessBalanceOperations]("recipiente id", recipientId); empty {
+		return left
+	}
+
+	uri := fmt.Sprintf("/balance/operations?%b", query.UrlQuery())
+
+	return either.
+		MapIf(
+			this.get(uri, createParserContent[BalanceOperations]()),
+			func(e *either.Either[error, *Response]) *ErrorResponse {
+				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+			},
+			func(e *either.Either[error, *Response]) SuccessBalanceOperations {
+				return NewSuccessSlice[BalanceOperations](e.UnwrapRight())
+			})
+}
+
+func (this *PagarmeRecipient) CreateTransfer(recipientId string, amount int64) *either.Either[*ErrorResponse, SuccessTransfer] {
+
+	if empty, left := checkEmpty[SuccessTransfer]("recipiente id", recipientId); empty {
 		return left
 	}
 
@@ -169,14 +197,14 @@ func (this *PagarmeRecipient) CreateTransfer(recipientId string, amount int64) *
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) TransferPtr {
-				return e.UnwrapRight().Content.(TransferPtr)
+			func(e *either.Either[error, *Response]) SuccessTransfer {
+				return NewSuccess[TransferPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeRecipient) ListTransfers(recipientId string, query *TransferQuery) *either.Either[*ErrorResponse, Transfers] {
+func (this *PagarmeRecipient) ListTransfers(recipientId string, query *TransferQuery) *either.Either[*ErrorResponse, SuccessTransfers] {
 
-	if empty, left := checkEmpty[Transfers]("recipiente id", recipientId); empty {
+	if empty, left := checkEmpty[SuccessTransfers]("recipiente id", recipientId); empty {
 		return left
 	}
 
@@ -188,14 +216,14 @@ func (this *PagarmeRecipient) ListTransfers(recipientId string, query *TransferQ
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) Transfers {
-				return e.UnwrapRight().Content.(*Content[Transfers]).Data
+			func(e *either.Either[error, *Response]) SuccessTransfers {
+				return NewSuccessSlice[Transfers](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeRecipient) GetTransfer(recipientId string, transferId string) *either.Either[*ErrorResponse, TransferPtr] {
+func (this *PagarmeRecipient) GetTransfer(recipientId string, transferId string) *either.Either[*ErrorResponse, SuccessTransfer] {
 
-	if empty, left := checkEmpty[TransferPtr]("recipiente id and transfer id", recipientId, transferId); empty {
+	if empty, left := checkEmpty[SuccessTransfer]("recipiente id and transfer id", recipientId, transferId); empty {
 		return left
 	}
 
@@ -207,8 +235,8 @@ func (this *PagarmeRecipient) GetTransfer(recipientId string, transferId string)
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) TransferPtr {
-				return e.UnwrapRight().Content.(TransferPtr)
+			func(e *either.Either[error, *Response]) SuccessTransfer {
+				return NewSuccess[TransferPtr](e.UnwrapRight())
 			})
 }
 

@@ -119,7 +119,7 @@ func TestPagarmeTokenCreate(t *testing.T) {
 		return
 	}
 
-	client.Set("CardId", result.CardResult.Id, 0)
+	CacheClient.Set("CardId", result.CardResult.Id, 0)
 }
 
 // go test -v  github.com/mobilemindtec/go-payments/tests -run TestPagarmePaymentCreateWithCard
@@ -163,7 +163,7 @@ func TestPagarmePaymentCreateWithCard(t *testing.T) {
 
 		}
 
-		client.Set("TransactionId", result.Id, 0)
+		CacheClient.Set("TransactionId", result.Id, 0)
 
 	}
 
@@ -210,7 +210,7 @@ func TestPagarmePaymentCreateWithBoleto(t *testing.T) {
 
 		}
 
-		client.Set("TransactionId", result.Id, 0)
+		CacheClient.Set("TransactionId", result.Id, 0)
 
 	}
 
@@ -261,7 +261,7 @@ func TestPagarmePaymentCreateWithPix(t *testing.T) {
 
 		}
 
-		client.Set("TransactionId", result.Id, 0)
+		CacheClient.Set("TransactionId", result.Id, 0)
 
 	}
 
@@ -273,7 +273,7 @@ func TestPagarmePaymentStatus(t *testing.T) {
 	Pagarme := pagarme.NewPagarme("pt-BR", ApiKey, CryptoKey)
 	Pagarme.SetDebug()
 
-	id, _ := client.Get("TransactionId").Int64()
+	id, _ := CacheClient.Get("TransactionId").Int64()
 	result, err := Pagarme.PaymentGet(fmt.Sprintf("%v", id))
 
 	if err != nil {
@@ -296,7 +296,7 @@ func TestPagarmePaymentCancel(t *testing.T) {
 	Pagarme := pagarme.NewPagarme("pt-BR", ApiKey, CryptoKey)
 	Pagarme.SetDebug()
 
-	id, _ := client.Get("TransactionId").Int64()
+	id, _ := CacheClient.Get("TransactionId").Int64()
 
 	result, err := Pagarme.PaymentRefund(fmt.Sprintf("%v", id), 10)
 
@@ -328,7 +328,7 @@ func TestPagarmePaymentCancel(t *testing.T) {
 
 		}
 
-		client.Set("TransactionId", result.Id, 0)
+		CacheClient.Set("TransactionId", result.Id, 0)
 
 	}
 
@@ -355,7 +355,7 @@ func TestPagarmePlanoCreate(t *testing.T) {
 			return
 		}
 
-		client.Set("PlanoId", result.Plano.Id, 0)
+		CacheClient.Set("PlanoId", result.Plano.Id, 0)
 
 	}
 
@@ -367,7 +367,7 @@ func TestPagarmePlanoUpdate(t *testing.T) {
 	Pagarme := pagarme.NewPagarme("pt-BR", ApiKey, CryptoKey)
 	Pagarme.SetDebug()
 
-	id, _ := client.Get("PlanoId").Int64()
+	id, _ := CacheClient.Get("PlanoId").Int64()
 
 	plano := pagarme.NewPlano(fmt.Sprintf("My plan %v", time.Now().Unix()), 110)
 	plano.Id = id
@@ -395,7 +395,7 @@ func TestPagarmePlanoGet(t *testing.T) {
 	Pagarme := pagarme.NewPagarme("pt-BR", ApiKey, CryptoKey)
 	Pagarme.SetDebug()
 
-	id, _ := client.Get("PlanoId").Int64()
+	id, _ := CacheClient.Get("PlanoId").Int64()
 
 	result, err := Pagarme.PlanoGet(id)
 
@@ -419,8 +419,8 @@ func TestPagarmeSubscriptionCreate(t *testing.T) {
 	Pagarme := pagarme.NewPagarme("pt-BR", ApiKey, CryptoKey)
 	Pagarme.SetDebug()
 
-	planId, _ := client.Get("PlanoId").Int64()
-	cardId, _ := client.Get("CardId").Result()
+	planId, _ := CacheClient.Get("PlanoId").Int64()
+	cardId, _ := CacheClient.Get("CardId").Result()
 	subscription := pagarme.NewSubscriptionWithCard(planId)
 	subscription.CardId = cardId
 	subscription.PostbackUrl = "https://mobilemind.free.beeceptor.com/webhook/pagarme"
@@ -439,7 +439,7 @@ func TestPagarmeSubscriptionCreate(t *testing.T) {
 			return
 		}
 
-		client.Set("SubscriptionId", result.Id, 0)
+		CacheClient.Set("SubscriptionId", result.Id, 0)
 
 	}
 
@@ -451,9 +451,9 @@ func TestPagarmeSubscriptionUpdate(t *testing.T) {
 	Pagarme := pagarme.NewPagarme("pt-BR", ApiKey, CryptoKey)
 	Pagarme.SetDebug()
 
-	planId, _ := client.Get("PlanoId").Int64()
-	cardId, _ := client.Get("CardId").Result()
-	subscriptionId, _ := client.Get("SubscriptionId").Int64()
+	planId, _ := CacheClient.Get("PlanoId").Int64()
+	cardId, _ := CacheClient.Get("CardId").Result()
+	subscriptionId, _ := CacheClient.Get("SubscriptionId").Int64()
 	subscription := pagarme.NewSubscriptionWithCard(planId)
 	subscription.CardId = cardId
 	subscription.Id = subscriptionId
@@ -483,7 +483,7 @@ func TestPagarmeSubscriptionGet(t *testing.T) {
 	Pagarme := pagarme.NewPagarme("pt-BR", ApiKey, CryptoKey)
 	Pagarme.SetDebug()
 
-	id, _ := client.Get("SubscriptionId").Int64()
+	id, _ := CacheClient.Get("SubscriptionId").Int64()
 
 	result, err := Pagarme.SubscriptionGet(fmt.Sprintf("%v", id))
 
@@ -505,7 +505,7 @@ func TestPagarmeSubscriptionTransactionsGet(t *testing.T) {
 	Pagarme := pagarme.NewPagarme("pt-BR", ApiKey, CryptoKey)
 	Pagarme.SetDebug()
 
-	id, _ := client.Get("SubscriptionId").Int64()
+	id, _ := CacheClient.Get("SubscriptionId").Int64()
 
 	result, err := Pagarme.SubscriptionTransactionsGet(fmt.Sprintf("%v", id))
 
@@ -547,7 +547,7 @@ func TestPagarmeSubscriptionSkip(t *testing.T) {
 	Pagarme := pagarme.NewPagarme("pt-BR", ApiKey, CryptoKey)
 	Pagarme.SetDebug()
 
-	id, _ := client.Get("SubscriptionId").Int64()
+	id, _ := CacheClient.Get("SubscriptionId").Int64()
 
 	_, err := Pagarme.SubscriptionSkip(fmt.Sprintf("%v", id), 1)
 
@@ -562,7 +562,7 @@ func TestPagarmeSubscriptionCancel(t *testing.T) {
 	Pagarme := pagarme.NewPagarme("pt-BR", ApiKey, CryptoKey)
 	Pagarme.SetDebug()
 
-	id, _ := client.Get("SubscriptionId").Int64()
+	id, _ := CacheClient.Get("SubscriptionId").Int64()
 
 	result, err := Pagarme.SubscriptionCancel(fmt.Sprintf("%v", id))
 

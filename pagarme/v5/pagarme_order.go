@@ -8,6 +8,9 @@ import (
 	"reflect"
 )
 
+type SuccessOrder = *Success[OrderPtr]
+type SuccessOrders = *Success[Orders]
+
 type PagarmeOrder struct {
 	Pagarme
 }
@@ -18,10 +21,10 @@ func NewPagarmeOrder(lang string, auth *Authentication) *PagarmeOrder {
 	return p
 }
 
-func (this *PagarmeOrder) Create(order *Order) *either.Either[*ErrorResponse, *Order] {
+func (this *PagarmeOrder) Create(order OrderPtr) *either.Either[*ErrorResponse, SuccessOrder] {
 
 	if !this.onValidOrder(order) {
-		return either.Left[*ErrorResponse, *Order](
+		return either.Left[*ErrorResponse, SuccessOrder](
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
 	}
 
@@ -31,14 +34,14 @@ func (this *PagarmeOrder) Create(order *Order) *either.Either[*ErrorResponse, *O
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) *Order {
-				return e.UnwrapRight().Content.(*Order)
+			func(e *either.Either[error, *Response]) SuccessOrder {
+				return NewSuccess[OrderPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeOrder) Get(orderId string) *either.Either[*ErrorResponse, OrderPtr] {
+func (this *PagarmeOrder) Get(orderId string) *either.Either[*ErrorResponse, SuccessOrder] {
 
-	if empty, left := checkEmpty[OrderPtr]("order id", orderId); empty {
+	if empty, left := checkEmpty[SuccessOrder]("order id", orderId); empty {
 		return left
 	}
 
@@ -50,12 +53,12 @@ func (this *PagarmeOrder) Get(orderId string) *either.Either[*ErrorResponse, Ord
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) OrderPtr {
-				return e.UnwrapRight().Content.(OrderPtr)
+			func(e *either.Either[error, *Response]) SuccessOrder {
+				return NewSuccess[OrderPtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeOrder) List(query *OrderQuery) *either.Either[*ErrorResponse, Orders] {
+func (this *PagarmeOrder) List(query *OrderQuery) *either.Either[*ErrorResponse, SuccessOrders] {
 
 	uri := fmt.Sprintf("/orders/?%v", url.QueryEscape(query.UrlQuery()))
 
@@ -65,8 +68,8 @@ func (this *PagarmeOrder) List(query *OrderQuery) *either.Either[*ErrorResponse,
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) Orders {
-				return e.UnwrapRight().Content.(*Content[Orders]).Data
+			func(e *either.Either[error, *Response]) SuccessOrders {
+				return NewSuccessSlice[Orders](e.UnwrapRight())
 			})
 }
 

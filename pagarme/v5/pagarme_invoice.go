@@ -5,6 +5,9 @@ import (
 	"github.com/mobilemindtec/go-utils/v2/either"
 )
 
+type SuccessInvoice = *Success[InvoicePtr]
+type SuccessInvoices = *Success[Invoices]
+
 type PagarmeInvoice struct {
 	Pagarme
 }
@@ -15,9 +18,9 @@ func NewPagarmeInvoice(lang string, auth *Authentication) *PagarmeInvoice {
 	return p
 }
 
-func (this *PagarmeInvoice) Get(id string) *either.Either[*ErrorResponse, InvoicePtr] {
+func (this *PagarmeInvoice) Get(id string) *either.Either[*ErrorResponse, SuccessInvoice] {
 
-	if empty, left := checkEmpty[InvoicePtr]("invoice id", id); empty {
+	if empty, left := checkEmpty[SuccessInvoice]("invoice id", id); empty {
 		return left
 	}
 
@@ -29,12 +32,12 @@ func (this *PagarmeInvoice) Get(id string) *either.Either[*ErrorResponse, Invoic
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) InvoicePtr {
-				return e.UnwrapRight().Content.(InvoicePtr)
+			func(e *either.Either[error, *Response]) SuccessInvoice {
+				return NewSuccess[InvoicePtr](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeInvoice) List(query *InvoiceQuery) *either.Either[*ErrorResponse, Invoices] {
+func (this *PagarmeInvoice) List(query *InvoiceQuery) *either.Either[*ErrorResponse, SuccessInvoices] {
 	uri := fmt.Sprintf("/invoices?%v", query.UrlQuery())
 
 	return either.
@@ -43,15 +46,15 @@ func (this *PagarmeInvoice) List(query *InvoiceQuery) *either.Either[*ErrorRespo
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) Invoices {
-				return e.UnwrapRight().Content.(*Content[Invoices]).Data
+			func(e *either.Either[error, *Response]) SuccessInvoices {
+				return NewSuccessSlice[Invoices](e.UnwrapRight())
 			})
 }
 
-func (this *PagarmeInvoice) Cancel(id string) *either.Either[*ErrorResponse, bool] {
+func (this *PagarmeInvoice) Cancel(id string) *either.Either[*ErrorResponse, SuccessBool] {
 
 	if len(id) == 0 {
-		return either.Left[*ErrorResponse, bool](
+		return either.Left[*ErrorResponse, SuccessBool](
 			NewErrorResponse("invoice id is required"))
 	}
 
@@ -63,7 +66,7 @@ func (this *PagarmeInvoice) Cancel(id string) *either.Either[*ErrorResponse, boo
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
 			},
-			func(e *either.Either[error, *Response]) bool {
-				return true
+			func(e *either.Either[error, *Response]) SuccessBool {
+				return NewSuccessWithValue[bool](e.UnwrapRight(), true)
 			})
 }
