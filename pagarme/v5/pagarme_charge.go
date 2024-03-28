@@ -41,13 +41,13 @@ func (this *PagarmeCharge) Capture(id string, code string) *either.Either[*Error
 			})
 }
 
-func (this *PagarmeCharge) Get(id string) *either.Either[*ErrorResponse, SuccessCharge] {
+func (this *PagarmeCharge) Get(chargeId string) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", chargeId); empty {
 		return left
 	}
 
-	uri := fmt.Sprintf("/charges/%v", id)
+	uri := fmt.Sprintf("/charges/%v", chargeId)
 
 	return either.
 		MapIf(
@@ -60,9 +60,9 @@ func (this *PagarmeCharge) Get(id string) *either.Either[*ErrorResponse, Success
 			})
 }
 
-func (this *PagarmeCharge) UpdateCard(id string, updateData ChargeUpdate) *either.Either[*ErrorResponse, SuccessCharge] {
+func (this *PagarmeCharge) UpdateCard(chargeId string, updateData ChargeUpdate) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", chargeId); empty {
 		return left
 	}
 
@@ -72,7 +72,7 @@ func (this *PagarmeCharge) UpdateCard(id string, updateData ChargeUpdate) *eithe
 			NewErrorResponse("card id, card token or card is required"))
 	}
 
-	uri := fmt.Sprintf("/charges/%v/card", id)
+	uri := fmt.Sprintf("/charges/%v/card", chargeId)
 
 	return either.
 		MapIf(
@@ -85,9 +85,9 @@ func (this *PagarmeCharge) UpdateCard(id string, updateData ChargeUpdate) *eithe
 			})
 }
 
-func (this *PagarmeCharge) UpdateDueDate(id string, dueDate time.Time) *either.Either[*ErrorResponse, SuccessCharge] {
+func (this *PagarmeCharge) UpdateDueDate(chargeId string, dueDate time.Time) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", chargeId); empty {
 		return left
 	}
 
@@ -97,7 +97,7 @@ func (this *PagarmeCharge) UpdateDueDate(id string, dueDate time.Time) *either.E
 	}
 
 	payload := maps.JSON("due_date", dueDate.Format(DateLayout))
-	uri := fmt.Sprintf("/charges/%v/due-date", id)
+	uri := fmt.Sprintf("/charges/%v/due-date", chargeId)
 
 	return either.
 		MapIf(
@@ -110,13 +110,13 @@ func (this *PagarmeCharge) UpdateDueDate(id string, dueDate time.Time) *either.E
 			})
 }
 
-func (this *PagarmeCharge) Cancel(id string) *either.Either[*ErrorResponse, SuccessCharge] {
+func (this *PagarmeCharge) Cancel(chargeId string) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", chargeId); empty {
 		return left
 	}
 
-	uri := fmt.Sprintf("/charges/%v", id)
+	uri := fmt.Sprintf("/charges/%v", chargeId)
 
 	return either.
 		MapIf(
@@ -129,15 +129,15 @@ func (this *PagarmeCharge) Cancel(id string) *either.Either[*ErrorResponse, Succ
 			})
 }
 
-func (this *PagarmeCharge) ConfirmPayment(id string, code string, description string) *either.Either[*ErrorResponse, SuccessCharge] {
+func (this *PagarmeCharge) ConfirmPayment(chargeId string, chargeCode string, description string) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", chargeId); empty {
 		return left
 	}
 
-	uri := fmt.Sprintf("/charges/%v/confirm-payment", id)
+	uri := fmt.Sprintf("/charges/%v/confirm-payment", chargeId)
 
-	payload := maps.JSON("code", code, "description", description)
+	payload := maps.JSON("code", chargeCode, "description", description)
 
 	return either.
 		MapIf(
@@ -150,13 +150,13 @@ func (this *PagarmeCharge) ConfirmPayment(id string, code string, description st
 			})
 }
 
-func (this *PagarmeCharge) Retry(id string) *either.Either[*ErrorResponse, SuccessCharge] {
+func (this *PagarmeCharge) Retry(chargeId string) *either.Either[*ErrorResponse, SuccessCharge] {
 
-	if empty, left := checkEmpty[SuccessCharge]("charge id", id); empty {
+	if empty, left := checkEmpty[SuccessCharge]("charge id", chargeId); empty {
 		return left
 	}
 
-	uri := fmt.Sprintf("/charges/%v/retry", id)
+	uri := fmt.Sprintf("/charges/%v/retry", chargeId)
 
 	payload := maps.JSON()
 

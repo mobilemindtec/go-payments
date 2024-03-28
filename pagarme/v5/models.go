@@ -28,6 +28,9 @@ type ChargeStatus string
 type TransferInterval string
 type BankAccountType string
 
+type WebhookEvent string
+type WebhookStatus string
+
 const (
 	BRL            Currency = "BRL"
 	DateLayout              = "2006-01-02"
@@ -141,6 +144,88 @@ const (
 	Savings  BankAccountType = "savings"  // poupança
 )
 
+const (
+	WebhookPending WebhookStatus = "pending"
+	WebhookSent    WebhookStatus = "sent"
+	WebhookFailed  WebhookStatus = "failed"
+)
+
+const (
+	EventCustomerCreated         WebhookEvent = "customer.created"          //	Occurs whenever a customer is created.
+	EventCustomerUpdated         WebhookEvent = "customer.updated"          //	Occurs whenever a customer is updated.
+	EventCardCreated             WebhookEvent = "card.created"              //	Occurs whenever a card is created.
+	EventCardUpdated             WebhookEvent = "card.updated"              //	Occurs whenever a card is updated.
+	EventCardDeleted             WebhookEvent = "card.deleted"              //	Occurs whenever a card is deleted.
+	EventAddressCreated          WebhookEvent = "address.created"           //	Occurs whenever an address is created.
+	EventAddressUpdated          WebhookEvent = "address.updated"           //	Occurs whenever an address is updated.
+	EventAddressDeleted          WebhookEvent = "address.deleted"           //	Occurs whenever an address is deleted.
+	EventCardExpired             WebhookEvent = "card.expired"              //	Occurs whenever a card expires by the expiration date.
+	EventPlanCreated             WebhookEvent = "plan.created"              //	Occurs whenever a plan is created.
+	EventPlanUpdated             WebhookEvent = "plan.updated"              //	Occurs whenever a plan is updated.
+	EventPlanDeleted             WebhookEvent = "plan.deleted"              //	Occurs whenever a plan is deleted.
+	EventPlanItemCreated         WebhookEvent = "plan_item.created"         //	Occurs whenever a plan item is created.
+	EventPlanItemUpdated         WebhookEvent = "plan_item.updated"         //	Occurs whenever a plan item is updated.
+	EventPlanItemDeleted         WebhookEvent = "plan_item.deleted"         //	Occurs whenever a plan item is deleted.
+	EventSubscriptionCreated     WebhookEvent = "subscription.created"      //	Occurs whenever a subscription is created.
+	EventSubscriptionCanceled    WebhookEvent = "subscription.canceled"     //	Occurs whenever the subscription is canceled.
+	EventSubscriptionItemCreated WebhookEvent = "subscription_item.created" //	Occurs whenever a subscription item is created.
+	EventSubscriptionItemUpdated WebhookEvent = "subscription_item.updated" //	Occurs whenever a subscription item is updated.
+	EventSubscriptionItemDeleted WebhookEvent = "subscription_item.deleted" //	Occurs whenever a subscription item is deleted.
+	EventDiscountCreated         WebhookEvent = "discount.created"          //	Occurs whenever a discount is created.
+	EventDiscountDeleted         WebhookEvent = "discount.deleted"          //	Occurs whenever a discount is deleted.
+	EventIncrementCreated        WebhookEvent = "increment.created"         //	Occurs whenever an increment is created.
+	EventIncrementDeleted        WebhookEvent = "increment.deleted"         //	Occurs whenever an increment is deleted.
+	EventOrderPaid               WebhookEvent = "order.paid"                //	Occurs whenever an order is paid.
+	EventOrderPaymentFailed      WebhookEvent = "order.payment_failed"      //	Occurs whenever payment for an order fails.
+	EventOrderCreated            WebhookEvent = "order.created"             //	Occurs whenever a order is created.
+	EventOrderCanceled           WebhookEvent = "order.canceled"            //	Occurs whenever an order is canceled.
+	EventOrderItemCreated        WebhookEvent = "order_item.created"        //	Occurs whenever an order item is created.
+	EventOrderItemUpdated        WebhookEvent = "order_item.updated"        //	Occurs whenever an order item is updated.
+	EventOrderItemDeleted        WebhookEvent = "order_item.deleted"        //	Occurs whenever an order item is deleted.
+	EventOrderClosed             WebhookEvent = "order.closed"              //	Occurs whenever a request is closed.
+	EventOrderUpdated            WebhookEvent = "order.updated"             //	Occurs whenever a order is updated.
+	EventInvoiceCreated          WebhookEvent = "invoice.created"           //	Occurs whenever an invoice is created.
+	EventInvoiceUpdated          WebhookEvent = "invoice.updated"           //	Occurs whenever an invoice is updated.
+	EventInvoicePaid             WebhookEvent = "invoice.paid"              //	Occurs whenever an invoice is paid.
+	EventInvoicePaymentFailed    WebhookEvent = "invoice.payment_failed"    //	Occurs when an invoice payment fails.
+	EventInvoiceCanceled         WebhookEvent = "invoice.canceled"          //	Occurs whenever an invoice is canceled
+	EventChargeCreated           WebhookEvent = "charge.created"            //	Occurs whenever a charge is created.
+	EventChargeUpdated           WebhookEvent = "charge.updated"            //	Occurs when a charge is updated.
+	EventChargePaid              WebhookEvent = "charge.paid"               //	Occurs whenever a charge is paid.
+	EventChargePaymentFailed     WebhookEvent = "charge.payment_failed"     //	Occurs when a charge for a charge fails.
+	EventChargeRefunded          WebhookEvent = "charge.refunded"           //	Occurs whenever a charge is reversed.
+	EventChargePending           WebhookEvent = "charge.pending"            //	Occurs whenever a charge is pending.
+	EventChargeProcessing        WebhookEvent = "charge.processing"         //	Occurs whenever a charge is still being processed.
+	EventChargeUnderpaid         WebhookEvent = "charge.underpaid"          //	Occurs whenever a charge has been underpaid.
+	EventChargeOverpaid          WebhookEvent = "charge.overpaid"           //	Occurs whenever a charge has been overpaid.
+	EventChargePartialCanceled   WebhookEvent = "charge.partial_canceled"   //	Occurs when a charge has been partially canceled.
+	EventChargeChargedback       WebhookEvent = "charge.chargedback"        //	Ocorre sempre que uma cobrança sofre chargeback.
+	EventUsageCreated            WebhookEvent = "usage.created"             //	Occurs whenever the usage of an item in the period is created.
+	EventUsageDeleted            WebhookEvent = "usage.deleted"             //	Occurs whenever the usage of an item in the period is deleted.
+	EventRecipientCreated        WebhookEvent = "recipient.created"         //	Occurs whenever a recipient is created.
+	EventRecipientDeleted        WebhookEvent = "recipient.deleted"         //	Occurs whenever a recipient is deleted.
+	EventRecipientUpdated        WebhookEvent = "recipient.updated"         //	Occurs whenever a recipient is updated.
+	EventBankAccountCreated      WebhookEvent = "bank_account.created"      //	Occurs whenever a bank account is created.
+	EventBankAccountUpdated      WebhookEvent = "bank_account.updated"      //	Occurs whenever a bank account is updated.
+	EventBankAccountDeleted      WebhookEvent = "bank_account.deleted"      //	Occurs whenever a bank account is deleted.
+	EventSellerCreated           WebhookEvent = "seller.created"            //	Occurs whenever a salesperson is created.
+	EventSellerUpdated           WebhookEvent = "seller.updated"            //	Occurs whenever a seller is edited.
+	EventSellerDeleted           WebhookEvent = "seller.deleted"            //	Occurs whenever a seller is deleted.
+	EventTransferPending         WebhookEvent = "transfer.pending"          //	Occurs whenever a transfer is pending.
+	EventTransferCreated         WebhookEvent = "transfer.created"          //	Occurs whenever a transfer is created.
+	EventTransferProcessing      WebhookEvent = "transfer.processing"       //	Occurs whenever a transfer is in process.
+	EventTransferPaid            WebhookEvent = "transfer.paid"             //	It occurs whenever a transfer is paid.
+	EventTransferCanceled        WebhookEvent = "transfer.canceled"         //	Occurs whenever a transfer is canceled.
+	EventTransferFailed          WebhookEvent = "transfer.failed"           //	Occurs whenever a transfer fails.
+	EventCheckoutCreated         WebhookEvent = "checkout.created"          //	Occurs when a checkout is created.
+	EventCheckoutCanceled        WebhookEvent = "checkout.canceled"         //	Occurs when a checkout is canceled.
+	EventCheckoutClosed          WebhookEvent = "checkout.closed"           //	Ocorre quando um checkout é fechado.
+	EventChargeAntifraudApproved WebhookEvent = "charge.antifraud_approved" //	Occurs when an anti-fraud order is approved.
+	EventChargeAntifraudReproved WebhookEvent = "charge.antifraud_reproved" //	It occurs when an anti-fraud order is disapproved.
+	EventChargeAntifraudManual   WebhookEvent = "charge.antifraud_manual"   //	Occurs when an order in anti-fraud is marked for manual analysis.
+	EventChargeAntifraudPending  WebhookEvent = "charge.antifraud_pending"  //	It occurs when an order is pending to be sent for analysis by the anti-fraud service.
+)
+
 type Order struct {
 	Code             string       `json:"code" valid:"Required;MaxSize(64)"`
 	Customer         *Customer    `json:"customer"`
@@ -160,6 +245,13 @@ type Order struct {
 	UpdatedAt string      `json:"updated_at,omitempty"`
 	Charges   []*Charge   `json:"charges,omitempty"`
 	Checkouts []*Checkout `json:"checkouts,omitempty"`
+}
+
+func (this *Order) GetLastCharge() *optional.Optional[ChargePtr] {
+	if len(this.Charges) > 0 {
+		return optional.Of[ChargePtr](this.Charges[len(this.Charges)-1])
+	}
+	return optional.OfNone[ChargePtr]()
 }
 
 func (this *Order) GetLastTransaction() *optional.Optional[LastTransactionPtr] {
@@ -1025,6 +1117,24 @@ type AntifraudResponse struct {
 	Status       string `json:"status"`
 	Score        string `json:"score"`
 	ProviderName string `json:"provider_name"`
+}
+
+type Webhook struct {
+	Id             string                 `json:"id"`
+	Url            string                 `json:"url"`
+	Event          WebhookEvent           `json:"event"`
+	Status         WebhookStatus          `json:"status"`
+	Attempts       string                 `json:"attempts"`
+	LastAttempt    string                 `json:"last_attempt"`
+	ResponseStatus string                 `json:"response_status"`
+	ResponseRaw    string                 `json:"response_raw"`
+	Account        Account                `json:"account"`
+	Data           map[string]interface{} `json:"data"`
+}
+
+type Account struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
 
 func failIf(ok bool, msg string, args ...interface{}) {

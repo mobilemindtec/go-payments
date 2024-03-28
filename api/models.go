@@ -314,6 +314,13 @@ const (
 	PayZenApiRestV4 PayZenApiVersion = "RESTFul.v4"
 )
 
+type PagarmeApiVersion string
+
+const (
+	PagarmeApi1 PagarmeApiVersion = "1"
+	PagarmeApi5 PagarmeApiVersion = "5"
+)
+
 type SubscriptionCycle string
 
 const (
@@ -430,6 +437,7 @@ type Transfer struct {
 	Amount        float64      `jsonp:""`
 	BankAccountId int64        `jsonp:""`
 	BankAccount   *BankAccount `jsonp:""`
+	RecebedorId string `jsonp:""`
 }
 
 func NewTransfer() *Transfer {
@@ -639,6 +647,9 @@ type PaymentFind struct {
 	Token           string         `jsonp:""`
 	AuthorizationId string         `jsonp:""`
 	Account         *PayZenAccount `valid:"Required"`
+
+	ChargeId string
+	ChargeCode string
 
 	PaymentType PaymentType `jsonp:""` // picpay, pix
 }
