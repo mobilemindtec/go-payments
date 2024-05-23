@@ -262,33 +262,31 @@ func (this *Order) GetLastTransaction() *optional.Optional[LastTransactionPtr] {
 }
 
 func (this *Order) GetStatus() api.PagarmeV5Status {
-	return optional.Map[LastTransactionPtr, api.PagarmeV5Status](
+	return optional.FlatMap[LastTransactionPtr, api.PagarmeV5Status](
 		this.GetLastTransaction(),
 		func(transaction LastTransactionPtr) *optional.Optional[api.PagarmeV5Status] {
 			return optional.Of[api.PagarmeV5Status](transaction.Status)
 		},
-	).
-		GetOrElse(api.PagarmeV5None)
+	).GetOr(api.PagarmeV5None)
 }
 
 func (this *Order) GetTranscationId() string {
-	return optional.Map[LastTransactionPtr, string](
+	return optional.FlatMap[LastTransactionPtr, string](
 		this.GetLastTransaction(),
 		func(transaction LastTransactionPtr) *optional.Optional[string] {
 			return optional.Of[string](transaction.Id)
 		},
 	).
-		GetOrElse("")
+		GetOr("")
 }
 
 func (this *Order) GetPayZenSOAPStatus() api.TransactionStatus {
-	return optional.Map[LastTransactionPtr, api.TransactionStatus](
+	return optional.FlatMap[LastTransactionPtr, api.TransactionStatus](
 		this.GetLastTransaction(),
 		func(transaction LastTransactionPtr) *optional.Optional[api.TransactionStatus] {
 			return optional.Of[api.TransactionStatus](transaction.GetPayZenSOAPStatus())
 		},
-	).
-		GetOrElse(api.NotCreated)
+	).GetOr(api.NotCreated)
 }
 
 type OrderPtr = *Order
