@@ -1178,8 +1178,8 @@ func TestAsaasAccountCreate(t *testing.T) {
 	//bankAccount.OwnerName = "Mobile Mind Empresa de Tecnologia LTDA"
 	//bankAccount.OwnerBirthDate = "1995-04-12"
 	bankAccount.CpfCnpj = "48877133000177"
-	bankAccount.Agency = "3060"
-	bankAccount.Account = "1128"
+	bankAccount.Agency = "3261"
+	bankAccount.Account = "1224"
 	bankAccount.AccountDigit = "2"
 
 	account := asaas.NewAccount(bankAccount)
@@ -1233,6 +1233,35 @@ func TestAsaasAccountCreate(t *testing.T) {
 		return
 	}
 
+}
+
+// go test -v  github.com/mobilemindtec/go-payments/tests -run TestAsaasBankAccountCreateOrUpdate
+func TestAsaasBankAccountCreateOrUpdate(t *testing.T) {
+
+	Asaas := asaas.NewAsaas("pt-BR", AsaasAccessToken, AsaasApiMode)
+	Asaas.Debug = true
+
+	//bank := asaas.NewBank("104")
+	bankAccount := asaas.NewBankAccountSimple("104", api.ContaCorrente)
+	bankAccount.AccountName = "Mobile Mind - Caixa Corrente"
+	bankAccount.Name = "Mobile Mind Empresa de Tecnologia LTDA"
+	bankAccount.OwnerBirthDate = "1995-04-12"
+	bankAccount.CpfCnpj = "48877133000177"
+	bankAccount.Agency = "3061"
+	bankAccount.Account = "1124"
+	bankAccount.AccountDigit = "2"
+
+	result, err := Asaas.BankAccountMainCreateOrUpdate(bankAccount)
+
+	if err != nil {
+		t.Errorf("Erro ao criar conta: %v", err)
+		return
+	}
+
+	if result.Error {
+		t.Errorf("Erro ao criar conta: %v", result.Message)
+		return
+	}
 }
 
 // go test -v  github.com/mobilemindtec/go-payments/tests -run TestAsaasAccountList

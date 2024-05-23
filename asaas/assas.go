@@ -622,6 +622,16 @@ func (this *Asaas) AccountCreate(account *Account) (*Response, error) {
 	return this.post(account, "accounts", resultProcessor)
 }
 
+func (this *Asaas) BankAccountMainCreateOrUpdate(bankAccount *BankAccountSimple) (*Response, error) {
+	this.Log("Call BankAccountCreate")
+
+	if !this.onValidBankAccount(bankAccount) {
+		return nil, errors.New(this.getMessage("Asaas.ValidationError"))
+	}
+
+	return this.post(bankAccount, "bankAccounts/mainAccount")
+}
+
 func (this *Asaas) AccountUpdate(account *Account) (*Response, error) {
 	this.Log("Call AccountUpdate")
 
@@ -804,8 +814,15 @@ func (this *Asaas) delete(action string) (*Response, error) {
 	return this.request(nil, action, "DELETE", nil)
 }
 
-func (this *Asaas) post(data interface{}, action string, resultProcessor ResultProcessor) (*Response, error) {
-	return this.request(data, action, "POST", resultProcessor)
+func (this *Asaas) post(data interface{}, action string, resultProcessor ...ResultProcessor) (*Response, error) {
+
+	var processor ResultProcessor
+
+	if len(resultProcessor) > 0 {
+		processor = resultProcessor[0]
+	}
+
+	return this.request(data, action, "POST", processor)
 }
 
 func (this *Asaas) put(data interface{}, action string, resultProcessor ResultProcessor) (*Response, error) {
@@ -860,7 +877,7 @@ func (this *Asaas) request(data interface{}, action string, method string, resul
 	res, err := client.Do(req)
 
 	if err != nil {
-		fmt.Println("err = %v", err)
+		fmt.Println("err = ", err)
 		return nil, errors.New(fmt.Sprintf("error on client.Do: %v", err))
 	}
 
@@ -868,7 +885,7 @@ func (this *Asaas) request(data interface{}, action string, method string, resul
 	body, err := ioutil.ReadAll(res.Body)
 
 	if err != nil {
-		fmt.Println("err = %v", err)
+		fmt.Println("err = ", err)
 		return nil, errors.New(fmt.Sprintf("error on ioutil.ReadAll: %v", err))
 	}
 
@@ -881,17 +898,19 @@ func (this *Asaas) request(data interface{}, action string, method string, resul
 	}
 
 	if res.StatusCode == 200 || res.StatusCode == 400 {
-		if res.StatusCode == 200 && resultProcessor != nil {
-			if err := resultProcessor(body, result); err != nil {
-				fmt.Println("err = %v", err)
-				return nil, errors.New(fmt.Sprintf("error on resultProcessor: %v", err))
+		if res.StatusCode == 200 {
+			if resultProcessor != nil {
+				if err := resultProcessor(body, result); err != nil {
+					fmt.Println("err =", err)
+					return nil, errors.New(fmt.Sprintf("error on resultProcessor: %v", err))
+				}
 			}
 		} else {
 
 			err = json.Unmarshal(body, result)
 
 			if err != nil {
-				fmt.Println("err = %v", err)
+				fmt.Println("err = ", err)
 				return nil, errors.New(fmt.Sprintf("error on json.Unmarshal: %v", err))
 			}
 
@@ -933,6 +952,16 @@ func (this *Asaas) onValid(entity interface{}) bool {
 	return true
 }
 
+func (this *Asaas) onValidBankAccount(bankAccount *BankAccountSimple) bool {
+	this.EntityValidatorResult, _ = this.EntityValidator.ValidSimple(bankAccount)
+
+	if this.EntityValidatorResult.HasError {
+		this.onValidationErrors()
+		return false
+	}
+
+	return true
+}
 func (this *Asaas) onValidAccount(account *Account, validateBankAccount bool) bool {
 
 	items := []interface{}{
