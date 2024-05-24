@@ -898,13 +898,11 @@ func (this *Asaas) request(data interface{}, action string, method string, resul
 	}
 
 	if res.StatusCode == 200 || res.StatusCode == 400 {
-		if res.StatusCode == 200 {
-			if resultProcessor != nil {
+		if res.StatusCode == 200 && resultProcessor != nil{
 				if err := resultProcessor(body, result); err != nil {
 					fmt.Println("err =", err)
 					return nil, errors.New(fmt.Sprintf("error on resultProcessor: %v", err))
 				}
-			}
 		} else {
 
 			err = json.Unmarshal(body, result)
