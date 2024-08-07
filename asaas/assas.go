@@ -9,8 +9,12 @@ import (
 	"github.com/beego/i18n"
 	"github.com/mobilemindtec/go-payments/api"
 	"github.com/mobilemindtec/go-utils/beego/validator"
+	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"reflect"
 	_ "time"
 )
 
@@ -23,7 +27,7 @@ curl --location --request GET 'https://api.chat24.io/v1/help/transports'
 type ResultProcessor func(data []byte, response *Response) error
 
 const (
-	AsaasProdApiUrl  = "https://www.asaas.com/api/v3"
+	AsaasProdApiUrl  = "https://api.asaas.com/v3"
 	AsaasTestApiUrl  = "https://sandbox.asaas.com/api/v3"
 	AccesTokenHeader = "access_token"
 )
@@ -687,6 +691,27 @@ func (this *Asaas) AccountDocuments() (*Response, error) {
 	return this.get("myAccount/documents", resultProcessor)
 }
 
+func (this *Asaas) AccountDocumentSend(doc *Document) (*Response, error) {
+	this.Log("Call AccountDocumentSend")
+
+	resultProcessor := func(data []byte, response *Response) error {
+		docResp := new(DocumentResponse)
+		err := json.Unmarshal(data, docResp)
+
+		if err == nil {
+			response.DocumentResponse = docResp
+		}
+
+		return err
+	}
+
+	data := map[string]interface{}{}
+	data["documentFile"] = doc.DocumentFile
+	data["type"] = string(doc.Type)
+
+	return this.postMultiPart(data, fmt.Sprintf("myAccount/documents/%v", doc.Id), resultProcessor)
+}
+
 func (this *Asaas) AccountStatus() (*Response, error) {
 	this.Log("Call AccountStatus")
 
@@ -807,11 +832,11 @@ func (this *Asaas) Wallets() (*Response, error) {
 }
 
 func (this *Asaas) get(action string, resultProcessor ResultProcessor) (*Response, error) {
-	return this.request(nil, action, "GET", resultProcessor)
+	return this.request(nil, action, "GET", resultProcessor, false)
 }
 
 func (this *Asaas) delete(action string) (*Response, error) {
-	return this.request(nil, action, "DELETE", nil)
+	return this.request(nil, action, "DELETE", nil, false)
 }
 
 func (this *Asaas) post(data interface{}, action string, resultProcessor ...ResultProcessor) (*Response, error) {
@@ -822,14 +847,26 @@ func (this *Asaas) post(data interface{}, action string, resultProcessor ...Resu
 		processor = resultProcessor[0]
 	}
 
-	return this.request(data, action, "POST", processor)
+	return this.request(data, action, "POST", processor, false)
+}
+
+func (this *Asaas) postMultiPart(data map[string]interface{}, action string, resultProcessor ...ResultProcessor) (*Response, error) {
+
+	var processor ResultProcessor
+
+	if len(resultProcessor) > 0 {
+		processor = resultProcessor[0]
+	}
+
+	return this.request(data, action, "POST", processor, true)
 }
 
 func (this *Asaas) put(data interface{}, action string, resultProcessor ResultProcessor) (*Response, error) {
-	return this.request(data, action, "PUT", resultProcessor)
+	return this.request(data, action, "PUT", resultProcessor, false)
 }
 
-func (this *Asaas) request(data interface{}, action string, method string, resultProcessor ResultProcessor) (*Response, error) {
+func (this *Asaas) request(
+	data interface{}, action string, method string, resultProcessor ResultProcessor, multiPartFormData bool) (*Response, error) {
 
 	result := NewResponse()
 
@@ -843,24 +880,93 @@ func (this *Asaas) request(data interface{}, action string, method string, resul
 
 	if method == "POST" && data != nil {
 
-		payload, err := json.Marshal(data)
+		if !multiPartFormData {
+			payload, err := json.Marshal(data)
 
-		if err != nil {
-			fmt.Println("error json.Marshal ", err.Error())
-			return result, err
+			if err != nil {
+				fmt.Println("error json.Marshal ", err.Error())
+				return result, err
+			}
+
+			postData := bytes.NewBuffer(payload)
+
+			result.Request = string(payload)
+
+			if this.Debug {
+				fmt.Println("****************** Asaas Request ******************")
+				fmt.Println(result.Request)
+				fmt.Println("****************** Asaas Request ******************")
+			}
+
+			req, err = http.NewRequest(method, apiUrl, postData)
+		} else {
+			var formData bytes.Buffer
+			writer := multipart.NewWriter(&formData)
+			m := data.(map[string]interface{})
+			for k, v := range m {
+
+				if x, ok := v.(io.Closer); ok {
+					defer x.Close()
+				}
+
+				if val, ok := v.(string); ok {
+					fw, err := writer.CreateFormField(k)
+
+					if err != nil {
+						return result, err
+					}
+
+					if _, err := fw.Write([]byte(val)); err != nil {
+						return result, err
+					}
+				} else if bits, ok := v.([]byte); ok {
+					fw, err := writer.CreateFormField(k)
+
+					if err != nil {
+						return result, err
+					}
+
+					if _, err := fw.Write(bits); err != nil {
+						return result, err
+					}
+				} else if reader, ok := v.(io.Reader); ok {
+					fw, err := writer.CreateFormField(k)
+
+					if err != nil {
+						return result, err
+					}
+
+					if _, err := io.Copy(fw, reader); err != nil {
+						return result, err
+					}
+				} else if fd, ok := v.(*os.File); ok {
+
+					fw, err := writer.CreateFormFile(k, fd.Name())
+
+					if err != nil {
+						return result, err
+					}
+
+					if _, err := io.Copy(fw, fd); err != nil {
+						return result, err
+					}
+
+				} else {
+					return result, fmt.Errorf("invalid field type: %v", reflect.TypeOf(v))
+				}
+			}
+			if err := writer.Close(); err != nil {
+				return result, err
+			}
+
+			/*if this.Debug {
+				fmt.Println("****************** Asaas Request ******************")
+				fmt.Println(string(formData.Bytes()))
+				fmt.Println("****************** Asaas Request ******************")
+			}*/
+
+			req, err = http.NewRequest(method, apiUrl, &formData)
 		}
-
-		postData := bytes.NewBuffer(payload)
-
-		result.Request = string(payload)
-
-		if this.Debug {
-			fmt.Println("****************** Asaas Request ******************")
-			fmt.Println(result.Request)
-			fmt.Println("****************** Asaas Request ******************")
-		}
-
-		req, err = http.NewRequest(method, apiUrl, postData)
 
 	} else {
 		req, err = http.NewRequest(method, apiUrl, nil)
@@ -871,7 +977,11 @@ func (this *Asaas) request(data interface{}, action string, method string, resul
 		return nil, errors.New(fmt.Sprintf("error on http.NewRequest: %v", err))
 	}
 
-	req.Header.Add("Content-Type", "application/json")
+	if multiPartFormData {
+		req.Header.Add("Content-Type", "multipart/form-data")
+	} else {
+		req.Header.Add("Content-Type", "application/json")
+	}
 	req.Header.Add(AccesTokenHeader, this.AccessToken)
 
 	res, err := client.Do(req)
@@ -892,17 +1002,17 @@ func (this *Asaas) request(data interface{}, action string, method string, resul
 	result.Response = string(body)
 
 	if this.Debug {
-		fmt.Println("****************** Asaas Response ******************")
+		fmt.Println("****************** Asaas Response ", res.StatusCode, " ******************")
 		fmt.Println(result.Response)
 		fmt.Println("****************** Asaas Response ******************")
 	}
 
 	if res.StatusCode == 200 || res.StatusCode == 400 {
-		if res.StatusCode == 200 && resultProcessor != nil{
-				if err := resultProcessor(body, result); err != nil {
-					fmt.Println("err =", err)
-					return nil, errors.New(fmt.Sprintf("error on resultProcessor: %v", err))
-				}
+		if res.StatusCode == 200 && resultProcessor != nil {
+			if err := resultProcessor(body, result); err != nil {
+				fmt.Println("err =", err)
+				return nil, errors.New(fmt.Sprintf("error on resultProcessor: %v", err))
+			}
 		} else {
 
 			err = json.Unmarshal(body, result)
@@ -918,8 +1028,12 @@ func (this *Asaas) request(data interface{}, action string, method string, resul
 	if res.StatusCode == 400 {
 		result.Error = true
 
-		if result.ErrorsCount() == 1 {
-			result.Message = result.FirstError()
+		if result.ErrorsCount() > 0 {
+
+			for _, erro := range result.Errors {
+				result.Message = fmt.Sprintf("%v%v, ", result.Message, erro.Description)
+			}
+
 		} else {
 			result.Message = fmt.Sprintf("Asaas validation errror")
 		}

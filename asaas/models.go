@@ -2,9 +2,9 @@ package asaas
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/mobilemindtec/go-payments/api"
+	"io"
+	"time"
 )
 
 type BillingType string
@@ -86,6 +86,25 @@ const (
 	WebhookAnticipation        WebhookType = "RECEIVABLE_ANTICIPATION"
 	WebhookMobilePhoneRecharge WebhookType = "MOBILE_PHONE_RECHARGE"
 	WebhookAccountStatus       WebhookType = "ACCOUNT_STATUS"
+)
+
+type DocumentType string
+
+const (
+	IDENTIFICATION           DocumentType = "IDENTIFICATION"
+	SOCIAL_CONTRACT          DocumentType = "SOCIAL_CONTRACT"
+	ENTREPRENEUR_REQUIREMENT DocumentType = "ENTREPRENEUR_REQUIREMENT"
+	MINUTES_OF_ELECTION      DocumentType = "MINUTES_OF_ELECTION"
+	CUSTOM                   DocumentType = "CUSTOM"
+)
+
+type DocumentStatus string
+
+const (
+	NOT_SENT DocumentStatus = "NOT_SENT"
+	PENDING  DocumentStatus = "PENDING"
+	APPROVED DocumentStatus = "APPROVED"
+	REJECTED DocumentStatus = "REJECTED"
 )
 
 type WebhookObject struct {
@@ -189,16 +208,27 @@ func NewAccount(bankAccount *BankAccountSimple) *Account {
 }
 
 type AccountStatus struct {
-	Id             string `json:"id"`
-	CommercialInfo string `json:"commercialInfo"`
-	Documentation  string `json:"documentation"`
-	BankAccountInfo  string `json:"bankAccountInfo"`
-	General        string `json:"general"`
+	Id              string `json:"id"`
+	CommercialInfo  string `json:"commercialInfo"`
+	Documentation   string `json:"documentation"`
+	BankAccountInfo string `json:"bankAccountInfo"`
+	General         string `json:"general"`
 }
 
 type AccountStatusEvent struct {
-	 Event string `json:"event"`
-	 Status *AccountStatus `json:"accountStatus"`
+	Event  string         `json:"event"`
+	Status *AccountStatus `json:"accountStatus"`
+}
+
+type Document struct {
+	Id           string       `json:"-"`
+	DocumentFile io.Reader    `json:"documentFile"`
+	Type         DocumentType `json:"type"`
+}
+
+type DocumentResponse struct {
+	Id     string         `json:"id"`
+	Status DocumentStatus `json:"status"`
 }
 
 type DocumentResponsible struct {
@@ -232,33 +262,32 @@ type Transfer struct {
 	BankAccount *BankAccount `json:"bankAccount" valid:"Required"`
 }
 
-
 func NewTransfer(bankAccount *BankAccount, value float64) *Transfer {
 	return &Transfer{Value: value, BankAccount: bankAccount}
 }
 
 type TransferEventData struct {
-	Object string `json:"object"`
-	Id string `json:"id"`
-	DateCreated string `json:"dateCreated"`
-	Status string `json:"status"`
-	EffectiveDate string `json:"effectiveDate"`
-	EndToEndIdentifier string `json:"endToEndIdentifier"`
-	Type string `json:"type"`
-	Value int64 `json:"value"`
-	NetValue int64 `json:"netValue"`
-	TransferFee int64 `json:"transferFee"`
-	ScheduleDate string `json:"scheduleDate"`
-	Authorized bool `json:"authorized"`
-	FailReason string `json:"failReason"`
-	TransactionReceiptUrl string `json:"transactionReceiptUrl"`
-	OperationType string `json:"operationType"`
-	Description string `json:"description"`
-	BankAccount *BankAccount `json:"bankAccount"`
+	Object                string       `json:"object"`
+	Id                    string       `json:"id"`
+	DateCreated           string       `json:"dateCreated"`
+	Status                string       `json:"status"`
+	EffectiveDate         string       `json:"effectiveDate"`
+	EndToEndIdentifier    string       `json:"endToEndIdentifier"`
+	Type                  string       `json:"type"`
+	Value                 int64        `json:"value"`
+	NetValue              int64        `json:"netValue"`
+	TransferFee           int64        `json:"transferFee"`
+	ScheduleDate          string       `json:"scheduleDate"`
+	Authorized            bool         `json:"authorized"`
+	FailReason            string       `json:"failReason"`
+	TransactionReceiptUrl string       `json:"transactionReceiptUrl"`
+	OperationType         string       `json:"operationType"`
+	Description           string       `json:"description"`
+	BankAccount           *BankAccount `json:"bankAccount"`
 }
 
 type TransferEvent struct {
-	Event string `json:"event"`
+	Event    string             `json:"event"`
 	Transfer *TransferEventData `json:"transfer"`
 }
 
@@ -900,6 +929,7 @@ type Response struct {
 	Webhook                     *WebhookObject
 	WalletResults               *WalletResults
 	Documents                   *Documents
+	DocumentResponse            *DocumentResponse
 
 	EncodedImage   string `json:"encodedImage"`
 	Payload        string `json:"payload"`
