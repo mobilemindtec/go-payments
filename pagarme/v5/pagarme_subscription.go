@@ -36,14 +36,14 @@ func (this *PagarmeSubscription) Create(subscription SubscriptionPtr) *either.Ei
 
 	if !this.validate(subscription) {
 		return either.Left[*ErrorResponse, SuccessSubscription](
-			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
+			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
 
 	return either.
 		MapIf(
 			this.post("/subscriptions", subscription, createParser[Subscription]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessSubscription {
 				return NewSuccess[SubscriptionPtr](e.UnwrapRight())
@@ -62,7 +62,7 @@ func (this *PagarmeSubscription) Get(id string) *either.Either[*ErrorResponse, S
 		MapIf(
 			this.get(uri, createParser[Subscription]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessSubscription {
 				return NewSuccess[SubscriptionPtr](e.UnwrapRight())
@@ -77,7 +77,7 @@ func (this *PagarmeSubscription) List(query *SubscriptionQuery) *either.Either[*
 		MapIf(
 			this.get(uri, createParserContent[Subscriptions]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessSubscriptions {
 				return NewSuccessSlice[Subscriptions](e.UnwrapRight())
@@ -92,7 +92,7 @@ func (this *PagarmeSubscription) ListItems(id string) *either.Either[*ErrorRespo
 		MapIf(
 			this.get(uri, createParserContent[SubscriptionItems]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessSubscriptionItems {
 				return NewSuccess[SubscriptionItems](e.UnwrapRight())
@@ -112,7 +112,7 @@ func (this *PagarmeSubscription) Cancel(id string, cancelPendingInvoices CancelP
 		MapIf(
 			this.delete(uri, payload),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBool {
 				return NewSuccessWithValue[bool](e.UnwrapRight(), true)
@@ -136,7 +136,7 @@ func (this *PagarmeSubscription) UpdateCard(updateData *SubscriptionUpdate) *eit
 		MapIf(
 			this.patch(uri, updateData),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBool {
 				return NewSuccessWithValue[bool](e.UnwrapRight(), true)
@@ -165,7 +165,7 @@ func (this *PagarmeSubscription) UpdatePaymentMethod(updateData *SubscriptionUpd
 		MapIf(
 			this.patch(uri, updateData),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBool {
 				return NewSuccessWithValue[bool](e.UnwrapRight(), true)
@@ -184,7 +184,7 @@ func (this *PagarmeSubscription) UpdateItem(subscriptionId string, itemId string
 		MapIf(
 			this.put(uri, item, createParser[SubscriptionPtr]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessSubscriptionItem {
 				return NewSuccess[SubscriptionItemPtr](e.UnwrapRight())

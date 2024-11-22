@@ -30,7 +30,7 @@ func (this *PagarmeInvoice) Get(id string) *either.Either[*ErrorResponse, Succes
 		MapIf(
 			this.get(uri, createParser[Invoice]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessInvoice {
 				return NewSuccess[InvoicePtr](e.UnwrapRight())
@@ -44,7 +44,7 @@ func (this *PagarmeInvoice) List(query *InvoiceQuery) *either.Either[*ErrorRespo
 		MapIf(
 			this.get(uri, createParserContent[Invoices]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessInvoices {
 				return NewSuccessSlice[Invoices](e.UnwrapRight())
@@ -64,7 +64,7 @@ func (this *PagarmeInvoice) Cancel(id string) *either.Either[*ErrorResponse, Suc
 		MapIf(
 			this.delete(uri),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBool {
 				return NewSuccessWithValue[bool](e.UnwrapRight(), true)

@@ -31,14 +31,14 @@ func (this *PagarmeRecipient) Create(recipient *Recipient) *either.Either[*Error
 
 	if !this.validate(recipient) {
 		return either.Left[*ErrorResponse, SuccessRecipient](
-			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
+			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
 
 	return either.
 		MapIf(
 			this.post("/recipients", recipient, createParser[Recipient]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessRecipient {
 				return NewSuccess[RecipientPtr](e.UnwrapRight())
@@ -57,7 +57,7 @@ func (this *PagarmeRecipient) Update(id string, recipient *RecipientUpdate) *eit
 		MapIf(
 			this.put(uri, recipient, createParser[Recipient]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessRecipient {
 				return NewSuccess[RecipientPtr](e.UnwrapRight())
@@ -76,7 +76,7 @@ func (this *PagarmeRecipient) Gt(id string) *either.Either[*ErrorResponse, Succe
 		MapIf(
 			this.get(uri, createParser[Recipient]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessRecipient {
 				return NewSuccess[RecipientPtr](e.UnwrapRight())
@@ -89,7 +89,7 @@ func (this *PagarmeRecipient) List() *either.Either[*ErrorResponse, SuccessRecip
 		MapIf(
 			this.get("/recipients", createParserContent[SuccessRecipients]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessRecipients {
 				return NewSuccessSlice[Recipients](e.UnwrapRight())
@@ -117,7 +117,7 @@ func (this *PagarmeRecipient) UpdateTransferSettings(id string, settings *Transf
 		MapIf(
 			this.patch(uri, settings),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBool {
 				return NewSuccessWithValue(e.UnwrapRight(), true)
@@ -136,7 +136,7 @@ func (this *PagarmeRecipient) UpdateBankAccount(id string, account BankAccount) 
 		MapIf(
 			this.patch(uri, account),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBool {
 				return NewSuccessWithValue(e.UnwrapRight(), true)
@@ -155,7 +155,7 @@ func (this *PagarmeRecipient) Balance(recipientId string) *either.Either[*ErrorR
 		MapIf(
 			this.get(uri, createParser[Balance]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBalance {
 				return NewSuccess[BalancePtr](e.UnwrapRight())
@@ -174,7 +174,7 @@ func (this *PagarmeRecipient) BalanceOperations(recipientId string, query *Balan
 		MapIf(
 			this.get(uri, createParserContent[BalanceOperations]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBalanceOperations {
 				return NewSuccessSlice[BalanceOperations](e.UnwrapRight())
@@ -195,7 +195,7 @@ func (this *PagarmeRecipient) CreateTransfer(recipientId string, amount int64) *
 		MapIf(
 			this.post(uri, payload, createParser[Transfer]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessTransfer {
 				return NewSuccess[TransferPtr](e.UnwrapRight())
@@ -214,7 +214,7 @@ func (this *PagarmeRecipient) ListTransfers(recipientId string, query *TransferQ
 		MapIf(
 			this.get(uri, createParserContent[Transfers]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessTransfers {
 				return NewSuccessSlice[Transfers](e.UnwrapRight())
@@ -233,7 +233,7 @@ func (this *PagarmeRecipient) GetTransfer(recipientId string, transferId string)
 		MapIf(
 			this.get(uri, createParser[Transfer]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessTransfer {
 				return NewSuccess[TransferPtr](e.UnwrapRight())

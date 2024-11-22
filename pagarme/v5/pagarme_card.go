@@ -32,7 +32,7 @@ func (this *PagarmeCard) Create(customerId string, card CardPtr) *either.Either[
 
 	if !this.validate(card) {
 		return either.Left[*ErrorResponse, SuccessCard](
-			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
+			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
 
 	uri := fmt.Sprintf("/customers/%v/cards", customerId)
@@ -41,7 +41,7 @@ func (this *PagarmeCard) Create(customerId string, card CardPtr) *either.Either[
 		MapIf(
 			this.post(uri, card, createParser[Card]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCard {
 				return NewSuccess[CardPtr](e.UnwrapRight())
@@ -60,7 +60,7 @@ func (this *PagarmeCard) Get(customerId string, cardId string) *either.Either[*E
 		MapIf(
 			this.get(uri, createParser[Card]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCard {
 				return NewSuccess[CardPtr](e.UnwrapRight())
@@ -79,7 +79,7 @@ func (this *PagarmeCard) List(customerId string) *either.Either[*ErrorResponse, 
 		MapIf(
 			this.get(uri, createParserContent[Cards]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCards {
 				return NewSuccessSlice[Cards](e.UnwrapRight())
@@ -94,7 +94,7 @@ func (this *PagarmeCard) Update(customerId string, card CardPtr) *either.Either[
 
 	if !this.validate(card) {
 		return either.Left[*ErrorResponse, SuccessCard](
-			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
+			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
 
 	uri := fmt.Sprintf("/customers/%v/cards/%v", customerId, card.Id)
@@ -103,7 +103,7 @@ func (this *PagarmeCard) Update(customerId string, card CardPtr) *either.Either[
 		MapIf(
 			this.put(uri, card, createParser[Card]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCard {
 				return NewSuccess[CardPtr](e.UnwrapRight())
@@ -122,7 +122,7 @@ func (this *PagarmeCard) Delete(customerId string, cardId string) *either.Either
 		MapIf(
 			this.delete(uri),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBool {
 				return NewSuccessWithValue[bool](e.UnwrapRight(), true)
@@ -141,7 +141,7 @@ func (this *PagarmeCard) Renew(customerId string, cardId string) *either.Either[
 		MapIf(
 			this.post(uri, nil),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBool {
 				return NewSuccessWithValue[bool](e.UnwrapRight(), true)

@@ -23,14 +23,14 @@ func (this *PagarmeCustomer) Create(customer CustomerPtr) *either.Either[*ErrorR
 
 	if !this.onValidCustomer(customer) {
 		return either.Left[*ErrorResponse, SuccessCustomer](
-			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
+			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
 
 	return either.
 		MapIf(
 			this.post("/customers", customer, createParser[Customer]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCustomer {
 				return NewSuccess[CustomerPtr](e.UnwrapRight())
@@ -41,7 +41,7 @@ func (this *PagarmeCustomer) Update(customer CustomerPtr) *either.Either[*ErrorR
 
 	if !this.onValidCustomer(customer) {
 		return either.Left[*ErrorResponse, SuccessCustomer](
-			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
+			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
 
 	if empty, left := checkEmpty[SuccessCustomer]("customer id", customer.Id); empty {
@@ -54,7 +54,7 @@ func (this *PagarmeCustomer) Update(customer CustomerPtr) *either.Either[*ErrorR
 		MapIf(
 			this.put(uri, customer, createParser[Customer]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCustomer {
 				return NewSuccess[CustomerPtr](e.UnwrapRight())
@@ -73,7 +73,7 @@ func (this *PagarmeCustomer) Get(customerId string) *either.Either[*ErrorRespons
 		MapIf(
 			this.get(uri, createParser[Customer]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCustomer {
 				return NewSuccess[CustomerPtr](e.UnwrapRight())
@@ -88,7 +88,7 @@ func (this *PagarmeCustomer) List(query *CustomerQuery) *either.Either[*ErrorRes
 		MapIf(
 			this.get(uri, createParserContent[SuccessCustomers]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCustomers {
 				return NewSuccessSlice[Customers](e.UnwrapRight())

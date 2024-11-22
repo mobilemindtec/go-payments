@@ -48,8 +48,9 @@ type Pagarme struct {
 	Debug                 bool
 }
 
-func (this *Pagarme) DebugOn() {
+func (this *Pagarme) DebugOn()  *Pagarme {
 	this.SetDebug(true)
+	return this
 }
 
 func (this *Pagarme) SetDebug(debug bool) {
@@ -67,6 +68,15 @@ func (this *Pagarme) init(lang string, auth *Authentication) *Pagarme {
 	this.EntityValidatorResult = new(validator.EntityValidatorResult)
 	this.EntityValidatorResult.Errors = map[string]string{}
 	return this
+}
+
+func (this *Pagarme) validationsToMapOfStringSlice() map[string][]string{
+	results := make(map[string][]string)
+	for k, v := range this.ValidationErrors{
+		results[k] = []string{v}
+	}
+
+	return results
 }
 
 // HTTP
@@ -136,6 +146,11 @@ func (this *Pagarme) request(
 		return either.Left[error, *Response](err)
 	}
 
+	if this.Debug {
+		logs.Debug("Secret %v", this.Auth.SecretKey)
+		logs.Debug("Authorization: Basic %v", this.Auth.Basic())
+	}
+
 	req.Header.Add("Authorization", fmt.Sprintf("Basic %v", this.Auth.Basic()))
 	req.Header.Add("Content-Type", "application/json")
 
@@ -185,13 +200,14 @@ func (this *Pagarme) request(
 
 	default:
 
+
 		err = json.Unmarshal(body, response.Error)
 		if err != nil {
 			return either.Left[error, *Response](
 				errors.New(fmt.Sprintf("Pagarme error. Status: %v", res.StatusCode)))
 		} else {
 			response.Error.StatusCode = int64(res.StatusCode)
-			return either.Right[error, *Response](response)
+			return either.Left[error, *Response](response.Error)
 		}
 
 	}
@@ -300,6 +316,15 @@ func createParser[T any]() func([]byte, *Response) error {
 		response.Content = new(T)
 		return json.Unmarshal(data, response.Content)
 	}
+}
+
+func unwrapError(err error) *ErrorResponse {
+
+	if er, ok := err.(*ErrorResponse); ok {
+		return er
+	}
+
+	return NewErrorResponse(fmt.Sprintf("%v", err.Error()))
 }
 
 func createParserContent[T any]() func([]byte, *Response) error {

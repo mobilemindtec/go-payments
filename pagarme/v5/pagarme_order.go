@@ -25,14 +25,14 @@ func (this *PagarmeOrder) Create(order OrderPtr) *either.Either[*ErrorResponse, 
 
 	if !this.onValidOrder(order) {
 		return either.Left[*ErrorResponse, SuccessOrder](
-			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
+			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
 
 	return either.
 		MapIf(
 			this.post("/orders", order, createParser[Order]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessOrder {
 				return NewSuccess[OrderPtr](e.UnwrapRight())
@@ -51,7 +51,7 @@ func (this *PagarmeOrder) Get(orderId string) *either.Either[*ErrorResponse, Suc
 		MapIf(
 			this.get(uri, createParser[Order]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessOrder {
 				return NewSuccess[OrderPtr](e.UnwrapRight())
@@ -66,7 +66,7 @@ func (this *PagarmeOrder) List(query *OrderQuery) *either.Either[*ErrorResponse,
 		MapIf(
 			this.get(uri, createParserContent[Orders]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessOrders {
 				return NewSuccessSlice[Orders](e.UnwrapRight())

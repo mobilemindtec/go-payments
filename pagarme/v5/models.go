@@ -5,7 +5,7 @@ import (
 	"github.com/mobilemindtec/go-payments/api"
 	"log"
 	"time"
-
+	"strings"
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/mobilemindtec/go-utils/v2/optional"
 )
@@ -256,7 +256,7 @@ func (this *Order) GetLastCharge() *optional.Optional[ChargePtr] {
 
 func (this *Order) GetLastTransaction() *optional.Optional[LastTransactionPtr] {
 	if len(this.Charges) > 0 {
-		return optional.Of[LastTransactionPtr](this.Charges[len(this.Charges)-1].LastTransaction)
+		return optional.Just(this.Charges[len(this.Charges)-1].LastTransaction)
 	}
 	return optional.OfNone[LastTransactionPtr]()
 }
@@ -485,18 +485,18 @@ type BillingAddress struct {
 }
 
 type Boleto struct {
-	Bank           BankCode   `json:"bank" valid:"Required"`
+	Bank           BankCode   `json:"bank,omitempty" valid:""`
 	Instructions   string     `json:"instructions" valid:"MaxSize(256)"`
 	DueAt          string     `json:"due_at"`
 	NossoNumero    string     `json:"nosso_numero,omitempty"`
 	Type           BoletoType `json:"type,omitempty"`
-	DocumentNumber string     `json:"document_number" valid:"MaxSize(16)"` // Identificador do boleto
-	Interest       *Interest  `json:"interest"`
-	Fine           *Fine      `json:"fine"`
+	DocumentNumber string     `json:"document_number,omitempty" valid:"MaxSize(16)"` // Identificador do boleto
+	Interest       *Interest  `json:"interest,omitempty"`
+	Fine           *Fine      `json:"fine,omitempty"`
 }
 
 func NewBoleto() *Boleto {
-	return &Boleto{Interest: new(Interest), Fine: new(Fine)}
+	return &Boleto{}
 }
 
 type Interest struct {
@@ -512,13 +512,13 @@ type Fine struct {
 }
 
 type Pix struct {
-	ExpiresIn             int64                  `json:"expires_in" ` //Data de expiração do Pix em segundos.
-	ExpiresAt             string                 `json:"expires_at"`  // Data de expiração do Pix [Formato: YYYY-MM-DDThh:mm:ss] UTC
+	ExpiresIn             int64                  `json:"expires_in,omitempty" ` //Data de expiração do Pix em segundos.
+	ExpiresAt             string                 `json:"expires_at,omitempty"`  // Data de expiração do Pix [Formato: YYYY-MM-DDThh:mm:ss] UTC
 	AdditionalInformation *AdditionalInformation `json:"additional_information,omitempty"`
 }
 
 func NewPix() *Pix {
-	return &Pix{AdditionalInformation: new(AdditionalInformation)}
+	return &Pix{}
 }
 
 type Plan struct {
@@ -818,7 +818,7 @@ type Invoices = []InvoicePtr
 
 type ErrorResponse struct {
 	Message    string            `json:"message"`
-	Errors     map[string]string `json:"errors"`
+	Errors     map[string][]string `json:"errors"`
 	StatusCode int64
 }
 
@@ -826,11 +826,25 @@ func (this *ErrorResponse) String() string {
 	return fmt.Sprint("State: %v: %v - %v", this.StatusCode, this.Message, this.Errors)
 }
 
+func (this *ErrorResponse) ToMapOfString() map[string]string{
+	 errors := make(map[string]string)
+	if this.Errors != nil {
+		for k, v := range this.Errors {
+			errors[k] = strings.Join(v, ", ")
+		}
+	}
+	return errors
+}
+
+func (this *ErrorResponse) Error() string {
+	return this.String()
+}
+
 func NewErrorResponse(msg string) *ErrorResponse {
 	return &ErrorResponse{Message: msg}
 }
 
-func NewErrorResponseWithErrors(msg string, errors map[string]string) *ErrorResponse {
+func NewErrorResponseWithErrors(msg string, errors map[string][]string) *ErrorResponse {
 	return &ErrorResponse{Message: msg, Errors: errors}
 }
 
@@ -904,11 +918,11 @@ func (this *Response) HasErrors() bool {
 	return false
 }
 
-func (this *Response) GetErrros() map[string]string {
+func (this *Response) GetErrros() map[string][]string {
 	if this.Error.Errors != nil {
 		return this.Error.Errors
 	}
-	return make(map[string]string)
+	return make(map[string][]string)
 }
 
 func (this *Response) GetMessage() string {
@@ -917,6 +931,8 @@ func (this *Response) GetMessage() string {
 	}
 	return ""
 }
+
+
 
 type Charge struct {
 	Id              string           `json:"id"`
@@ -1108,7 +1124,7 @@ type Transfers = []TransferPtr
 
 type GatewayResponse struct {
 	Code   string   `json:"code"`
-	Errors []string `json:"errors"`
+	Errors []map[string]string `json:"errors"`
 }
 
 type AntifraudResponse struct {

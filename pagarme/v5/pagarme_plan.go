@@ -26,14 +26,14 @@ func (this *PagarmePlan) Create(plan *Plan) *either.Either[*ErrorResponse, Succe
 
 	if !this.validate(plan) {
 		return either.Left[*ErrorResponse, SuccessPlan](
-			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
+			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
 
 	return either.
 		MapIf(
 			this.post("/plans", plan, createParser[Plan]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessPlan {
 				return NewSuccess[PlanPtr](e.UnwrapRight())
@@ -52,7 +52,7 @@ func (this *PagarmePlan) Get(id string) *either.Either[*ErrorResponse, SuccessPl
 		MapIf(
 			this.get(uri, createParser[Plan]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessPlan {
 				return NewSuccess[PlanPtr](e.UnwrapRight())
@@ -67,7 +67,7 @@ func (this *PagarmePlan) List(query *PlanQuery) *either.Either[*ErrorResponse, S
 		MapIf(
 			this.get(uri, createParserContent[Plan]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessPlans {
 				return NewSuccessSlice[Plans](e.UnwrapRight())
@@ -82,7 +82,7 @@ func (this *PagarmePlan) Update(plan PlanPtr) *either.Either[*ErrorResponse, Suc
 
 	if !this.validate(plan) {
 		return either.Left[*ErrorResponse, SuccessPlan](
-			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.ValidationErrors))
+			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
 
 	uri := fmt.Sprintf("/plans/%v", plan.Id)
@@ -91,7 +91,7 @@ func (this *PagarmePlan) Update(plan PlanPtr) *either.Either[*ErrorResponse, Suc
 		MapIf(
 			this.put(uri, plan, createParser[Plan]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessPlan {
 				return NewSuccess[PlanPtr](e.UnwrapRight())
@@ -110,7 +110,7 @@ func (this *PagarmePlan) Delete(id string) *either.Either[*ErrorResponse, Succes
 		MapIf(
 			this.delete(uri),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessBool {
 				return NewSuccessWithValue(e.UnwrapRight(), true)

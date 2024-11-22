@@ -34,7 +34,7 @@ func (this *PagarmeCharge) Capture(id string, code string) *either.Either[*Error
 		MapIf(
 			this.post(uri, payload, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCharge {
 				return NewSuccess[ChargePtr](e.UnwrapRight())
@@ -53,7 +53,7 @@ func (this *PagarmeCharge) Get(chargeId string) *either.Either[*ErrorResponse, S
 		MapIf(
 			this.get(uri, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCharge {
 				return NewSuccess[ChargePtr](e.UnwrapRight())
@@ -78,7 +78,7 @@ func (this *PagarmeCharge) UpdateCard(chargeId string, updateData ChargeUpdate) 
 		MapIf(
 			this.patch(uri, updateData, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCharge {
 				return NewSuccess[ChargePtr](e.UnwrapRight())
@@ -103,7 +103,7 @@ func (this *PagarmeCharge) UpdateDueDate(chargeId string, dueDate time.Time) *ei
 		MapIf(
 			this.patch(uri, payload, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCharge {
 				return NewSuccess[ChargePtr](e.UnwrapRight())
@@ -122,7 +122,7 @@ func (this *PagarmeCharge) Cancel(chargeId string) *either.Either[*ErrorResponse
 		MapIf(
 			this.delete(uri, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCharge {
 				return NewSuccess[ChargePtr](e.UnwrapRight())
@@ -143,7 +143,7 @@ func (this *PagarmeCharge) ConfirmPayment(chargeId string, chargeCode string, de
 		MapIf(
 			this.post(uri, payload, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCharge {
 				return NewSuccess[ChargePtr](e.UnwrapRight())
@@ -164,7 +164,7 @@ func (this *PagarmeCharge) Retry(chargeId string) *either.Either[*ErrorResponse,
 		MapIf(
 			this.post(uri, payload, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCharge {
 				return NewSuccess[ChargePtr](e.UnwrapRight())
@@ -179,7 +179,7 @@ func (this *PagarmeCharge) List(query *ChargeQuery) *either.Either[*ErrorRespons
 		MapIf(
 			this.get(uri, createParserContent[Charges]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
-				return NewErrorResponse(fmt.Sprintf("%v", e.UnwrapLeft()))
+				return unwrapError(e.UnwrapLeft())
 			},
 			func(e *either.Either[error, *Response]) SuccessCharges {
 

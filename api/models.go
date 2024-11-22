@@ -437,7 +437,7 @@ type Transfer struct {
 	Amount        float64      `jsonp:""`
 	BankAccountId int64        `jsonp:""`
 	BankAccount   *BankAccount `jsonp:""`
-	RecebedorId string `jsonp:""`
+	RecebedorId   string       `jsonp:""`
 }
 
 func NewTransfer() *Transfer {
@@ -500,6 +500,7 @@ type PayZenAccount struct {
 }
 
 type Card struct {
+	Id                 string `valid:"" jsonp:""`
 	Number             string `valid:"" jsonp:""`
 	Scheme             string `valid:"" jsonp:"brand"`
 	ExpiryMonth        string `valid:"" jsonp:"expiry_month"`
@@ -507,6 +508,7 @@ type Card struct {
 	CardSecurityCode   string `valid:"" jsonp:"cvv"`
 	CardHolderBirthDay string `valid:""`
 	CardHolderName     string `valid:"" jsonp:"holder_name"`
+	CardHolderDocument     string `valid:"" jsonp:"holder_name_document"`
 	Token              string `valid:"" jsonp:""`
 }
 
@@ -561,6 +563,7 @@ type Subscription struct {
 	Cycle                   SubscriptionCycle `jsonp:""`
 	PaymentAtLastDayOfMonth bool              `jsonp:""`
 	PaymentAtDayOfMonth     int64             `jsonp:""`
+	SoftDescriptor          string            `valid:"" jsonp:""`
 
 	Rule string `jsonp:""`
 
@@ -648,7 +651,7 @@ type PaymentFind struct {
 	AuthorizationId string         `jsonp:""`
 	Account         *PayZenAccount `valid:"Required"`
 
-	ChargeId string
+	ChargeId   string
 	ChargeCode string
 
 	PaymentType PaymentType `jsonp:""` // picpay, pix
@@ -767,6 +770,7 @@ func NewOrder() *Order {
 }
 
 type TokenInfo struct {
+	Id            string `jsonp:""`
 	Token            string `jsonp:""`
 	Number           string `jsonp:""`
 	Brand            string `jsonp:""`
@@ -775,6 +779,8 @@ type TokenInfo struct {
 	Cancelled        bool `jsonp:""`
 	Active           bool `jsonp:""`
 	NotFound         bool `jsonp:""`
+	FirstSixDigits string            `jsonp:""`
+	LastFourDigits string            `jsonp:""`
 }
 
 type SubscriptionResult struct {
@@ -1208,6 +1214,16 @@ func (this *PaymentResult) BuildStatus() {
 		this.StatusLabel = PaymentErrorLabel
 		break
 	}
+}
+
+func (this *PaymentResult) WithTransactionStatus(status TransactionStatus) *PaymentResult {
+	this.TransactionStatus = status
+	return this
+}
+
+func (this *PaymentResult) WithSuccess() *PaymentResult {
+	this.TransactionStatus = Success
+	return this
 }
 
 func NewPaymentResult() *PaymentResult {
