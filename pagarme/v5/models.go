@@ -2,12 +2,12 @@ package v5
 
 import (
 	"fmt"
-	"github.com/mobilemindtec/go-payments/api"
-	"log"
-	"time"
-	"strings"
 	"github.com/beego/beego/v2/core/logs"
+	"github.com/mobilemindtec/go-payments/api"
 	"github.com/mobilemindtec/go-utils/v2/optional"
+	"log"
+	"strings"
+	"time"
 )
 
 type CustomerType string
@@ -225,6 +225,14 @@ const (
 	EventChargeAntifraudManual   WebhookEvent = "charge.antifraud_manual"   //	Occurs when an order in anti-fraud is marked for manual analysis.
 	EventChargeAntifraudPending  WebhookEvent = "charge.antifraud_pending"  //	It occurs when an order is pending to be sent for analysis by the anti-fraud service.
 )
+
+type WebhookObject[T any] struct {
+	Id        string       `json:"id"`
+	Account   *Account     `json:"account"`
+	Type      WebhookEvent `json:"type"`
+	CreatedAt string       `json:"created_at"`
+	Data      T            `json:"data"`
+}
 
 type Order struct {
 	Code             string       `json:"code" valid:"Required;MaxSize(64)"`
@@ -785,6 +793,9 @@ type Cycle struct {
 	Status    string `json:"status"`
 }
 
+// The object invoice representa os documentos gerados automaticamente ao final
+// de cada ciclo de uma assinatura, discriminando todos os valores referentes à
+// assinatura, como itens e descontos, para realização da cobrança do assinante.
 type InvoiceItem struct {
 	Name        string `json:"name"`
 	Amount      int64  `json:"amount"`
@@ -817,7 +828,7 @@ type InvoicePtr = *Invoice
 type Invoices = []InvoicePtr
 
 type ErrorResponse struct {
-	Message    string            `json:"message"`
+	Message    string              `json:"message"`
 	Errors     map[string][]string `json:"errors"`
 	StatusCode int64
 }
@@ -826,8 +837,8 @@ func (this *ErrorResponse) String() string {
 	return fmt.Sprint("State: %v: %v - %v", this.StatusCode, this.Message, this.Errors)
 }
 
-func (this *ErrorResponse) ToMapOfString() map[string]string{
-	 errors := make(map[string]string)
+func (this *ErrorResponse) ToMapOfString() map[string]string {
+	errors := make(map[string]string)
 	if this.Errors != nil {
 		for k, v := range this.Errors {
 			errors[k] = strings.Join(v, ", ")
@@ -931,8 +942,6 @@ func (this *Response) GetMessage() string {
 	}
 	return ""
 }
-
-
 
 type Charge struct {
 	Id              string           `json:"id"`
@@ -1046,6 +1055,8 @@ type BankAccount struct {
 	Type              BankAccountType `json:"type" valid:"Required"`
 }
 
+// The object recipient represents a receiver,
+// which will receive part of the sale made.
 type Recipient struct {
 	Id                 string            `json:"id,omitempty"`
 	Name               string            `json:"name" valid:"Required;MaxSize(128)"`
@@ -1123,7 +1134,7 @@ type TransferPtr = *Transfer
 type Transfers = []TransferPtr
 
 type GatewayResponse struct {
-	Code   string   `json:"code"`
+	Code   string              `json:"code"`
 	Errors []map[string]string `json:"errors"`
 }
 
@@ -1131,19 +1142,6 @@ type AntifraudResponse struct {
 	Status       string `json:"status"`
 	Score        string `json:"score"`
 	ProviderName string `json:"provider_name"`
-}
-
-type Webhook struct {
-	Id             string                 `json:"id"`
-	Url            string                 `json:"url"`
-	Event          WebhookEvent           `json:"event"`
-	Status         WebhookStatus          `json:"status"`
-	Attempts       string                 `json:"attempts"`
-	LastAttempt    string                 `json:"last_attempt"`
-	ResponseStatus string                 `json:"response_status"`
-	ResponseRaw    string                 `json:"response_raw"`
-	Account        Account                `json:"account"`
-	Data           map[string]interface{} `json:"data"`
 }
 
 type Account struct {

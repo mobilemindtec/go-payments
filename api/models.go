@@ -93,6 +93,8 @@ const (
 	PaymentEventPicPayStatusChanged        PaymentEvent = "PICPAY_STATUS_CHANGED"
 	PaymentEventNotFound                   PaymentEvent = "EVENT_NOT_FOUND"
 
+	PaymentEventOrderChanged PaymentEvent = "ORDER_CHANGED"
+
 	//
 )
 
@@ -508,7 +510,7 @@ type Card struct {
 	CardSecurityCode   string `valid:"" jsonp:"cvv"`
 	CardHolderBirthDay string `valid:""`
 	CardHolderName     string `valid:"" jsonp:"holder_name"`
-	CardHolderDocument     string `valid:"" jsonp:"holder_name_document"`
+	CardHolderDocument string `valid:"" jsonp:"holder_name_document"`
 	Token              string `valid:"" jsonp:""`
 }
 
@@ -770,17 +772,17 @@ func NewOrder() *Order {
 }
 
 type TokenInfo struct {
-	Id            string `jsonp:""`
+	Id               string `jsonp:""`
 	Token            string `jsonp:""`
 	Number           string `jsonp:""`
 	Brand            string `jsonp:""`
 	CreationDate     time.Time
 	CancellationDate time.Time
-	Cancelled        bool `jsonp:""`
-	Active           bool `jsonp:""`
-	NotFound         bool `jsonp:""`
-	FirstSixDigits string            `jsonp:""`
-	LastFourDigits string            `jsonp:""`
+	Cancelled        bool   `jsonp:""`
+	Active           bool   `jsonp:""`
+	NotFound         bool   `jsonp:""`
+	FirstSixDigits   string `jsonp:""`
+	LastFourDigits   string `jsonp:""`
 }
 
 type SubscriptionResult struct {
