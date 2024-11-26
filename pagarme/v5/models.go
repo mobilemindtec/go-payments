@@ -10,6 +10,14 @@ import (
 	"time"
 )
 
+// Quantidade de vezes para obrar na recorrência
+type CycleCount int64
+///Ex .: monthly plan = interval_count (1) and interval month
+///quarterly plan = interval_count (3) and interval month
+///Semi-annual plan = interval_count (6) and interval month
+type IntervalCount int64
+type Quantity int64
+
 type CustomerType string
 type DocumentType string
 type Gender string
@@ -547,7 +555,7 @@ type Plan struct {
 	plano trimestral = interval_count (3) e interval (month)
 	plano semestral = interval_count (6) e interval (month)
 	*/
-	IntervalCount   int64       `json:"interval_count"`
+	IntervalCount   IntervalCount       `json:"interval_count"`
 	TrialPeriodDays int64       `json:"trial_period_days,omitempty"`
 	BillingType     BillingType `json:"billing_type" valid:"Required"`
 	/**
@@ -563,7 +571,7 @@ type Plan struct {
 	Quantidade para o pricing_scheme.
 	Obrigatório quando o pricing_scheme.scheme_type for igual a unit.
 	*/
-	Quantity int64  `json:"quantity"`
+	Quantity Quantity  `json:"quantity"`
 	Status   Status `json:"status,omitempty"`
 }
 
@@ -589,7 +597,7 @@ func (this *Plan) AddPlanItem(items ...*PlanItem) *Plan {
 	return this
 }
 
-func (this *Plan) SetIntervalRule(interval Interval, count int64) *Plan {
+func (this *Plan) SetIntervalRule(interval Interval, count IntervalCount) *Plan {
 	this.Interval = interval
 	this.IntervalCount = count
 	return this
@@ -598,7 +606,7 @@ func (this *Plan) SetIntervalRule(interval Interval, count int64) *Plan {
 func (this *Plan) GetAmount() int64 {
 	var amount int64
 	for _, it := range this.Items {
-		amount += it.PricingScheme.Price * it.Quantity
+		amount += it.PricingScheme.Price * int64(it.Quantity)
 	}
 	return amount
 }
@@ -618,14 +626,15 @@ type PlanItem struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	// Quantidade de itens.
-	Quantity int64 `json:"quantity"`
+	Quantity Quantity `json:"quantity"`
+	//Indicates how many times the item will be charged.
 	/**
 	Número de ciclos durante o qual o item será cobrado.
 	Ex: Um item com cycles = 1 representa que um item será cobrado apenas uma vez.
 	Caso não seja informado, o item será cobrado até que seja desativado.
 	*/
-	Cycles        int64          `json:"cycles,omitempty"`
-	Interval      string         `json:"interval,omitempty"`
+	Cycles CycleCount `json:"cycles,omitempty"`
+	Interval      Interval         `json:"interval,omitempty"`
 	CreatedAt     string         `json:"created_at,omitempty"`
 	UpdatedAt     string         `json:"updated_at,omitempty"`
 	DeletedAt     string         `json:"deleted_at,omitempty"`
@@ -634,8 +643,13 @@ type PlanItem struct {
 	Plan          *Plan          `json:"plan"`
 }
 
-func NewPlanItem(name string, quantity int64, price int64) *PlanItem {
-	return &PlanItem{Name: name, Quantity: quantity, PricingScheme: NewPricingScheme(price)}
+func NewPlanItem(name string, quantity Quantity, cycles CycleCount, price int64) *PlanItem {
+	return &PlanItem{
+		Name: name,
+		Quantity: quantity,
+		PricingScheme: NewPricingScheme(price),
+		Cycles: cycles,
+	}
 }
 
 type PricingScheme struct {
@@ -645,7 +659,7 @@ type PricingScheme struct {
 }
 
 func NewPricingScheme(price int64) *PricingScheme {
-	return &PricingScheme{Price: price}
+	return &PricingScheme{Price: price, SchemeType: Unit}
 }
 
 type AdditionalInformation struct {
@@ -662,7 +676,7 @@ type Subscription struct {
 	StartAt             string              `json:"start_at" valid:"Required"`
 	Interval            Interval            `json:"interval" valid:"Required"`
 	MinimumPrice        int64               `json:"minimum_price" valid:""`
-	IntervalCount       int64               `json:"interval_count" valid:"Required"`
+	IntervalCount       IntervalCount               `json:"interval_count" valid:"Required"`
 	BillingType         BillingType         `json:"billing_type" valid:"Required"`
 	BillingDay          int64               `json:"billing_day,omitempty" valid:""`
 	Installments        int64               `json:"installments" valid:""`
@@ -679,7 +693,7 @@ type Subscription struct {
 	Metadata            map[string]string   `json:"metadata"`
 	Description         string              `json:"description"`
 	PricingScheme       *PricingScheme      `json:"pricing_scheme,omitempty"`
-	Quantity            int64               `json:"quantity"`
+	Quantity            Quantity               `json:"quantity"`
 	Boleto              *Boleto             `json:"boleto,omitempty"`
 }
 
@@ -712,9 +726,14 @@ func (this *Subscription) SetStartAt(date time.Time) *Subscription {
 	return this
 }
 
-func (this *Subscription) SetIntervalRule(interval Interval, count int64) *Subscription {
+func (this *Subscription) SetIntervalRule(interval Interval, intervalCount IntervalCount) *Subscription {
 	this.Interval = interval
-	this.IntervalCount = count
+	this.IntervalCount = intervalCount
+	return this
+}
+
+func (this *Subscription) SetPricingScheme(scheme *PricingScheme) *Subscription {
+	this.PricingScheme = scheme
 	return this
 }
 
@@ -731,8 +750,8 @@ type Subscriptions = []SubscriptionPtr
 type SubscriptionItem struct {
 	Id            string         `json:"id,omitempty"`
 	Description   string         `json:"description,omitempty"`
-	Cycles        int64          `json:"cycles,omitempty"`
-	Quantity      int64          `json:"quantity"`
+	Cycles        CycleCount          `json:"cycles,omitempty"`
+	Quantity      Quantity          `json:"quantity"`
 	Status        Status         `json:"status,omitempty"`
 	CreatedAt     string         `json:"created_at,omitempty"`
 	UpdatedAt     string         `json:"updated_at,omitempty"`
@@ -746,10 +765,12 @@ type SubscriptionItem struct {
 type SubscriptionItemPtr = *SubscriptionItem
 type SubscriptionItems = []SubscriptionItemPtr
 
-func NewSubscriptionItem(description string, quantity int64) *SubscriptionItem {
+func NewSubscriptionItem(description string, quantity Quantity, cycles CycleCount) *SubscriptionItem {
 	return &SubscriptionItem{
 		Description: description,
-		Quantity:    quantity}
+		Quantity:    quantity,
+		Cycles:      cycles,
+	}
 }
 
 type SubscriptionUpdate struct {

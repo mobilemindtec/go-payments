@@ -9,6 +9,7 @@ import (
 	"github.com/beego/i18n"
 	"github.com/mobilemindtec/go-payments/api"
 	"github.com/mobilemindtec/go-utils/beego/validator"
+	"github.com/beego/beego/v2/core/logs"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -884,7 +885,7 @@ func (this *Asaas) request(
 			payload, err := json.Marshal(data)
 
 			if err != nil {
-				fmt.Println("error json.Marshal ", err.Error())
+				logs.Debug("error json.Marshal ", err.Error())
 				return result, err
 			}
 
@@ -893,9 +894,10 @@ func (this *Asaas) request(
 			result.Request = string(payload)
 
 			if this.Debug {
-				fmt.Println("****************** Asaas Request ******************")
-				fmt.Println(result.Request)
-				fmt.Println("****************** Asaas Request ******************")
+				logs.Debug("****************** Asaas Request ******************")
+				pettry, _ := json.MarshalIndent(data, "", "  ")
+				logs.Debug(string(pettry))
+				logs.Debug("****************** Asaas Request ******************")
 			}
 
 			req, err = http.NewRequest(method, apiUrl, postData)
@@ -960,9 +962,9 @@ func (this *Asaas) request(
 			}
 
 			/*if this.Debug {
-				fmt.Println("****************** Asaas Request ******************")
-				fmt.Println(string(formData.Bytes()))
-				fmt.Println("****************** Asaas Request ******************")
+				logs.Debug("****************** Asaas Request ******************")
+				logs.Debug(string(formData.Bytes()))
+				logs.Debug("****************** Asaas Request ******************")
 			}*/
 
 			req, err = http.NewRequest(method, apiUrl, &formData)
@@ -973,7 +975,7 @@ func (this *Asaas) request(
 	}
 
 	if err != nil {
-		fmt.Println("err = ", err)
+		logs.Debug("err = ", err)
 		return nil, errors.New(fmt.Sprintf("error on http.NewRequest: %v", err))
 	}
 
@@ -987,7 +989,7 @@ func (this *Asaas) request(
 	res, err := client.Do(req)
 
 	if err != nil {
-		fmt.Println("err = ", err)
+		logs.Debug("err = ", err)
 		return nil, errors.New(fmt.Sprintf("error on client.Do: %v", err))
 	}
 
@@ -995,22 +997,22 @@ func (this *Asaas) request(
 	body, err := ioutil.ReadAll(res.Body)
 
 	if err != nil {
-		fmt.Println("err = ", err)
+		logs.Debug("err = ", err)
 		return nil, errors.New(fmt.Sprintf("error on ioutil.ReadAll: %v", err))
 	}
 
 	result.Response = string(body)
 
 	if this.Debug {
-		fmt.Println("****************** Asaas Response ", res.StatusCode, " ******************")
-		fmt.Println(result.Response)
-		fmt.Println("****************** Asaas Response ******************")
+		logs.Debug("****************** Asaas Response ", res.StatusCode, " ******************")
+		logs.Debug(result.Response)
+		logs.Debug("****************** Asaas Response ******************")
 	}
 
 	if res.StatusCode == 200 || res.StatusCode == 400 {
 		if res.StatusCode == 200 && resultProcessor != nil {
 			if err := resultProcessor(body, result); err != nil {
-				fmt.Println("err =", err)
+				logs.Debug("err =", err)
 				return nil, errors.New(fmt.Sprintf("error on resultProcessor: %v", err))
 			}
 		} else {
@@ -1018,7 +1020,7 @@ func (this *Asaas) request(
 			err = json.Unmarshal(body, result)
 
 			if err != nil {
-				fmt.Println("err = ", err)
+				logs.Debug("err = ", err)
 				return nil, errors.New(fmt.Sprintf("error on json.Unmarshal: %v", err))
 			}
 
@@ -1322,7 +1324,7 @@ func (this *Asaas) SetValidationError(key string, value string) {
 
 func (this *Asaas) Log(message string, args ...interface{}) {
 	if this.Debug {
-		fmt.Println("Assas: ", fmt.Sprintf(message, args...))
+		logs.Debug("Assas: ", fmt.Sprintf(message, args...))
 	}
 }
 

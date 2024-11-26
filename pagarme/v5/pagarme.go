@@ -131,7 +131,8 @@ func (this *Pagarme) request(
 
 		if this.Debug {
 			logs.Debug("****************** Pagarme Request ******************")
-			logs.Debug(response.RawRequest)
+			pettry, _ := json.MarshalIndent(data, "", "  ")
+			logs.Debug(string(pettry))
 			logs.Debug("****************** Pagarme Request ******************")
 		}
 

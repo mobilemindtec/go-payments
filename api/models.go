@@ -561,6 +561,9 @@ type Subscription struct {
 	EffectDate time.Time `valid:"Required" jsonp:""`
 	// cobrar no último dia do mês
 
+	// pagarme
+	IntervalCount                   int64             `jsonp:""`
+	// Charges
 	Count                   int64             `jsonp:""`
 	Cycle                   SubscriptionCycle `jsonp:""`
 	PaymentAtLastDayOfMonth bool              `jsonp:""`

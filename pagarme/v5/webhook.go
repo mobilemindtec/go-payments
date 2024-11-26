@@ -87,7 +87,6 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
 	data.Status = this.JsonParser.GetJsonString(payload, "status")
 	data.PayloadMap = jsonMap
 	data.Event = WebhookEvent(this.JsonParser.GetJsonString(jsonMap, "type"))
-	data.Event = WebhookEvent(this.JsonParser.GetJsonString(data.PayloadMap, "event"))
 	data.Raw = string(body)
 
 	entityValidatorResult, _ := this.EntityValidator.IsValid(data, nil)
