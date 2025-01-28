@@ -165,11 +165,15 @@ func cardValidator(entity interface{}, validator *validator.Validation) {
 	}
 
 	if isUpdate || isCreate {
+		/*
 		if len(c.Brand) == 0 {
 			validator.SetError("Brand", "Brand is required")
-		}
-		if !cpf.Validate(c.HolderDocument) && !cnpj.Validate(c.HolderDocument) {
-			validator.SetError("HolderDocument", "HolderDocument is required CPF or CNPJ")
+		}*/
+
+		if len(c.HolderDocument) > 0 {
+			if !cpf.Validate(c.HolderDocument) && !cnpj.Validate(c.HolderDocument) {
+				validator.SetError("HolderDocument", "HolderDocument is required CPF or CNPJ")
+			}
 		}
 		if len(c.HolderName) == 0 {
 			validator.SetError("HolderName", "HolderName is required")
@@ -188,8 +192,9 @@ func cardValidator(entity interface{}, validator *validator.Validation) {
 		}
 	}
 
+	/*
 	if len(c.BillingAddressId) == 0 && c.BillingAddress == nil {
 		validator.SetError("Card", "BillingAddress or BillingAddressId is required")
-	}
+	}*/
 
 }

@@ -86,7 +86,7 @@ func (this *PagarmeCustomer) List(query *CustomerQuery) *either.Either[*ErrorRes
 
 	return either.
 		MapIf(
-			this.get(uri, createParserContent[SuccessCustomers]()),
+			this.get(uri, createParserContent[Customers]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return unwrapError(e.UnwrapLeft())
 			},

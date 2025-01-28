@@ -29,6 +29,10 @@ func (this *WebhookData) IsSubscription() bool {
 	return strings.HasPrefix(string(this.Event), "subscription.")
 }
 
+func (this *WebhookData) IsSubscriptionItem() bool {
+	return strings.HasPrefix(string(this.Event), "subscription_item.")
+}
+
 func (this *WebhookData) IsCharge() bool {
 	return strings.HasPrefix(string(this.Event), "charge.")
 }

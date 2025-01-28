@@ -182,7 +182,7 @@ func (this *PagarmeSubscription) UpdateItem(subscriptionId string, itemId string
 
 	return either.
 		MapIf(
-			this.put(uri, item, createParser[SubscriptionPtr]()),
+			this.put(uri, item, createParser[SubscriptionItem]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return unwrapError(e.UnwrapLeft())
 			},

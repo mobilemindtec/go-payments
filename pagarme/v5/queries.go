@@ -20,6 +20,11 @@ func NewCustomerQuery() *CustomerQuery {
 	return &CustomerQuery{}
 }
 
+func (this *CustomerQuery) WithDocument(doc string) *CustomerQuery {
+	this.Document = doc
+	return this
+}
+
 func (this *CustomerQuery) UrlQuery() string {
 	m, _ := json.EncodeAsMap(this)
 	return maps.ToUrlQuery(m)

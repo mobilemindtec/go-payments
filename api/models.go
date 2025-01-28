@@ -2,6 +2,7 @@ package api
 
 import (
 	"time"
+	"fmt"
 )
 
 type Gateway string
@@ -549,9 +550,14 @@ type Subscription struct {
 	TransactionId  string `valid:"" jsonp:""`
 	Description    string `valid:"Required" jsonp:""`
 
+	// Pagarme v5
+	SubscriptionItemId string `valid:"" jsonp:""`
+
 	// valor da recorrência
 	Amount float64 `valid:"Required" jsonp:""`
-
+	
+	Installments int64 `jsonp:""`
+	
 	// valor inicial da recorrência
 	InitialAmount float64 `valid:"" jsonp:""`
 	// quantas vezes o valor inicial deve ser cobrado
@@ -790,7 +796,7 @@ type TokenInfo struct {
 
 type SubscriptionResult struct {
 	SubscriptionId string `jsonp:""`
-
+	SubscriptionItemId string `jsonp:""`
 	PastPaymentsNumber  int64     `jsonp:""`
 	TotalPaymentsNumber int64     `jsonp:""`
 	EffectDate          time.Time `jsonp:""`
@@ -1044,7 +1050,8 @@ type PaymentResult struct {
 	PaymentType  PaymentType  `jsonp:""`
 	PaymentEvent PaymentEvent `jsonp:""`
 
-	SubscriptionId string `jsonp:""`
+	//SubscriptionId string `jsonp:""`
+
 
 	InstallmentId    string  `jsonp:""`
 	InstallmentCount int64   `jsonp:""`
@@ -1069,6 +1076,7 @@ type PaymentResult struct {
 	Nsu                 string  `jsonp:""`
 	BoletoOutputContent []byte  `json:"-"`
 	BoletoFileName      string  `json:"-"`
+	DueAt          time.Time `jsonp:""`
 
 	QrCode           string `jsonp:"qrcode"`
 	QrCodeUrl        string `jsonp:"qrcode_url"`
@@ -1118,7 +1126,7 @@ func (this *PaymentResult) IsInstallment() bool {
 }
 
 func (this *PaymentResult) IsSubscription() bool {
-	return len(this.SubscriptionId) > 0
+	return len(this.SubscriptionInfo.SubscriptionId) > 0
 }
 
 func (this *PaymentResult) BuildStatus() {
@@ -1254,6 +1262,13 @@ func NewPaymentResultValidationError(errors map[string]string) *PaymentResultVal
 	result := new(PaymentResultValidationError)
 	result.Error = true
 	result.ValidationErrors = errors
+	return result
+}
+
+func NewPaymentResultWithError(format string, args ...interface{}) *PaymentResultValidationError {
+	result := new(PaymentResultValidationError)
+	result.Error = true
+	result.Message = fmt.Sprintf(format, args...)
 	return result
 }
 

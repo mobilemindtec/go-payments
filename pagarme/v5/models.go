@@ -121,14 +121,15 @@ const (
 	Deleted  Status = "deleted"
 	Expired  Status = "expired"
 	Inactive Status = "inactive"
+	Canceled Status = "canceled"
 )
 
 const (
-	Pending   InvoiceStatus = "pending"
-	Paid      InvoiceStatus = "paid"
-	Canceled  InvoiceStatus = "canceled"
-	Scheduled InvoiceStatus = "scheduled"
-	Failed    InvoiceStatus = "failed"
+	InvoicePending   InvoiceStatus = "pending"
+	InvoicePaid      InvoiceStatus = "paid"
+	InvoiceCanceled  InvoiceStatus = "canceled"
+	InvoiceScheduled InvoiceStatus = "scheduled"
+	InvoiceFailed    InvoiceStatus = "failed"
 )
 
 const (
@@ -469,7 +470,7 @@ type Card struct {
 	CardId           string          `json:"card_id,omitempty"`
 	CardToken        string          `json:"card_token,omitempty"`
 	BillingAddressId string          `json:"billing_address_id,omitempty"`
-	BillingAddress   *BillingAddress `json:"billing_address"`
+	BillingAddress   *BillingAddress `json:"billing_address,omitempty"`
 
 	Id             string            `json:"id,omitempty"`
 	FirstSixDigits string            `json:"first_six_digits,omitempty"`
@@ -671,6 +672,7 @@ type Subscription struct {
 	Id                  string              `json:"id,omitempty"`
 	Code                string              `json:"code,omitempty" valid:"MaxSize(52)"`
 	PlanId              string              `json:"plan_id,omitempty"`
+	Status              Status              `json:"status,omitempty"`
 	PaymentMethod       PaymentMethod       `json:"payment_method" valid:"Required"`
 	Currency            Currency            `json:"currency"`
 	StartAt             string              `json:"start_at" valid:"Required"`
@@ -833,11 +835,13 @@ type Invoice struct {
 	Installments    int64          `json:"installments"`
 	Status          InvoiceStatus  `json:"status"`
 	BillingAt       string         `json:"billing_at"`
+	DueAt           string         `json:"due_at"`
 	SeenAt          string         `json:"seen_at"`
 	CreatedAt       string         `json:"created_at"`
 	CanceledAt      string         `json:"canceled_at"`
 	TotalDiscounts  int64          `json:"total_discounts"`
 	TotalIncrements int64          `json:"total_increments"`
+	SubscriptionId  string         `json:"subscriptionId"`
 	Items           []*InvoiceItem `json:"items"`
 	Customer        *Customer      `json:"customer"`
 	Subscription    *Subscription  `json:"subscription"`
@@ -977,6 +981,7 @@ type Charge struct {
 	PaidAt          string           `json:"paid_at"`
 	CreatedAt       string           `json:"created_at"`
 	UpdatedAt       string           `json:"updated_at"`
+	Invoice 		*Invoice 		 `json:"invoice"`
 	Customer        *Customer        `json:"customer"`
 	LastTransaction *LastTransaction `json:"last_transaction"`
 }
@@ -1048,7 +1053,7 @@ func (this *LastTransaction) GetPayZenSOAPStatus() api.TransactionStatus {
 	case api.PagarmeV5Voided, api.PagarmeV5PartialVoid:
 		return api.Cancelled
 	case api.PagarmeV5Paid:
-		return api.Success
+		return api.Authorised
 	case api.PagarmeV5None:
 		return api.NotCreated
 	default:
