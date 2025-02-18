@@ -19,7 +19,7 @@ func TestPagarmev5OrderCreate(t *testing.T) {
 	assert.False(t, result.IsLeft())
 	assert.Truef(t, result.Right().NonEmpty(), "empty order response")
 	if result.IsRight() {
-		assert.NotEmptyf(t, result.UnwrapRight().Id, "empty order id")
+		assert.NotEmptyf(t, result.UnwrapRight().Data.Id, "empty order id")
 	}
 }
 
@@ -36,14 +36,14 @@ func TestPagarmev5OrderList(t *testing.T) {
 
 	result.
 		Right().
-		Foreach(func(orders pagarme.Orders) {
+		Foreach(func(orders pagarme.SuccessOrders) {
 
-			l := len(orders)
+			l := len(orders.Data)
 
 			assert.True(t, l > 0)
 
 			if l > 0 {
-				assert.True(t, len(orders[0].Items) > 0)
+				assert.True(t, len(orders.Data[0].Items) > 0)
 			}
 		})
 }

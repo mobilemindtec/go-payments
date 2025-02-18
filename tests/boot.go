@@ -26,14 +26,12 @@ var (
 
 	// pagarme
 	ApiKey    = ""
-	CryptoKey = ""
-	PublicKey = ""
 	SecretKey = ""
+	PublicKey = ""
 
 	// payzen soap
 	Mode   = "TEST"
 	ShopId = ""
-	Cert   = ""
 
 	// picpay
 	Token       = ""
@@ -85,17 +83,12 @@ func init() {
 	Authentication = v4.NewAuthentication(username, passwordProd, passwordTest)
 
 	// payzen soap
-	certObj := jsonParser.GetJsonObject(payzenObj, "cert")
 	Mode, _ = payzenObj["mode"].(string)
 	ShopId, _ = payzenObj["shop_id"].(string)
-	Cert, _ = certObj["test"].(string)
 
 	// pagarme
 	pagarmeObj := jsonParser.GetJsonObject(mobilemindObj, "pagarme")
-	pagarmeV1 := jsonParser.GetJsonObject(pagarmeObj, "v1")
 	pagarmeV5 := jsonParser.GetJsonObject(pagarmeObj, "v5")
-	ApiKey = jsonParser.GetJsonString(pagarmeV1, "api_key")
-	CryptoKey = jsonParser.GetJsonString(pagarmeV1, "crypto_key")
 	PublicKey = jsonParser.GetJsonString(pagarmeV5, "public_key")
 	SecretKey = jsonParser.GetJsonString(pagarmeV5, "secret_key")
 
@@ -110,8 +103,7 @@ func init() {
 	AsaasAccessToken = jsonParser.GetJsonString(asaasObj, "api_key")
 
 	fmt.Printf("init picpay token = %v, sallerToken = %v\n", Token, SallerToken)
-	fmt.Printf("init payzen data: Mode = %v, ShopId = %v, Cert = %v\n", Mode, ShopId, Cert)
-	fmt.Printf("init pagarme v1 toApiKey = %v, CryptoKey = %v\n", Token, CryptoKey)
+	fmt.Printf("init payzen data: Mode = %v, ShopId = %v, Cert = %v\n", Mode, ShopId)
 	fmt.Printf("init pagarme v5 public key = %v, secret key = %v\n", PublicKey, SecretKey)
 	fmt.Printf("init payzen v4 data: Mode = %v, username = %v, Password = %v\n", ApiMode, username, passwordTest)
 	fmt.Printf("init asaas: Token = %v\n", AsaasAccessToken)

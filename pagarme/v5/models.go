@@ -12,9 +12,10 @@ import (
 
 // Quantidade de vezes para obrar na recorrência
 type CycleCount int64
-///Ex .: monthly plan = interval_count (1) and interval month
-///quarterly plan = interval_count (3) and interval month
-///Semi-annual plan = interval_count (6) and interval month
+
+// /Ex .: monthly plan = interval_count (1) and interval month
+// /quarterly plan = interval_count (3) and interval month
+// /Semi-annual plan = interval_count (6) and interval month
 type IntervalCount int64
 type Quantity int64
 
@@ -556,9 +557,9 @@ type Plan struct {
 	plano trimestral = interval_count (3) e interval (month)
 	plano semestral = interval_count (6) e interval (month)
 	*/
-	IntervalCount   IntervalCount       `json:"interval_count"`
-	TrialPeriodDays int64       `json:"trial_period_days,omitempty"`
-	BillingType     BillingType `json:"billing_type" valid:"Required"`
+	IntervalCount   IntervalCount `json:"interval_count"`
+	TrialPeriodDays int64         `json:"trial_period_days,omitempty"`
+	BillingType     BillingType   `json:"billing_type" valid:"Required"`
 	/**
 	Dias disponíveis para cobrança das assinaturas criadas a partir do plano.
 	Deve ser maior ou igual a 1 e menor ou igual a 28.
@@ -572,8 +573,23 @@ type Plan struct {
 	Quantidade para o pricing_scheme.
 	Obrigatório quando o pricing_scheme.scheme_type for igual a unit.
 	*/
-	Quantity Quantity  `json:"quantity"`
-	Status   Status `json:"status,omitempty"`
+	Quantity Quantity `json:"quantity"`
+	Status   Status   `json:"status,omitempty"`
+}
+
+func (this *Plan) GetIntervalRule() api.SubscriptionCycle {
+	switch this.Interval {
+	case Day:
+		return api.Daily
+	case Week:
+		return api.Weekly
+	case Month:
+		return api.Monthly
+	case Year:
+		return api.Yearly
+	default:
+		return api.SubscriptionCycleNone
+	}
 }
 
 type PlanPtr = *Plan
@@ -634,8 +650,8 @@ type PlanItem struct {
 	Ex: Um item com cycles = 1 representa que um item será cobrado apenas uma vez.
 	Caso não seja informado, o item será cobrado até que seja desativado.
 	*/
-	Cycles CycleCount `json:"cycles,omitempty"`
-	Interval      Interval         `json:"interval,omitempty"`
+	Cycles        CycleCount     `json:"cycles,omitempty"`
+	Interval      Interval       `json:"interval,omitempty"`
 	CreatedAt     string         `json:"created_at,omitempty"`
 	UpdatedAt     string         `json:"updated_at,omitempty"`
 	DeletedAt     string         `json:"deleted_at,omitempty"`
@@ -646,10 +662,10 @@ type PlanItem struct {
 
 func NewPlanItem(name string, quantity Quantity, cycles CycleCount, price int64) *PlanItem {
 	return &PlanItem{
-		Name: name,
-		Quantity: quantity,
+		Name:          name,
+		Quantity:      quantity,
 		PricingScheme: NewPricingScheme(price),
-		Cycles: cycles,
+		Cycles:        cycles,
 	}
 }
 
@@ -678,7 +694,7 @@ type Subscription struct {
 	StartAt             string              `json:"start_at" valid:"Required"`
 	Interval            Interval            `json:"interval" valid:"Required"`
 	MinimumPrice        int64               `json:"minimum_price" valid:""`
-	IntervalCount       IntervalCount               `json:"interval_count" valid:"Required"`
+	IntervalCount       IntervalCount       `json:"interval_count" valid:"Required"`
 	BillingType         BillingType         `json:"billing_type" valid:"Required"`
 	BillingDay          int64               `json:"billing_day,omitempty" valid:""`
 	Installments        int64               `json:"installments" valid:""`
@@ -695,7 +711,7 @@ type Subscription struct {
 	Metadata            map[string]string   `json:"metadata"`
 	Description         string              `json:"description"`
 	PricingScheme       *PricingScheme      `json:"pricing_scheme,omitempty"`
-	Quantity            Quantity               `json:"quantity"`
+	Quantity            Quantity            `json:"quantity"`
 	Boleto              *Boleto             `json:"boleto,omitempty"`
 }
 
@@ -752,8 +768,8 @@ type Subscriptions = []SubscriptionPtr
 type SubscriptionItem struct {
 	Id            string         `json:"id,omitempty"`
 	Description   string         `json:"description,omitempty"`
-	Cycles        CycleCount          `json:"cycles,omitempty"`
-	Quantity      Quantity          `json:"quantity"`
+	Cycles        CycleCount     `json:"cycles,omitempty"`
+	Quantity      Quantity       `json:"quantity"`
 	Status        Status         `json:"status,omitempty"`
 	CreatedAt     string         `json:"created_at,omitempty"`
 	UpdatedAt     string         `json:"updated_at,omitempty"`
@@ -847,6 +863,21 @@ type Invoice struct {
 	Subscription    *Subscription  `json:"subscription"`
 	Cycle           *Cycle         `json:"cycle"`
 	Charge          *Charge        `json:"charge"`
+}
+
+func (this *Invoice) ToPaymentStatus() api.PaymentStatus {
+	switch this.Status {
+	case InvoicePending, InvoiceScheduled:
+		return api.PaymentWaitingPayment
+	case InvoicePaid:
+		return api.PaymentPaid
+	case InvoiceCanceled:
+		return api.PaymentCancelled
+	case InvoiceFailed:
+		return api.PaymentRefused
+	default:
+		return api.PaymentError
+	}
 }
 
 type InvoicePtr = *Invoice
@@ -981,9 +1012,29 @@ type Charge struct {
 	PaidAt          string           `json:"paid_at"`
 	CreatedAt       string           `json:"created_at"`
 	UpdatedAt       string           `json:"updated_at"`
-	Invoice 		*Invoice 		 `json:"invoice"`
+	Invoice         *Invoice         `json:"invoice"`
 	Customer        *Customer        `json:"customer"`
 	LastTransaction *LastTransaction `json:"last_transaction"`
+}
+
+func (this *Charge) ToPaymentStatus() api.PaymentStatus {
+	switch this.Status {
+	case ChargePending:
+		return api.PaymentWaitingPayment
+	case ChargePaid:
+		return api.PaymentPaid
+	case ChargeCanceled:
+		return api.PaymentCreated
+	case ChargeProcessing:
+		return api.PaymentWaitingPayment
+	case ChargeFailed:
+		return api.PaymentRefused
+	case ChargeOverpaid, ChargeUnderpaid:
+		return api.PaymentOther
+	default:
+		return api.PaymentOther
+
+	}
 }
 
 type ChargePtr = *Charge
@@ -1173,6 +1224,12 @@ type AntifraudResponse struct {
 type Account struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
+}
+
+type ChargePaymentConfirm struct {
+	ChargeCode  string `json:"charge_code"`
+	Description string `json:"description"`
+	Amount      int64  `json:"amount"`
 }
 
 func failIf(ok bool, msg string, args ...interface{}) {

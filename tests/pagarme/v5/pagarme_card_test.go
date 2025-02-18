@@ -22,7 +22,7 @@ func TestPagarmev5CardCreate(t *testing.T) {
 	assert.False(t, result.IsLeft())
 	assert.Truef(t, result.Right().NonEmpty(), "empty card response")
 	if result.IsRight() {
-		assert.NotEmptyf(t, result.UnwrapRight().Id, "empty card id")
+		assert.NotEmptyf(t, result.UnwrapRight().Data.Id, "empty card id")
 	}
 }
 
@@ -38,7 +38,7 @@ func TestPagarmev5CardList(t *testing.T) {
 	assert.False(t, result.IsLeft())
 	assert.Truef(t, result.Right().NonEmpty(), "empty card response")
 	if result.IsRight() {
-		assert.True(t, result.Right().ListNonEmpty())
+		assert.True(t, result.Right().SliceNonEmpty())
 	}
 }
 
@@ -71,9 +71,9 @@ func TestPagarmev5CardUpdate(t *testing.T) {
 
 	result.
 		Right().
-		Foreach(func(card pagarme.CardPtr) {
+		Foreach(func(card pagarme.SuccessCard) {
 			creditCard := fillCreditCard(pagarme.NewCreditCard())
-			creditCard.Card.Id = card.Id
+			creditCard.Card.Id = card.Data.Id
 			result := Pagarme.Update(customerId, creditCard.Card)
 			assert.False(t, result.IsLeft())
 			assert.Truef(t, result.Right().NonEmpty(), "empty card response")

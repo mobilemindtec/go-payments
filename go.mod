@@ -30,7 +30,7 @@ require (
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/mobilemindtec/go-io v0.0.0-20240530013303-7c555a67548b // indirect
+	github.com/mobilemindtec/go-io v0.0.0-20241018190539-11fe1345c51e // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.30.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

@@ -23,9 +23,9 @@ func TestPagarmev5CustomerCreate(t *testing.T) {
 
 	result.
 		Right().
-		Foreach(func(c *pagarme.Customer) {
-			assert.NotEmptyf(t, result.UnwrapRight().Id, "empty customer id")
-			gopayments.CacheClient.Set("CustomerId", c.Id, 0)
+		Foreach(func(c pagarme.SuccessCustomer) {
+			assert.NotEmptyf(t, c.Data.Id, "empty customer id")
+			gopayments.CacheClient.Set("CustomerId", c.Data.Id, 0)
 		})
 }
 
@@ -43,8 +43,8 @@ func TestPagarmev5CustomerGet(t *testing.T) {
 
 	result.
 		Right().
-		Foreach(func(c pagarme.CustomerPtr) {
-			fmt.Print(c.Id)
+		Foreach(func(c pagarme.SuccessCustomer) {
+			fmt.Print(c.Data.Id)
 		})
 }
 
@@ -61,8 +61,8 @@ func TestPagarmev5CustomerList(t *testing.T) {
 
 	result.
 		Right().
-		ListForeach(func(c pagarme.CustomerPtr) {
-			fmt.Print(c.Id)
+		SliceForeach(func(c pagarme.SuccessCustomer) {
+			fmt.Print(c.Data.Id)
 		})
 }
 
@@ -82,7 +82,7 @@ func TestPagarmev5CustomerUpdate(t *testing.T) {
 
 	result.
 		Right().
-		Foreach(func(c pagarme.CustomerPtr) {
-			fmt.Print(c.Id)
+		Foreach(func(c pagarme.SuccessCustomer) {
+			fmt.Print(c.Data.Id)
 		})
 }

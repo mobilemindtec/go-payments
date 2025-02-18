@@ -18,7 +18,7 @@ func TestPagarmev5PlanCreate(t *testing.T) {
 	plan := pagarme.
 		NewPlan("Plan test").
 		AddPaymentMethod(pagarme.MethodCreditCard, pagarme.MethodBoleto).
-		AddPlanItem(pagarme.NewPlanItem("Item test", 1, 100)).
+		AddPlanItem(pagarme.NewPlanItem("Item test", pagarme.Quantity(1), pagarme.CycleCount(5), 100)).
 		SetIntervalRule(pagarme.Month, 1) // mensal
 
 	plan.StatementDescriptor = "MMIND"
@@ -28,7 +28,7 @@ func TestPagarmev5PlanCreate(t *testing.T) {
 	assert.False(t, result.IsLeft())
 	assert.Truef(t, result.Right().NonEmpty(), "empty plan response")
 	if result.IsRight() {
-		assert.NotEmptyf(t, result.UnwrapRight().Id, "empty plan id")
+		assert.NotEmptyf(t, result.UnwrapRight().Data.Id, "empty plan id")
 	}
 }
 
@@ -45,7 +45,7 @@ func TestPagarmev5PlanEdit(t *testing.T) {
 	assert.False(t, result.IsLeft())
 	assert.Truef(t, result.Right().NonEmpty(), "empty plan response")
 	if result.IsRight() {
-		assert.NotEmptyf(t, result.UnwrapRight().Id, "empty plan id")
+		assert.NotEmptyf(t, result.UnwrapRight().Data.Id, "empty plan id")
 	}
 }
 
@@ -62,14 +62,14 @@ func TestPagarmev5PlanList(t *testing.T) {
 
 	result.
 		Right().
-		Foreach(func(plans pagarme.Plans) {
+		Foreach(func(plans pagarme.SuccessPlans) {
 
-			l := len(plans)
+			l := len(plans.Data)
 
 			assert.True(t, l > 0)
 
 			if l > 0 {
-				assert.True(t, len(plans[0].Items) > 0)
+				assert.True(t, len(plans.Data[0].Items) > 0)
 			}
 		})
 }
@@ -83,7 +83,7 @@ func TestPagarmev5PlanUpdate(t *testing.T) {
 	plan := pagarme.
 		NewPlan("Plan test").
 		AddPaymentMethod(pagarme.MethodCreditCard, pagarme.MethodBoleto).
-		AddPlanItem(pagarme.NewPlanItem("Item test", 1, 100)).
+		AddPlanItem(pagarme.NewPlanItem("Item test", pagarme.Quantity(1), pagarme.CycleCount(5), 100)).
 		SetIntervalRule(pagarme.Month, 1) // mensal
 
 	plan.StatementDescriptor = "MMIND"
@@ -95,7 +95,7 @@ func TestPagarmev5PlanUpdate(t *testing.T) {
 	assert.False(t, result.IsLeft())
 	assert.Truef(t, result.Right().NonEmpty(), "empty plan response")
 	if result.IsRight() {
-		assert.NotEmptyf(t, result.UnwrapRight().Id, "empty plan id")
+		assert.NotEmptyf(t, result.UnwrapRight().Data.Id, "empty plan id")
 	}
 }
 

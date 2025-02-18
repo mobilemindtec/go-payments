@@ -5,18 +5,13 @@
 			"CryptoKey": ""
 		},
 		"payzen": {
-			"shop_id": "",
 			"v4": {
 				"username": "",
 				"password": {
 					"prod": "",
 					"test": ""
 				}
-			},
-			"cert": {
-				"prod": "",
-				"test": ""
-			}			
+			}
 		}
 	},
 	"picpay": {

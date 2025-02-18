@@ -30,7 +30,7 @@ func TestPagarmev5SubscriptionCreateWithoutPlan(t *testing.T) {
 		SetIntervalRule(pagarme.Month, 1).
 		AddItem(
 			pagarme.
-				NewSubscriptionItem("Item test", 1).
+				NewSubscriptionItem("Item test", pagarme.Quantity(1), pagarme.CycleCount(5)).
 				SetPricingScheme(pagarme.NewPricingScheme(100)))
 	sub.StatementDescriptor = "MMIND"
 
@@ -39,7 +39,7 @@ func TestPagarmev5SubscriptionCreateWithoutPlan(t *testing.T) {
 	assert.False(t, result.IsLeft())
 	assert.True(t, result.Right().NonEmpty())
 	if result.IsRight() {
-		assert.NotEmpty(t, result.UnwrapRight().Id)
+		assert.NotEmpty(t, result.UnwrapRight().Data.Id)
 	}
 }
 
@@ -59,14 +59,14 @@ func TestPagarmev5SubscriptionCreateFromPlan(t *testing.T) {
 	plan := pagarme.
 		NewPlan("Plan test").
 		AddPaymentMethod(pagarme.MethodCreditCard, pagarme.MethodBoleto).
-		AddPlanItem(pagarme.NewPlanItem("Item test", 1, 100)).
+		AddPlanItem(pagarme.NewPlanItem("Item test", pagarme.Quantity(1), pagarme.CycleCount(5), 100)).
 		SetIntervalRule(pagarme.Month, 1) // mensal
 
 	presult := PagarmePlan.Create(plan)
 
 	assert.True(t, presult.IsRight())
 
-	pid := presult.Right().Get().Id
+	pid := presult.Right().Get().Data.Id
 
 	customer := newCustomer()
 	card := fillCreditCard(pagarme.NewCreditCard()).Card
@@ -80,7 +80,7 @@ func TestPagarmev5SubscriptionCreateFromPlan(t *testing.T) {
 		SetIntervalRule(pagarme.Month, 1).
 		AddItem(
 			pagarme.
-				NewSubscriptionItem("Item test", 1).
+				NewSubscriptionItem("Item test", pagarme.Quantity(1), pagarme.CycleCount(5)).
 				SetPricingScheme(pagarme.NewPricingScheme(100)))
 	sub.StatementDescriptor = "MMIND"
 
@@ -89,7 +89,7 @@ func TestPagarmev5SubscriptionCreateFromPlan(t *testing.T) {
 	assert.False(t, result.IsLeft())
 	assert.True(t, result.Right().NonEmpty())
 	if result.IsRight() {
-		assert.NotEmpty(t, result.UnwrapRight().Id)
+		assert.NotEmpty(t, result.UnwrapRight().Data.Id)
 	}
 }
 
@@ -107,7 +107,7 @@ func TestPagarmev5SubscriptionGet(t *testing.T) {
 	assert.False(t, result.IsLeft())
 	assert.True(t, result.Right().NonEmpty())
 	if result.IsRight() {
-		assert.NotEmpty(t, result.UnwrapRight().Id)
+		assert.NotEmpty(t, result.UnwrapRight().Data.Id)
 	}
 }
 
