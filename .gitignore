@@ -1,6 +1,7 @@
 
 
 .keys
-go.sum
+*.sum
 certs.json
 .idea
+go.work

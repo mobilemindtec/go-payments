@@ -428,6 +428,8 @@ func NewPayment() *Payment {
 	payment.Customer = new(Customer)
 	payment.Card = new(Card)
 	payment.Installments = 1
+	payment.AdditionalInfo = make(map[string]interface{})
+	payment.Order = NewOrder()
 	return payment
 }
 
@@ -556,7 +558,7 @@ type TransactionItemResult struct {
 	Amount  float64   `jsonp:""`
 	DueDate time.Time `jsonp:""`
 	//ExpectedCaptureDate    time.Time          `jsonp:""`
-	//CreationDate           time.Time          `jsonp:""`
+	CreationDate           time.Time          `jsonp:""`
 	Status      PaymentStatus      `jsonp:""`
 	StatusLabel PaymentStatusLabel `jsonp:""`
 
@@ -583,6 +585,10 @@ func (this *TransactionItemResult) isPicPay() bool {
 
 func (this *TransactionItemResult) isAsaas() bool {
 	return this.Platform == GatewayAsaas
+}
+
+func (this *TransactionItemResult) IsPaid() bool {
+	return this.TransactionStatus == Authorised || this.TransactionStatus == Captured
 }
 
 func (this *TransactionItemResult) BuildStatus() {
