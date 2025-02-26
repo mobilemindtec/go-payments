@@ -827,6 +827,8 @@ type PaymentResult struct {
 	Transfers []*TransferResult `jsonp:""`
 
 	Customer *Customer `jsonp:""`
+
+	Tag interface{}
 }
 
 func (this *PaymentResult) isPagarme() bool {
