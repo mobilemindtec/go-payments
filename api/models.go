@@ -701,6 +701,14 @@ func (this *PaymentResultValidationError) AddError(key string, value string) *Pa
 	return this
 }
 
+func (this *PaymentResultValidationError) String() string {
+	msg := this.Message
+	if this.ValidationErrors != nil && len(this.ValidationErrors) > 0 {
+		msg = fmt.Sprintf("%v\n%v", msg, this.ValidationErrors)
+	}
+	return msg
+}
+
 type Balance struct {
 	WaitingFunds float64 `jsonp:""`
 	Available    float64 `jsonp:""`

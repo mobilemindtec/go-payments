@@ -9,7 +9,7 @@ import (
 	"github.com/beego/beego/v2/core/validation"
 	"github.com/beego/i18n"
 	"github.com/mobilemindtec/go-utils/beego/validator"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -341,12 +341,12 @@ func (this *PayZen) request(requestData interface{}, action string, result inter
 		return info, errors.New(fmt.Sprintf("client.Do: %v", err.Error()))
 	}
 
-	response, err := ioutil.ReadAll(resp.Body)
+	response, err := io.ReadAll(resp.Body)
 
 	if err != nil {
 		return info, errors.New(fmt.Sprintf("ioutil.ReadAll: %v", err.Error()))
 	}
-
+	
 	fmt.Println("***********************************")
 	fmt.Println("***** PAYZEN START RESPONSE ******")
 	fmt.Println("***** STATUS CODE: %v", resp.StatusCode)

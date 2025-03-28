@@ -385,10 +385,22 @@ type SubscriptionDetails struct {
 	SubscriptionId string `json:"subscriptionId"`
 }
 
+type RiskAnalysi struct {
+	ResultCode string `json:"resultCode"`
+	Status string `json:"status"`
+	RequestId string `json:"requestId"`
+	Score string `json:"score"`
+}
+
+type FraudManagement struct {
+	RiskAnalysis []*RiskAnalysi `json:"riskAnalysis"`
+}
+
 type TransactionDetails struct {
 	ExternalTransactionId string               `json:"externalTransactionId"` // nsu
 	Nsu                   string               `json:"nsu"`                   // nsu
 	SubscriptionDetails   *SubscriptionDetails `json:"subscriptionDetails"`
+	FraudManagement *FraudManagement `json:"fraudManagement"`
 }
 
 type Transaction struct {
@@ -456,7 +468,12 @@ func (this *Transaction) BuildStatus() {
 		this.TransactionStatus = ERROR
 		break
 	case "":
-		this.TransactionStatus = EMPTY
+
+		if len(this.ErrorCode) > 0 {
+			this.TransactionStatus = ERROR
+		} else {
+			this.TransactionStatus = EMPTY
+		}
 		break
 	default:
 		this.TransactionStatus = UNKNOW
