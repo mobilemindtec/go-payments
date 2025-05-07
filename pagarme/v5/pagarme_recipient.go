@@ -21,9 +21,9 @@ type PagarmeRecipient struct {
 	Pagarme
 }
 
-func NewPagarmeRecipient(lang string, auth *Authentication) *PagarmeRecipient {
+func NewPagarmeRecipient(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *PagarmeRecipient {
 	p := &PagarmeRecipient{}
-	p.Pagarme.init(lang, auth)
+	p.Pagarme.init(lang, auth, serviceRefererName)
 	return p
 }
 

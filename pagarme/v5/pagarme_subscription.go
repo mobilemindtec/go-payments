@@ -26,9 +26,9 @@ type PagarmeSubscription struct {
 	Pagarme
 }
 
-func NewPagarmeSubscription(lang string, auth *Authentication) *PagarmeSubscription {
+func NewPagarmeSubscription(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *PagarmeSubscription {
 	p := &PagarmeSubscription{}
-	p.Pagarme.init(lang, auth)
+	p.Pagarme.init(lang, auth, serviceRefererName)
 	return p
 }
 

@@ -265,6 +265,20 @@ type Order struct {
 	Checkouts []*Checkout `json:"checkouts,omitempty"`
 }
 
+func (this *Order) IsCreditCard() bool {
+	if len(this.Payments) > 0 {
+		return this.Payments[0].IsCreditCard()
+	}
+	return false
+}
+
+func (this *Order) HasCardIdOrToken() bool {
+	if this.IsCreditCard() {
+		return this.Payments[0].HasCardIdOrToken()
+	}
+	return false
+}
+
 func (this *Order) GetLastCharge() *optional.Optional[ChargePtr] {
 	if len(this.Charges) > 0 {
 		return optional.Of[ChargePtr](this.Charges[len(this.Charges)-1])
@@ -294,8 +308,19 @@ func (this *Order) GetTranscationId() string {
 		func(transaction LastTransactionPtr) *optional.Optional[string] {
 			return optional.Of[string](transaction.Id)
 		},
-	).
-		GetOr("")
+	).GetOr("")
+}
+
+func (this *Order) GetChargeId() string {
+
+
+
+	return optional.FlatMap[ChargePtr, string](
+		this.GetLastCharge(),
+		func(charge ChargePtr) *optional.Optional[string] {
+			return optional.Of[string](charge.Id)
+		},
+	).GetOr("")
 }
 
 func (this *Order) GetPayZenSOAPStatus() api.TransactionStatus {
@@ -375,6 +400,7 @@ type Customer struct {
 	Email      string            `json:"email" valid:"Required;Email"`
 	Code       string            `json:"code" valid:"MaxSize(52)"` // código na plataforma
 	Document   string            `json:"document" valid:"MaxSize(50)"`
+	DocumentType DocumentType `json:"document_type"`
 	Gender     Gender            `json:"gender"`
 	Delinquent bool              `json:"delinquent"`
 	Address    *Address          `json:"address"`
@@ -431,6 +457,15 @@ type Payment struct {
 	Amount        int64         `json:"amount" valid:"Required"`
 }
 
+func (this *Payment) IsCreditCard() bool {
+	return this.PaymentMethod == MethodCreditCard
+}
+
+func (this *Payment) HasCardIdOrToken() bool {
+	return this.IsCreditCard() &&
+		(len(this.CreditCard.CardId) > 0 || len(this.CreditCard.CardToken) > 0)
+}
+
 func NewPayment(amount int64, method PaymentMethod) *Payment {
 
 	switch method {
@@ -452,7 +487,9 @@ type CreditCard struct {
 	OperationType       OperationType `json:"operation_type" valid:"Required"`
 	Installments        int64         `json:"installments"`
 	StatementDescriptor string        `json:"statement_descriptor" valid:"Required;MaxSize(13)"`
-	Card                *Card         `json:"card"`
+	Card                *Card         `json:"card,omitempty"`
+	CardId string `json:"card_id,omitempty"`
+	CardToken string `json:"card_token,omitempty"`
 }
 
 func NewCreditCard() *CreditCard {
@@ -469,7 +506,7 @@ type Card struct {
 	Brand            string          `json:"brand,omitempty" valid:""`
 	Label            string          `json:"label,omitempty" valid:""`
 	CardId           string          `json:"card_id,omitempty"`
-	CardToken        string          `json:"card_token,omitempty"`
+	//CardToken        string          `json:"card_token,omitempty"`
 	BillingAddressId string          `json:"billing_address_id,omitempty"`
 	BillingAddress   *BillingAddress `json:"billing_address,omitempty"`
 
@@ -760,6 +797,11 @@ func (this *Subscription) AddItem(items ...*SubscriptionItem) *Subscription {
 		this.Items = append(this.Items, item)
 	}
 	return this
+}
+
+func (this *Subscription) HasCardIdOrToken() bool {
+	return this.PaymentMethod == MethodCreditCard &&
+		(len(this.CardId) > 0 || len(this.CardToken) > 0)
 }
 
 type SubscriptionPtr = *Subscription

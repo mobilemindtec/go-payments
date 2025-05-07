@@ -774,8 +774,6 @@ type PaymentResult struct {
 	TransactionStatusLabel string `jsonp:""`
 
 	TransactionId string `jsonp:""`
-	//TransactionUuid string `jsonp:""`
-	//ExternalTransactionId string
 
 	ResponseCode       string `jsonp:""`
 	ResponseCodeDetail string `jsonp:""`

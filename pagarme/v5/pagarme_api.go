@@ -1,5 +1,7 @@
 package v5
 
+type ServiceRefererName string
+
 type PagarmeApi struct {
 	Card         *PagarmeCard
 	Customer     *PagarmeCustomer
@@ -9,32 +11,33 @@ type PagarmeApi struct {
 	Invoice      *PagarmeInvoice
 	Charge       *PagarmeCharge
 	Recipient    *PagarmeRecipient
+	ServiceRefererName ServiceRefererName
 }
 
-func NewPagarmeApi(lang string, auth *Authentication) *PagarmeApi {
+func NewPagarmeApi(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *PagarmeApi {
 	card := &PagarmeCard{}
-	card.Pagarme.init(lang, auth)
+	card.Pagarme.init(lang, auth, serviceRefererName)
 
 	customer := &PagarmeCustomer{}
-	customer.Pagarme.init(lang, auth)
+	customer.Pagarme.init(lang, auth, serviceRefererName)
 
 	order := &PagarmeOrder{}
-	order.Pagarme.init(lang, auth)
+	order.Pagarme.init(lang, auth, serviceRefererName)
 
 	plan := &PagarmePlan{}
-	plan.Pagarme.init(lang, auth)
+	plan.Pagarme.init(lang, auth, serviceRefererName)
 
 	subscription := &PagarmeSubscription{}
-	subscription.Pagarme.init(lang, auth)
+	subscription.Pagarme.init(lang, auth, serviceRefererName)
 
 	invoice := &PagarmeInvoice{}
-	invoice.Pagarme.init(lang, auth)
+	invoice.Pagarme.init(lang, auth, serviceRefererName)
 
 	charge := &PagarmeCharge{}
-	charge.Pagarme.init(lang, auth)
+	charge.Pagarme.init(lang, auth, serviceRefererName)
 
 	recipient := &PagarmeRecipient{}
-	recipient.Pagarme.init(lang, auth)
+	recipient.Pagarme.init(lang, auth, serviceRefererName)
 
 	return &PagarmeApi{
 		Card:         card,
@@ -45,6 +48,7 @@ func NewPagarmeApi(lang string, auth *Authentication) *PagarmeApi {
 		Invoice:      invoice,
 		Charge:       charge,
 		Recipient:    recipient,
+		ServiceRefererName: serviceRefererName,
 	}
 }
 

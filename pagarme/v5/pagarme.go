@@ -46,6 +46,7 @@ type Pagarme struct {
 	ValidationErrors      map[string]string
 	HasValidationError    bool
 	Debug                 bool
+	ServiceRefererName 	ServiceRefererName
 }
 
 func (this *Pagarme) DebugOn()  *Pagarme {
@@ -57,16 +58,17 @@ func (this *Pagarme) SetDebug(debug bool) {
 	this.Debug = debug
 }
 
-func NewPagarme(lang string, auth *Authentication) *Pagarme {
-	return (&Pagarme{}).init(lang, auth)
+func NewPagarme(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *Pagarme {
+	return (&Pagarme{}).init(lang, auth, serviceRefererName)
 }
 
-func (this *Pagarme) init(lang string, auth *Authentication) *Pagarme {
+func (this *Pagarme) init(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *Pagarme {
 	this.Lang = lang
 	this.Auth = auth
 	this.EntityValidator = validator.NewEntityValidator(this.Lang, "Pagarme")
 	this.EntityValidatorResult = new(validator.EntityValidatorResult)
 	this.EntityValidatorResult.Errors = map[string]string{}
+	this.ServiceRefererName = serviceRefererName
 	return this
 }
 
@@ -75,6 +77,8 @@ func (this *Pagarme) validationsToMapOfStringSlice() map[string][]string{
 	for k, v := range this.ValidationErrors{
 		results[k] = []string{v}
 	}
+
+	logs.Debug("results = %v", results)
 
 	return results
 }
@@ -85,8 +89,8 @@ func (this *Pagarme) get(
 	return this.request("GET", action, nil, tryParser(parsers))
 }
 
-func (this *Pagarme) delete(action string, payloads ...interface{}) *either.Either[error, *Response] {
-	return this.request("DELETE", action, tryPayload(payloads), nil)
+func (this *Pagarme) delete(action string, payload interface{}, parsers ...ResponseParser) *either.Either[error, *Response] {
+	return this.request("DELETE", action, payload, tryParser(parsers))
 }
 
 func (this *Pagarme) patch(action string, payload interface{}, parsers ...ResponseParser) *either.Either[error, *Response] {
@@ -152,8 +156,16 @@ func (this *Pagarme) request(
 		logs.Debug("Authorization: Basic %v", this.Auth.Basic())
 	}
 
+	if len(this.ServiceRefererName) > 0 {
+		req.Header.Add("ServiceRefererName", string(this.ServiceRefererName))
+	}
+
 	req.Header.Add("Authorization", fmt.Sprintf("Basic %v", this.Auth.Basic()))
 	req.Header.Add("Content-Type", "application/json")
+
+	if this.Debug {
+		logs.Debug("Headers = %v", req.Header)
+	}
 
 	res, err := client.Do(req)
 
@@ -266,13 +278,20 @@ func (this *Pagarme) processValidator() bool {
 
 	switch val.(type) {
 	case *optional.Fail:
-		fail := val.(*optional.Fail).Item
-		if errs, ok := fail.(map[string]string); ok {
+		fail := val.(*optional.Fail)
+		failItem := fail.Item
+		if errs, ok := failItem.(map[string]string); ok {
 			this.ValidationErrors = errs
 			this.HasValidationError = true
 		}
+		if verror, ok  := fail.Error.(*validator.ValidationError); ok {
+			this.ValidationErrors = verror.Map
+			this.HasValidationError = true
+			logs.Debug("ValidationErrors=%v", this.ValidationErrors)
+		}
 		return false
 	default:
+		logs.Debug("??????")
 		return true
 	}
 }

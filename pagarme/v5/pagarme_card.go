@@ -18,9 +18,9 @@ type PagarmeCard struct {
 	Pagarme
 }
 
-func NewPagarmeCard(lang string, auth *Authentication) *PagarmeCard {
+func NewPagarmeCard(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *PagarmeCard {
 	p := &PagarmeCard{}
-	p.Pagarme.init(lang, auth)
+	p.Pagarme.init(lang, auth, serviceRefererName)
 	return p
 }
 
@@ -30,7 +30,7 @@ func (this *PagarmeCard) Create(customerId string, card CardPtr) *either.Either[
 		return left
 	}
 
-	if !this.validate(card) {
+	if !this.validateForCreate(card) {
 		return either.Left[*ErrorResponse, SuccessCard](
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
@@ -92,7 +92,7 @@ func (this *PagarmeCard) Update(customerId string, card CardPtr) *either.Either[
 		return left
 	}
 
-	if !this.validate(card) {
+	if !this.validateForUpdate(card) {
 		return either.Left[*ErrorResponse, SuccessCard](
 			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
 	}
@@ -120,7 +120,7 @@ func (this *PagarmeCard) Delete(customerId string, cardId string) *either.Either
 
 	return either.
 		MapIf(
-			this.delete(uri),
+			this.delete(uri, nil),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return unwrapError(e.UnwrapLeft())
 			},
@@ -148,27 +148,31 @@ func (this *PagarmeCard) Renew(customerId string, cardId string) *either.Either[
 			})
 }
 
-func (this *PagarmeCard) validate(card *Card) bool {
+func (this *PagarmeCard) validateForCreate(card *Card) bool {
 	this.EntityValidator.AddEntity(card)
-	this.EntityValidator.AddValidationForType(reflect.TypeOf(card), cardValidator)
+	this.EntityValidator.AddValidationForType(reflect.TypeOf(card), cardValidator(true, false))
 	return this.processValidator()
 }
 
-func cardValidator(entity interface{}, validator *validator.Validation) {
-	c := entity.(*Card)
+func (this *PagarmeCard) validateForUpdate(card *Card) bool {
+	this.EntityValidator.AddEntity(card)
+	this.EntityValidator.AddValidationForType(reflect.TypeOf(card), cardValidator(false, true))
+	return this.processValidator()
+}
 
-	isUpdate := len(c.CardId) > 0
-	isCreate := len(c.CardToken) == 0 && len(c.CardId) == 0
+func cardValidator(create bool, update bool) func(interface{}, *validator.Validation) {
+	return func(entity interface{}, validator *validator.Validation) {
+		c := entity.(*Card)
 
-	if len(c.Number) == 0 && len(c.CardToken) == 0 && len(c.CardId) == 0 {
-		validator.SetError("Card", "CardToken, CardId or Number is required")
-	}
+		if create {
+			if len(c.Number) < 13 || len(c.Number) > 19 {
+				validator.SetError("Number", "Number is required size between 13 and 19")
+			}
+			if len(c.Cvv) < 3 || len(c.Cvv) > 4 {
+				validator.SetError("Cvv", "CVV is required size between 3 and 4")
+			}
 
-	if isUpdate || isCreate {
-		/*
-		if len(c.Brand) == 0 {
-			validator.SetError("Brand", "Brand is required")
-		}*/
+		}
 
 		if len(c.HolderDocument) > 0 {
 			if !cpf.Validate(c.HolderDocument) && !cnpj.Validate(c.HolderDocument) {
@@ -177,12 +181,6 @@ func cardValidator(entity interface{}, validator *validator.Validation) {
 		}
 		if len(c.HolderName) == 0 {
 			validator.SetError("HolderName", "HolderName is required")
-		}
-		if len(c.Number) < 13 || len(c.Number) > 19 {
-			validator.SetError("Number", "Number is required size between 13 and 19")
-		}
-		if len(c.Cvv) < 3 || len(c.Cvv) > 4 {
-			validator.SetError("Cvv", "CVV is required size between 3 and 4")
 		}
 		if c.ExpMonth < 1 || c.ExpMonth > 12 {
 			validator.SetError("ExpMonth", "ExpMonth is required size between 1 and 12")
@@ -196,5 +194,4 @@ func cardValidator(entity interface{}, validator *validator.Validation) {
 	if len(c.BillingAddressId) == 0 && c.BillingAddress == nil {
 		validator.SetError("Card", "BillingAddress or BillingAddressId is required")
 	}*/
-
 }

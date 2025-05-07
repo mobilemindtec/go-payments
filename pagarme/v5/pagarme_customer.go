@@ -3,7 +3,6 @@ package v5
 import (
 	"fmt"
 	"github.com/mobilemindtec/go-utils/v2/either"
-	"net/url"
 )
 
 type SuccessCustomer = *Success[CustomerPtr]
@@ -13,9 +12,9 @@ type PagarmeCustomer struct {
 	Pagarme
 }
 
-func NewPagarmeCustomer(lang string, auth *Authentication) *PagarmeCustomer {
+func NewPagarmeCustomer(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *PagarmeCustomer {
 	p := &PagarmeCustomer{}
-	p.Pagarme.init(lang, auth)
+	p.Pagarme.init(lang, auth, serviceRefererName)
 	return p
 }
 
@@ -82,7 +81,7 @@ func (this *PagarmeCustomer) Get(customerId string) *either.Either[*ErrorRespons
 
 func (this *PagarmeCustomer) List(query *CustomerQuery) *either.Either[*ErrorResponse, SuccessCustomers] {
 
-	uri := fmt.Sprintf("/customers/?%v", url.QueryEscape(query.UrlQuery()))
+	uri := fmt.Sprintf("/customers/?%v", query.UrlQuery())
 
 	return either.
 		MapIf(

@@ -5,7 +5,6 @@ import (
 	"github.com/mobilemindtec/go-utils/beego/validator"
 	"github.com/mobilemindtec/go-utils/lists"
 	"github.com/mobilemindtec/go-utils/v2/either"
-	"net/url"
 	"reflect"
 )
 
@@ -16,9 +15,9 @@ type PagarmePlan struct {
 	Pagarme
 }
 
-func NewPagarmePlan(lang string, auth *Authentication) *PagarmePlan {
+func NewPagarmePlan(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *PagarmePlan {
 	p := &PagarmePlan{}
-	p.Pagarme.init(lang, auth)
+	p.Pagarme.init(lang, auth, serviceRefererName)
 	return p
 }
 
@@ -61,7 +60,7 @@ func (this *PagarmePlan) Get(id string) *either.Either[*ErrorResponse, SuccessPl
 
 func (this *PagarmePlan) List(query *PlanQuery) *either.Either[*ErrorResponse, SuccessPlans] {
 
-	uri := fmt.Sprintf("/plans/?%v", url.QueryEscape(query.UrlQuery()))
+	uri := fmt.Sprintf("/plans/?%v", query.UrlQuery())
 
 	return either.
 		MapIf(
@@ -108,7 +107,7 @@ func (this *PagarmePlan) Delete(id string) *either.Either[*ErrorResponse, Succes
 
 	return either.
 		MapIf(
-			this.delete(uri),
+			this.delete(uri, nil),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return unwrapError(e.UnwrapLeft())
 			},

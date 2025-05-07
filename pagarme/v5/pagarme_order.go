@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/mobilemindtec/go-utils/beego/validator"
 	"github.com/mobilemindtec/go-utils/v2/either"
-	"net/url"
 	"reflect"
 )
 
@@ -15,9 +14,9 @@ type PagarmeOrder struct {
 	Pagarme
 }
 
-func NewPagarmeOrder(lang string, auth *Authentication) *PagarmeOrder {
+func NewPagarmeOrder(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *PagarmeOrder {
 	p := &PagarmeOrder{}
-	p.Pagarme.init(lang, auth)
+	p.Pagarme.init(lang, auth, serviceRefererName)
 	return p
 }
 
@@ -60,7 +59,7 @@ func (this *PagarmeOrder) Get(orderId string) *either.Either[*ErrorResponse, Suc
 
 func (this *PagarmeOrder) List(query *OrderQuery) *either.Either[*ErrorResponse, SuccessOrders] {
 
-	uri := fmt.Sprintf("/orders/?%v", url.QueryEscape(query.UrlQuery()))
+	uri := fmt.Sprintf("/orders/?%v", query.UrlQuery())
 
 	return either.
 		MapIf(
@@ -97,6 +96,10 @@ func (this *Pagarme) onValidOrder(order *Order) bool {
 
 					p := entity.(*Payment)
 
+					if p.Amount <= 0 {
+						validator.SetError("Amount", "Amount is required")
+					}
+
 					switch p.PaymentMethod {
 					case MethodCreditCard:
 						if p.CreditCard == nil {
@@ -121,26 +124,21 @@ func (this *Pagarme) onValidOrder(order *Order) bool {
 
 					this.EntityValidator.AddEntity(it.CreditCard)
 
-					if it.CreditCard.Card != nil {
+					if len(it.CreditCard.CardId) == 0 && len(it.CreditCard.CardToken) == 0 {
 						this.EntityValidator.AddEntity(it.CreditCard.Card)
 						this.EntityValidator.AddValidationForType(
-							reflect.TypeOf(it.CreditCard.Card), cardValidator)
+							reflect.TypeOf(it.CreditCard.Card),
+							cardValidator(true, false))
+
+						this.EntityValidator.AddValidationForType(
+							reflect.TypeOf(it.CreditCard), func(entity interface{}, validator *validator.Validation) {
+
+								if it.CreditCard.Card == nil {
+									validator.SetError("Card", "Card is required")
+								}
+							})
 					}
 
-					this.EntityValidator.AddValidationForType(
-						reflect.TypeOf(it.CreditCard), func(entity interface{}, validator *validator.Validation) {
-
-							card := it.CreditCard.Card
-
-							if card == nil {
-								validator.SetError("Card", "Card is required")
-							}
-
-							if it.Amount <= 0 {
-								validator.SetError("Amount", "Amount is required")
-							}
-
-						})
 				}
 			case MethodBoleto:
 				if it.Boleto != nil {

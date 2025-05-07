@@ -12,9 +12,9 @@ type PagarmeInvoice struct {
 	Pagarme
 }
 
-func NewPagarmeInvoice(lang string, auth *Authentication) *PagarmeInvoice {
+func NewPagarmeInvoice(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *PagarmeInvoice {
 	p := &PagarmeInvoice{}
-	p.Pagarme.init(lang, auth)
+	p.Pagarme.init(lang, auth, serviceRefererName)
 	return p
 }
 
@@ -52,7 +52,7 @@ func (this *PagarmeInvoice) List(query *InvoiceQuery) *either.Either[*ErrorRespo
 }
 
 func (this *PagarmeInvoice) Cancel(id string) *either.Either[*ErrorResponse, SuccessBool] {
-
+	
 	if len(id) == 0 {
 		return either.Left[*ErrorResponse, SuccessBool](
 			NewErrorResponse("invoice id is required"))
@@ -62,7 +62,7 @@ func (this *PagarmeInvoice) Cancel(id string) *either.Either[*ErrorResponse, Suc
 
 	return either.
 		MapIf(
-			this.delete(uri),
+			this.delete(uri,nil),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return unwrapError(e.UnwrapLeft())
 			},

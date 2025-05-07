@@ -14,9 +14,9 @@ type PagarmeCharge struct {
 	Pagarme
 }
 
-func NewPagarmeCharge(lang string, auth *Authentication) *PagarmeCharge {
+func NewPagarmeCharge(lang string, auth *Authentication, serviceRefererName ServiceRefererName) *PagarmeCharge {
 	p := &PagarmeCharge{}
-	p.Pagarme.init(lang, auth)
+	p.Pagarme.init(lang, auth, serviceRefererName)
 	return p
 }
 
@@ -120,7 +120,7 @@ func (this *PagarmeCharge) Cancel(chargeId string) *either.Either[*ErrorResponse
 
 	return either.
 		MapIf(
-			this.delete(uri, createParser[Charge]()),
+			this.delete(uri, nil, createParser[Charge]()),
 			func(e *either.Either[error, *Response]) *ErrorResponse {
 				return unwrapError(e.UnwrapLeft())
 			},
@@ -129,9 +129,6 @@ func (this *PagarmeCharge) Cancel(chargeId string) *either.Either[*ErrorResponse
 			})
 }
 
-
-
-
 func (this *PagarmeCharge) ConfirmPayment(chargeId string, opts ...*ChargePaymentConfirm) *either.Either[*ErrorResponse, SuccessCharge] {
 
 	if empty, left := checkEmpty[SuccessCharge]("charge id", chargeId); empty {
@@ -139,13 +136,13 @@ func (this *PagarmeCharge) ConfirmPayment(chargeId string, opts ...*ChargePaymen
 	}
 
 	uri := fmt.Sprintf("/charges/%v/confirm-payment", chargeId)
-	
+
 	var payload *ChargePaymentConfirm
-	
+
 	if len(opts) > 0 {
 		payload = opts[0]
 	}
-	
+
 	return either.
 		MapIf(
 			this.post(uri, payload, createParser[Charge]()),
@@ -179,7 +176,7 @@ func (this *PagarmeCharge) Retry(chargeId string) *either.Either[*ErrorResponse,
 }
 
 func (this *PagarmeCharge) List(query *ChargeQuery) *either.Either[*ErrorResponse, SuccessCharges] {
-	
+
 	uri := fmt.Sprintf("/charges?%v", query.UrlQuery())
 
 	return either.
