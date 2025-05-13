@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"time"
+	"github.com/beego/beego/v2/core/logs"
 )
 
 type Gateway string
@@ -769,11 +770,15 @@ type PaymentResult struct {
 	Status      PaymentStatus      `jsonp:""`
 	StatusLabel PaymentStatusLabel `jsonp:""`
 
+	NotificationId int64 `jsonp:""`
+	OperationId int64 `jsonp:""`
+
 	//v4
 
 	TransactionStatusLabel string `jsonp:""`
 
 	TransactionId string `jsonp:""`
+	OrderId string `jsonp:""`
 
 	ResponseCode       string `jsonp:""`
 	ResponseCodeDetail string `jsonp:""`
@@ -866,7 +871,9 @@ func (this *PaymentResult) BuildStatus() {
 	this.IsPayZen = this.isPayZen()
 	this.IsPicPay = this.isPicPay()
 	this.IsPagarme = this.isPagarme()
-	this.IsPagarme = this.isAsaas()
+	this.IsAsaas = this.isAsaas()
+
+	logs.Info("this.TransactionStatus!! %v", this.TransactionStatus)
 
 	switch this.TransactionStatus {
 	case Initial:
@@ -878,7 +885,10 @@ func (this *PaymentResult) BuildStatus() {
 		this.StatusLabel = PaymentInitialLabel
 		break
 	case Authorised:
-		if this.IsPayZen {
+
+		logs.Info("Authorized!! %v", this.IsPagarme)
+
+		if this.IsPayZen || this.IsPagarme {
 			this.Status = PaymentPaid
 			this.StatusLabel = PaymentPaidLabel
 		} else {

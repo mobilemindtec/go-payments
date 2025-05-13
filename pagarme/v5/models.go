@@ -451,9 +451,9 @@ func NewPhone(countryCode string, areaCode string, number string) *Phone {
 
 type Payment struct {
 	PaymentMethod PaymentMethod `json:"payment_method"`
-	CreditCard    *CreditCard   `json:"credit_card"`
-	Boleto        *Boleto       `json:"boleto"`
-	Pix           *Pix          `json:"pix"`
+	CreditCard    *CreditCard   `json:"credit_card,omitempty"`
+	Boleto        *Boleto       `json:"boleto,omitempty"`
+	Pix           *Pix          `json:"pix,omitempty"`
 	Amount        int64         `json:"amount" valid:"Required"`
 }
 
