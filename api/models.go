@@ -819,6 +819,7 @@ type PaymentResult struct {
 	QrCodeUrl        string `jsonp:"qrcode_url"`
 	QrPayload        string `jsonp:"qrcode_payload"`
 	QrExpirationDate string `jsonp:"qrcode_expiration_date"`
+	Barcode string `jsonp:"barcode"`
 	PaymentUrl       string `jsonp:"payment_url"`
 
 	InvoiceUrl  string `jsonp:""` // url da fatura

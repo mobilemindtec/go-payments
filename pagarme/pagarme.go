@@ -1,7 +1,6 @@
 package pagarme
 
 import (
-	"fmt"
 	"github.com/leekchan/accounting"
 	"strconv"
 	"strings"
@@ -16,7 +15,7 @@ func FormatAmount(amount float64) int64 {
 }
 
 func FormatAmountToFloat(amount int64) float64 {
-	unformateed := accounting.UnformatNumber(fmt.Sprintf("%v", amount), 2, "BRL")
-	val, _ := strconv.ParseFloat(unformateed, 64)
-	return val
+	//unformateed := accounting.UnformatNumber(fmt.Sprintf("%v", amount), 2, "BRL")
+	//val, _ := strconv.ParseFloat(unformateed, 64)
+	return float64(amount) / 100.0
 }
