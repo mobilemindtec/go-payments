@@ -68,4 +68,5 @@ const (
 	//Failed PagarmeV5Status = "failed"
 	//Boleto ainda está em etapa de criação
 	PagarmeV5Processing PagarmeV5Status = "processing"
+	PagarmeV5Chargedback PagarmeV5Status = "chargedback"
 )

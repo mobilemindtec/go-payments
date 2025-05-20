@@ -263,6 +263,7 @@ type Order struct {
 	UpdatedAt string      `json:"updated_at,omitempty"`
 	Charges   []*Charge   `json:"charges,omitempty"`
 	Checkouts []*Checkout `json:"checkouts,omitempty"`
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 func (this *Order) IsCreditCard() bool {
@@ -336,7 +337,7 @@ type OrderPtr = *Order
 type Orders = []OrderPtr
 
 func NewOrder() *Order {
-	return &Order{Payments: []*Payment{}, Items: []*OrderItem{}}
+	return &Order{Payments: []*Payment{}, Items: []*OrderItem{}, Metadata: make(map[string]string)}
 }
 
 func (this *Order) AddItem() *OrderItem {
@@ -422,7 +423,7 @@ type Address struct {
 	Id        string `json:"id,omitempty"`
 	Country   string `json:"country" valid:"Required;MaxSize(2)"`
 	State     string `json:"state" valid:"Required;MaxSize(2)"`
-	City      string `json:"city" valid:"Required;MaxSize(2)"`
+	City      string `json:"city" valid:"Required;MaxSize(64)"`
 	ZipCode   string `json:"zip_code" valid:"Required;MaxSize(8)"`
 	Line1     string `json:"line_1" valid:"Required"`
 	Line2     string `json:"line_2" valid:""`
@@ -533,7 +534,7 @@ func NewCard() *Card {
 type BillingAddress struct {
 	Country string `json:"country" valid:"Required;MaxSize(2)"`
 	State   string `json:"state" valid:"Required;MaxSize(2)"`
-	City    string `json:"city" valid:"Required;MaxSize(2)"`
+	City    string `json:"city" valid:"Required;MaxSize(64)"`
 	ZipCode string `json:"zip_code" valid:"Required;MaxSize(8)"`
 	Line1   string `json:"line_1" valid:"Required"`
 	Line2   string `json:"line_2" valid:""`
@@ -758,6 +759,7 @@ func NewSubscription() *Subscription {
 		Currency:      BRL,
 		Installments:  1,
 		BillingType:   PrePaid,
+		Metadata: make(map[string]string),
 	}
 }
 
@@ -1098,6 +1100,7 @@ type LastTransaction struct {
 	TransactionType     string              `json:"transaction_type"`
 	GatewayId           string              `json:"gateway_id"`
 	Amount              int64               `json:"amount"`
+	PaidAmount              int64               `json:"paid_amount"`
 	Status              api.PagarmeV5Status `json:"status"`
 	Success             bool                `json:"success"`
 	Installments        int64               `json:"installments"`
@@ -1113,6 +1116,7 @@ type LastTransaction struct {
 	FundingSource       string              `json:"funding_source"`
 	CreatedAt           string              `json:"created_at"`
 	UpdatedAt           string              `json:"updated_at"`
+	DueAt           string              `json:"due_at"`
 	GatewayResponse     *GatewayResponse    `json:"gateway_response"`
 	AntifraudResponse   *AntifraudResponse  `json:"antifraud_response"`
 	Metadata            map[string]string   `json:"metadata"`
@@ -1149,6 +1153,8 @@ func (this *LastTransaction) GetPayZenSOAPStatus() api.TransactionStatus {
 		return api.Authorised
 	case api.PagarmeV5None:
 		return api.NotCreated
+	case api.PagarmeV5Chargedback:
+		return api.Chargeback
 	default:
 		return api.Error
 	}

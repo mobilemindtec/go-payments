@@ -193,11 +193,12 @@ func (this *PagarmeSubscription) UpdateItem(subscriptionId string, itemId string
 
 func (this *PagarmeSubscription) validate(subscription *Subscription) bool {
 	this.EntityValidator.AddEntity(subscription)
-	this.EntityValidator.AddValidationForType(reflect.TypeOf(subscription), subscriptionValidator)
+	this.EntityValidator.AddValidationForType(reflect.TypeOf(subscription), this.subscriptionValidator)
 	return this.processValidator()
 }
 
-func subscriptionValidator(entity interface{}, validator *validator.Validation) {
+
+func (this *PagarmeSubscription) subscriptionValidator(entity interface{}, validator *validator.Validation) {
 
 	s := entity.(*Subscription)
 
@@ -207,11 +208,38 @@ func subscriptionValidator(entity interface{}, validator *validator.Validation) 
 		}
 	}
 
+	if len(s.Items) == 0 {
+		validator.SetError("Items", "Items is required")
+	}
+
+	for _, it := range s.Items {
+		if it.PricingScheme == nil || it.PricingScheme.Price <= 0 {
+			validator.SetError("PricingScheme", "Item PricingScheme must be bigger than zero")
+		}
+	}
+
 	if s.Customer == nil && len(s.CustomerId) == 0 {
 		validator.SetError("Customer", "Customer or CustomerId is required")
 	}
 
-	if s.Card == nil && len(s.CardId) == 0 && len(s.CardToken) == 0 {
-		validator.SetError("Customer", "Card, CardId or CardToken is required")
+	if len(s.CardId) == 0 && len(s.CardToken) == 0 {
+
+		if s.Card == nil {
+			validator.SetError("Card", "Card is required")
+		} else {
+
+			this.EntityValidator.AddEntity(s.Card)
+			this.EntityValidator.AddEntity(s.Card.BillingAddress)
+			this.EntityValidator.AddValidationForType(
+				reflect.TypeOf(s.Card),
+				cardValidator(true, false))
+			
+		}
+		
+		
+	}
+	
+	if s.Card != nil {
+		
 	}
 }

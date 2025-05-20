@@ -188,10 +188,11 @@ func cardValidator(create bool, update bool) func(interface{}, *validator.Valida
 		if c.ExpYear < 1900 {
 			validator.SetError("Brand", "ExpYear is required size greater 1900")
 		}
+		
+		if len(c.BillingAddressId) == 0 && c.BillingAddress == nil {
+			validator.SetError("Card", "BillingAddress or BillingAddressId is required")
+		}
 	}
 
-	/*
-	if len(c.BillingAddressId) == 0 && c.BillingAddress == nil {
-		validator.SetError("Card", "BillingAddress or BillingAddressId is required")
-	}*/
+
 }

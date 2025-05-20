@@ -82,8 +82,20 @@ func (this *Pagarme) onValidOrder(order *Order) bool {
 				validator.SetError("Payments", "Payments array is required")
 			}
 
+
+			if len(p.Items) == 0 {
+				validator.SetError("Items", "Items is required")
+			}
+
+			for _, it := range p.Items {
+				if it.Amount <= 0 {
+					validator.SetError("Item", "Item Amount must be bigger than zero")
+				}
+			}
+
 		})
 
+	
 	this.EntityValidator.AddEntity(order)
 
 	if order.Payments != nil {
@@ -125,10 +137,17 @@ func (this *Pagarme) onValidOrder(order *Order) bool {
 					this.EntityValidator.AddEntity(it.CreditCard)
 
 					if len(it.CreditCard.CardId) == 0 && len(it.CreditCard.CardToken) == 0 {
-						this.EntityValidator.AddEntity(it.CreditCard.Card)
-						this.EntityValidator.AddValidationForType(
-							reflect.TypeOf(it.CreditCard.Card),
-							cardValidator(true, false))
+
+
+						if it.CreditCard.Card != nil {
+
+							this.EntityValidator.AddEntity(it.CreditCard.Card)
+							this.EntityValidator.AddEntity(it.CreditCard.Card.BillingAddress)
+							this.EntityValidator.AddValidationForType(
+								reflect.TypeOf(it.CreditCard.Card),
+								cardValidator(true, false))
+						}
+
 
 						this.EntityValidator.AddValidationForType(
 							reflect.TypeOf(it.CreditCard), func(entity interface{}, validator *validator.Validation) {
@@ -138,6 +157,8 @@ func (this *Pagarme) onValidOrder(order *Order) bool {
 								}
 							})
 					}
+
+
 
 				}
 			case MethodBoleto:
