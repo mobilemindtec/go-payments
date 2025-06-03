@@ -246,7 +246,7 @@ type WebhookObject[T any] struct {
 
 type Order struct {
 	Code             string       `json:"code" valid:"Required;MaxSize(64)"`
-	Customer         *Customer    `json:"customer"`
+	Customer         *Customer    `json:"customer,omitempty"`
 	CustomerId       string       `json:"customer_id,omitempty"`
 	Items            []*OrderItem `json:"items"`
 	Payments         []*Payment   `json:"payments"`
@@ -276,6 +276,35 @@ func (this *Order) IsCreditCard() bool {
 func (this *Order) HasCardIdOrToken() bool {
 	if this.IsCreditCard() {
 		return this.Payments[0].HasCardIdOrToken()
+	}
+	return false
+}
+
+func (this *Order) HasCardToken() bool {
+	if this.IsCreditCard() {
+		return this.Payments[0].HasCardToken()
+	}
+	return false
+}
+
+func (this *Order) GetCard() CardPtr {
+	if len(this.Payments) > 0 && this.Payments[0].IsCreditCard() {
+		return this.Payments[0].CreditCard.Card
+	}
+	return nil
+}
+
+// SetCardToken set card token and clean card sensitive information
+func (this *Order) SetCardToken(token string) {
+	if len(this.Payments) > 0 && this.Payments[0].IsCreditCard() {
+		this.Payments[0].CreditCard.Card.Clean()
+		this.Payments[0].CreditCard.CardToken = token
+	}
+}
+
+func (this *Order) HasCardId() bool {
+	if this.IsCreditCard() {
+		return this.Payments[0].HasCardId()
 	}
 	return false
 }
@@ -450,6 +479,10 @@ func NewPhone(countryCode string, areaCode string, number string) *Phone {
 	return &Phone{CountryCode: countryCode, AreaCode: areaCode, Number: number}
 }
 
+func (this *Phone) ToString() string {
+	return fmt.Sprintf("%v%v",this.AreaCode, this.Number)
+}
+
 type Payment struct {
 	PaymentMethod PaymentMethod `json:"payment_method"`
 	CreditCard    *CreditCard   `json:"credit_card,omitempty"`
@@ -464,8 +497,18 @@ func (this *Payment) IsCreditCard() bool {
 
 func (this *Payment) HasCardIdOrToken() bool {
 	return this.IsCreditCard() &&
-		(len(this.CreditCard.CardId) > 0 || len(this.CreditCard.CardToken) > 0)
+		(this.HasCardId() || this.HasCardToken())
 }
+
+func (this *Payment) HasCardId() bool {
+	return this.IsCreditCard() && len(this.CreditCard.CardId) > 0
+}
+
+func (this *Payment) HasCardToken() bool {
+	return this.IsCreditCard() && len(this.CreditCard.CardToken) > 0
+}
+
+
 
 func NewPayment(amount int64, method PaymentMethod) *Payment {
 
@@ -496,6 +539,7 @@ type CreditCard struct {
 func NewCreditCard() *CreditCard {
 	return &CreditCard{OperationType: AuthAndCapture, Installments: 1, Card: NewCard()}
 }
+
 
 type Card struct {
 	Number           string          `json:"number,omitempty" valid:""`
@@ -529,6 +573,29 @@ type Cards = []CardPtr
 
 func NewCard() *Card {
 	return &Card{BillingAddress: &BillingAddress{Country: BrasilCode}}
+}
+
+func (this *Card) Copy() *Card {
+	return &Card{
+		Number: this.Number,
+		HolderName: this.HolderName,
+		HolderDocument: this.HolderDocument,
+		ExpMonth: this.ExpMonth,
+		ExpYear: this.ExpYear,
+		Cvv: this.Cvv,
+		Brand: this.Brand,
+	}
+}
+
+// Clean clean card sensitive information
+func (this *Card) Clean(){
+	this.Number = ""
+	this.HolderName = ""
+	this.HolderDocument = ""
+	this.ExpMonth = 0
+	this.ExpYear = 0
+	this.Cvv = ""
+	this.Brand = ""
 }
 
 type BillingAddress struct {
@@ -763,6 +830,13 @@ func NewSubscription() *Subscription {
 	}
 }
 
+// SetCardToken set card token and clean card sensitive information
+func (this *Subscription) SetCardToken(token string) {
+	this.Card.Clean()
+	this.CardToken = token
+}
+
+
 func (this *Subscription) WithCustomer(customer CustomerPtr) *Subscription {
 	this.Customer = customer
 	return this
@@ -806,13 +880,14 @@ func (this *Subscription) HasCardIdOrToken() bool {
 		(len(this.CardId) > 0 || len(this.CardToken) > 0)
 }
 
+
 type SubscriptionPtr = *Subscription
 type Subscriptions = []SubscriptionPtr
 
 type SubscriptionItem struct {
 	Id            string         `json:"id,omitempty"`
 	Description   string         `json:"description,omitempty"`
-	Cycles        CycleCount     `json:"cycles,omitempty"`
+	Cycles        CycleCount     `json:"cycles,omitempty"` // determina quantas vezes vai ser cobrado. se zero, a recorrência é indeterminada.
 	Quantity      Quantity       `json:"quantity"`
 	Status        Status         `json:"status,omitempty"`
 	CreatedAt     string         `json:"created_at,omitempty"`
@@ -926,6 +1001,16 @@ func (this *Invoice) ToPaymentStatus() api.PaymentStatus {
 
 type InvoicePtr = *Invoice
 type Invoices = []InvoicePtr
+
+type CardTokenResponse struct {
+	Id string `json:"id"`
+	Type string `json:"type"`
+	CreatedAt string `json:"created_at"`
+	ExpiresAt string `json:"expires_at"`
+	Card *Card `json:"card"`
+}
+
+type  CardTokenResponsePtr = *CardTokenResponse
 
 type ErrorResponse struct {
 	Message    string              `json:"message"`

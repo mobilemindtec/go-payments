@@ -232,7 +232,7 @@ func (this *PagarmeSubscription) subscriptionValidator(entity interface{}, valid
 			this.EntityValidator.AddEntity(s.Card.BillingAddress)
 			this.EntityValidator.AddValidationForType(
 				reflect.TypeOf(s.Card),
-				cardValidator(true, false))
+				cardValidator(ValidateCardCreate))
 			
 		}
 		

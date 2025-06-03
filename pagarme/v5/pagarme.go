@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/beego/i18n"
 
@@ -160,7 +161,11 @@ func (this *Pagarme) request(
 		req.Header.Add("ServiceRefererName", string(this.ServiceRefererName))
 	}
 
-	req.Header.Add("Authorization", fmt.Sprintf("Basic %v", this.Auth.Basic()))
+	// grrrrrr tem um endpoint que pede appId=publickey no lugar da autenticação padrão
+	if !strings.Contains(action, "?appId=") {
+		req.Header.Add("Authorization", fmt.Sprintf("Basic %v", this.Auth.Basic()))
+	}
+
 	req.Header.Add("Content-Type", "application/json")
 
 	if this.Debug {

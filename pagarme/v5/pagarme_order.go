@@ -145,7 +145,7 @@ func (this *Pagarme) onValidOrder(order *Order) bool {
 							this.EntityValidator.AddEntity(it.CreditCard.Card.BillingAddress)
 							this.EntityValidator.AddValidationForType(
 								reflect.TypeOf(it.CreditCard.Card),
-								cardValidator(true, false))
+								cardValidator(ValidateCardCreate))
 						}
 
 

@@ -4,11 +4,21 @@ import (
 	"fmt"
 	"github.com/mobilemindtec/go-utils/beego/validator"
 	"github.com/mobilemindtec/go-utils/v2/either"
+	"github.com/mobilemindtec/go-utils/v2/maps"
 	"github.com/mobilemindtec/go-utils/validator/cnpj"
 	"github.com/mobilemindtec/go-utils/validator/cpf"
 	"reflect"
 )
+type CardValidationType int
+const (
+	ValidateCardCreate CardValidationType = iota + 1
+	ValidateCardUpdate
+	ValidateCardTokenize
+)
 
+
+
+type SuccessCardToken = *Success[CardTokenResponsePtr]
 type SuccessCard = *Success[CardPtr]
 type SuccessCards = *Success[Cards]
 
@@ -22,6 +32,29 @@ func NewPagarmeCard(lang string, auth *Authentication, serviceRefererName Servic
 	p := &PagarmeCard{}
 	p.Pagarme.init(lang, auth, serviceRefererName)
 	return p
+}
+
+func (this *PagarmeCard) Tokenize(card CardPtr) *either.Either[*ErrorResponse, SuccessCardToken] {
+
+	if !this.validateForTokenize(card) {
+		return either.Left[*ErrorResponse, SuccessCardToken](
+			NewErrorResponseWithErrors(this.getMessage("Pagarme.ValidationError"), this.validationsToMapOfStringSlice()))
+	}
+
+	uri := fmt.Sprintf("/tokens?appId=%v", this.Auth.PublicKey)
+	payload := maps.JSON(
+		"type", "card",
+		"card", card)
+
+	return either.
+		MapIf(
+			this.post(uri, payload, createParser[CardTokenResponse]()),
+			func(e *either.Either[error, *Response]) *ErrorResponse {
+				return unwrapError(e.UnwrapLeft())
+			},
+			func(e *either.Either[error, *Response]) SuccessCardToken {
+				return NewSuccess[CardTokenResponsePtr](e.UnwrapRight())
+			})
 }
 
 func (this *PagarmeCard) Create(customerId string, card CardPtr) *either.Either[*ErrorResponse, SuccessCard] {
@@ -148,23 +181,31 @@ func (this *PagarmeCard) Renew(customerId string, cardId string) *either.Either[
 			})
 }
 
+func (this *PagarmeCard) validateForTokenize(card *Card) bool {
+	this.EntityValidator.AddEntity(card)
+	this.EntityValidator.AddValidationForType(reflect.TypeOf(card), cardValidator(ValidateCardTokenize))
+	return this.processValidator()
+}
+
+
 func (this *PagarmeCard) validateForCreate(card *Card) bool {
 	this.EntityValidator.AddEntity(card)
-	this.EntityValidator.AddValidationForType(reflect.TypeOf(card), cardValidator(true, false))
+	this.EntityValidator.AddValidationForType(reflect.TypeOf(card), cardValidator(ValidateCardCreate))
 	return this.processValidator()
 }
 
 func (this *PagarmeCard) validateForUpdate(card *Card) bool {
 	this.EntityValidator.AddEntity(card)
-	this.EntityValidator.AddValidationForType(reflect.TypeOf(card), cardValidator(false, true))
+	this.EntityValidator.AddValidationForType(reflect.TypeOf(card), cardValidator(ValidateCardUpdate))
 	return this.processValidator()
 }
 
-func cardValidator(create bool, update bool) func(interface{}, *validator.Validation) {
+func cardValidator(validationType CardValidationType) func(interface{}, *validator.Validation) {
 	return func(entity interface{}, validator *validator.Validation) {
 		c := entity.(*Card)
 
-		if create {
+		switch validationType  {
+		case ValidateCardCreate, ValidateCardTokenize:
 			if len(c.Number) < 13 || len(c.Number) > 19 {
 				validator.SetError("Number", "Number is required size between 13 and 19")
 			}
@@ -188,9 +229,12 @@ func cardValidator(create bool, update bool) func(interface{}, *validator.Valida
 		if c.ExpYear < 1900 {
 			validator.SetError("Brand", "ExpYear is required size greater 1900")
 		}
-		
-		if len(c.BillingAddressId) == 0 && c.BillingAddress == nil {
-			validator.SetError("Card", "BillingAddress or BillingAddressId is required")
+
+		switch validationType {
+		case ValidateCardCreate, ValidateCardUpdate:
+			if len(c.BillingAddressId) == 0 && c.BillingAddress == nil {
+				validator.SetError("Card", "BillingAddress or BillingAddressId is required")
+			}
 		}
 	}
 

@@ -459,6 +459,10 @@ type PaymentFind struct {
 	Page       int    `jsonp:""` // results page
 
 	PaymentType PaymentType `jsonp:""` // picpay, pix
+
+	CustomerDocument string `jsonp:""`
+
+	CustomerExternalReference string `jsonp:""`
 }
 
 func NewPaymentFind() *PaymentFind {
@@ -988,6 +992,7 @@ func NewPaymentResult() *PaymentResult {
 	result.Transactions = []*TransactionItemResult{}
 	result.SubscriptionInfo = new(SubscriptionResult)
 	result.ValidationErrors = make(map[string]string)
+	result.Customer = new(Customer)
 	result.Movements = []*Movement{}
 	result.Transfers = []*TransferResult{}
 	result.Platform = GatewayPayZen
