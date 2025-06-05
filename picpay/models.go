@@ -56,6 +56,7 @@ func (this *PicPayTransaction) GetPayZenSOAPStatus() api.TransactionStatus {
 type PicPayResult struct {
   Transaction *PicPayTransaction `json:"transaction"`
   ValidationErrors map[string]string `json:"error"`
+  OverridePaymentStatusUrl string `json:"overridePaymentStatusUrl"`
   Error bool `json:"error"`  
   Message string `json:"message"`
   Response string

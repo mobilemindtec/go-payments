@@ -844,6 +844,9 @@ type PaymentResult struct {
 
 	Customer *Customer `jsonp:""`
 
+	OverridePaymentStatusUrl string `json:"override_payment_status_url"`
+
+
 	Tag interface{}
 }
 

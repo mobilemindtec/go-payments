@@ -11,6 +11,7 @@ import (
 type WebhookData struct {
   ReferenceId string `json:"referenceId" valid:"Required"`
   AuthorizationId string `json:"authorizationId"`
+  OverridePaymentStatusUrl string `json:"overridePaymentStatusUrl"`
   Raw string `json:"row" valid:"Required"`
   Response *PicPayResult
 }
@@ -62,6 +63,7 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
 
   data.ReferenceId = this.JsonParser.GetJsonString(jsonMap, "referenceId")
   data.AuthorizationId = this.JsonParser.GetJsonString(jsonMap, "authorizationId")
+  data.OverridePaymentStatusUrl = this.JsonParser.GetJsonString(jsonMap, "overridePaymentStatusUrl")
   data.Raw = string(body)
 
   entityValidatorResult, _ := this.EntityValidator.IsValid(data, nil)  
@@ -79,6 +81,7 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
   data.Response.Transaction.AuthorizationId = data.AuthorizationId
   data.Response.Transaction.PicPayStatus = api.PicPayCreated
   data.Response.Transaction.StatusText = "new status received"
+  data.Response.OverridePaymentStatusUrl = data.OverridePaymentStatusUrl
 
   return data, nil  
 }

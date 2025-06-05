@@ -421,6 +421,7 @@ type Transaction struct {
 	TransactionDetails   *TransactionDetails `json:"transactionDetails"`
 	TransactionStatus    TransactionStatus
 	PaymentStatus        PaymentStatus
+	CreationDate string `json:"creationDate"`
 	ResponseCode         int64 `json:"responseCode,omitempty"`
 }
 
