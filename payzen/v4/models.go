@@ -509,7 +509,7 @@ func (this *Transaction) GetSOAPStatus() api.TransactionStatus {
 	case AUTHORISED_TO_VALIDATE:
 		return api.AuthorisedToValidate
 	case CANCELLED:
-		return api.Cancelled
+		return api.Canceled
 	case CAPTURED:
 		return api.Captured
 	case EXPIRED:

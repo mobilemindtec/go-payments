@@ -46,7 +46,7 @@ func (this *PicPayTransaction) GetPayZenSOAPStatus() api.TransactionStatus {
 
       if len(strings.TrimSpace(this.CancellationId)) > 0 {
         this.PicPayStatus = api.PicPayCancelled
-        return api.Cancelled
+        return api.Canceled
       } else {
         return api.Error
       }

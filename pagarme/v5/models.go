@@ -1233,7 +1233,7 @@ func (this *LastTransaction) GetPayZenSOAPStatus() api.TransactionStatus {
 	case api.PagarmeV5NotAuthorized:
 		return api.Refused
 	case api.PagarmeV5Voided, api.PagarmeV5PartialVoid:
-		return api.Cancelled
+		return api.Canceled
 	case api.PagarmeV5Paid:
 		return api.Authorised
 	case api.PagarmeV5None:

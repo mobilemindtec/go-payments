@@ -129,7 +129,7 @@ const (
 	WaitingAuthorisationToValidate
 	Refused
 	Captured
-	Cancelled
+	Canceled
 	Expired
 	UnderVerification
 	PartiallyAuthorised
@@ -142,7 +142,7 @@ const (
 	PendingReview  //pagarme
 	ReceivedInCash // asaas
 	Other
-	Canceled
+	Canceled__invalid
 	Success
 	Error
 )
@@ -596,6 +596,18 @@ func (this *TransactionItemResult) IsPaid() bool {
 	return this.TransactionStatus == Authorised || this.TransactionStatus == Captured
 }
 
+func (this *TransactionItemResult) IsCancelled() bool {
+	return this.TransactionStatus == Canceled
+}
+
+func (this *TransactionItemResult) IsRefound() bool {
+	return this.TransactionStatus == Refunded
+}
+
+func (this *TransactionItemResult) IsRefused() bool {
+	return this.TransactionStatus == Refused
+}
+
 func (this *TransactionItemResult) BuildStatus() {
 
 	switch this.TransactionStatus {
@@ -636,13 +648,13 @@ func (this *TransactionItemResult) BuildStatus() {
 		this.Status = PaymentPaid
 		this.StatusLabel = PaymentPaidLabel
 		break
-	case Cancelled:
+	case Canceled:
 		this.Status = PaymentCancelled
 		this.StatusLabel = PaymentCancelledLabel
 		break
 	case Expired:
 		this.Status = PaymentExpired
-		this.StatusLabel = PaymentCancelledLabel
+		this.StatusLabel = PaymentExpiredLabel
 		break
 	case UnderVerification:
 		this.Status = PaymentOther
@@ -874,6 +886,7 @@ func (this *PaymentResult) IsSubscription() bool {
 	return len(this.SubscriptionInfo.SubscriptionId) > 0
 }
 
+
 func (this *PaymentResult) BuildStatus() {
 
 	this.IsPayZen = this.isPayZen()
@@ -924,13 +937,13 @@ func (this *PaymentResult) BuildStatus() {
 		this.Status = PaymentPaid
 		this.StatusLabel = PaymentPaidLabel
 		break
-	case Cancelled:
+	case Canceled:
 		this.Status = PaymentCancelled
 		this.StatusLabel = PaymentCancelledLabel
 		break
 	case Expired:
 		this.Status = PaymentExpired
-		this.StatusLabel = PaymentCancelledLabel
+		this.StatusLabel = PaymentExpiredLabel
 		break
 	case UnderVerification:
 		this.Status = PaymentOther
@@ -988,6 +1001,28 @@ func (this *PaymentResult) WithSuccess() *PaymentResult {
 	this.TransactionStatus = Success
 	return this
 }
+
+func (this *PaymentResult) IsCancelled() bool {
+	return this.Status == PaymentCancelled
+}
+
+func (this *PaymentResult) IsRefused() bool {
+	return this.Status == PaymentRefused
+}
+
+func (this *PaymentResult) IsRefound() bool {
+	return this.Status == PaymentRefound
+}
+
+func (this *PaymentResult) IsExpired() bool {
+	return this.Status == PaymentExpired
+}
+
+func (this *PaymentResult) IsChargebacked() bool {
+	return this.Status == PaymentChargeback
+}
+
+
 
 func NewPaymentResult() *PaymentResult {
 	result := new(PaymentResult)
