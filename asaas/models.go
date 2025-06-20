@@ -355,7 +355,7 @@ type Customer struct {
 	AddressNumber string `json:"addressNumber"`
 	Province      string `json:"province"`
 	PostalCode    string `json:"postalCode"`
-	City          string `json:"city"`
+	City          int `json:"city"`
 	State         string `json:"state"`
 }
 
