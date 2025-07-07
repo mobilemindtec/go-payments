@@ -809,9 +809,9 @@ type Subscription struct {
 	Discounts           []*Discount         `json:"discounts,omitempty"`
 	Increments          []*Increment        `json:"increments,omitempty"`
 	Items               []*SubscriptionItem `json:"items"`
-	Card                *Card               `json:"card"`
-	CardId              string              `json:"card_id"`
-	CardToken           string              `json:"card_token"`
+	Card                *Card               `json:"card,omitempty"`
+	CardId              string              `json:"card_id,omitempty"`
+	CardToken           string              `json:"card_token,omitempty"`
 	BoletoDueDays       int64               `json:"boleto_due_days"`
 	Metadata            map[string]string   `json:"metadata"`
 	Description         string              `json:"description"`
