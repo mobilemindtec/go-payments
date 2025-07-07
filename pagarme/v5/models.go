@@ -427,7 +427,7 @@ type Customer struct {
 	Id         string            `json:"id,omitempty"`
 	Name       string            `json:"name" valid:"Required;MaxSize(64)"`
 	Type       CustomerType      `json:"type" valid:"Required"`
-	Email      string            `json:"email" valid:"Required"`
+	Email      string            `json:"email" valid:"Required;Email"`
 	Code       string            `json:"code" valid:"MaxSize(52)"` // código na plataforma
 	Document   string            `json:"document" valid:"MaxSize(50)"`
 	DocumentType DocumentType `json:"document_type"`
