@@ -98,6 +98,7 @@ func (this *Webhook) Parse(body []byte) (*WebhookData, error) {
 	if entityValidatorResult.HasError {
 		this.HasValidationError = true
 		this.ValidationErrors = this.EntityValidator.GetValidationErrors(entityValidatorResult)
+		fmt.Println("ValidationErrors = %v", this.ValidationErrors)
 		return nil, errors.New("validation error")
 	}
 

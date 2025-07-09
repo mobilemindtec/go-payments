@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/beego/beego/v2/core/logs"
 	"github.com/beego/beego/v2/core/validation"
 	"github.com/beego/i18n"
 	"github.com/mobilemindtec/go-payments/api"
 	"github.com/mobilemindtec/go-utils/beego/validator"
-	"github.com/beego/beego/v2/core/logs"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -1090,26 +1090,26 @@ func (this *Asaas) onValidAccount(account *Account, validateBankAccount bool) bo
 	this.EntityValidatorResult, _ = this.EntityValidator.ValidMult(items, func(validator *validation.Validation) {
 
 		if account.Webhooks == nil || len(account.Webhooks) == 0 {
-			validator.SetError("Webhooks", this.getMessage("Asaas.rquired"))
+			validator.SetError("Webhooks", this.getMessage("Asaas.required"))
 		}
 
 		if validateBankAccount {
 			if account.BankAccount == nil {
-				validator.SetError("BankAccount", this.getMessage("Asaas.rquired"))
-				validator.SetError("Bank", this.getMessage("Asaas.rquired"))
+				validator.SetError("BankAccount", this.getMessage("Asaas.required"))
+				validator.SetError("Bank", this.getMessage("Asaas.required"))
 			}
 
 			if account.BankAccount != nil && len(account.BankAccount.Bank) == 0 {
-				validator.SetError("Bank", this.getMessage("Asaas.rquired"))
+				validator.SetError("Bank", this.getMessage("Asaas.required"))
 			}
 
 			if len(account.LoginEmail) == 0 {
-				validator.SetError("LoginEmail", this.getMessage("Asaas.rquired"))
+				validator.SetError("LoginEmail", this.getMessage("Asaas.required"))
 			}
 
 		} else {
 			if len(account.PersonType) == 0 {
-				validator.SetError("PersonType", this.getMessage("Asaas.rquired"))
+				validator.SetError("PersonType", this.getMessage("Asaas.required"))
 			}
 		}
 
@@ -1137,12 +1137,12 @@ func (this *Asaas) onValidTransfer(transfer *Transfer) bool {
 	this.EntityValidatorResult, _ = this.EntityValidator.ValidMult(items, func(validator *validation.Validation) {
 
 		if transfer.BankAccount == nil {
-			validator.SetError("BankAccount", this.getMessage("Asaas.rquired"))
-			validator.SetError("Bank", this.getMessage("Asaas.rquired"))
+			validator.SetError("BankAccount", this.getMessage("Asaas.required"))
+			validator.SetError("Bank", this.getMessage("Asaas.required"))
 		}
 
 		if transfer.BankAccount != nil && transfer.BankAccount.Bank == nil {
-			validator.SetError("Bank", this.getMessage("Asaas.rquired"))
+			validator.SetError("Bank", this.getMessage("Asaas.required"))
 		}
 
 	})
@@ -1176,11 +1176,11 @@ func (this *Asaas) onValidCard(payment *Payment) bool {
 	this.EntityValidatorResult, _ = this.EntityValidator.ValidMult(items, func(validator *validation.Validation) {
 
 		if payment.Card == nil {
-			validator.SetError("Card", this.getMessage("Asaas.rquired"))
+			validator.SetError("Card", this.getMessage("Asaas.required"))
 		}
 
 		if payment.CardHolderInfo == nil {
-			validator.SetError("CardHolderInfo", this.getMessage("Asaas.rquired"))
+			validator.SetError("CardHolderInfo", this.getMessage("Asaas.required"))
 		}
 
 	})
@@ -1217,53 +1217,53 @@ func (this *Asaas) onValidPayment(payment *Payment) bool {
 		if payment.PaymentType == PaymentLink {
 
 			if payment.ChargeType == ChargeTypeNone {
-				validator.SetError("ChargeType", this.getMessage("Asaas.rquired"))
+				validator.SetError("ChargeType", this.getMessage("Asaas.required"))
 			}
 
 			if len(payment.Name) == 0 {
-				validator.SetError("Name", this.getMessage("Asaas.rquired"))
+				validator.SetError("Name", this.getMessage("Asaas.required"))
 			}
 
 			if payment.ChargeType == Recurrent {
 				if payment.SubscriptionCycle == api.SubscriptionCycleNone {
-					validator.SetError("SubscriptionCycle", this.getMessage("Asaas.rquired"))
+					validator.SetError("SubscriptionCycle", this.getMessage("Asaas.required"))
 				}
 			} else if payment.ChargeType == Installment {
 				if payment.MaxInstallmentCount <= 0 {
-					validator.SetError("MaxInstallmentCount", this.getMessage("Asaas.rquired"))
+					validator.SetError("MaxInstallmentCount", this.getMessage("Asaas.required"))
 				}
 			}
 
 			if payment.BillingType == BillingBoleto || payment.BillingType == BillingUndefined {
 				if payment.DueDateLimitDays <= 0 {
-					validator.SetError("DueDateLimitDays", this.getMessage("Asaas.rquired"))
+					validator.SetError("DueDateLimitDays", this.getMessage("Asaas.required"))
 				}
 			}
 
 		} else {
 
 			if len(payment.Customer) == 0 {
-				validator.SetError("Customer", this.getMessage("Asaas.rquired"))
+				validator.SetError("Customer", this.getMessage("Asaas.required"))
 			}
 
 			if len(payment.ExternalReference) == 0 {
-				validator.SetError("ExternalReference", this.getMessage("Asaas.rquired"))
+				validator.SetError("ExternalReference", this.getMessage("Asaas.required"))
 			}
 
 			if payment.PaymentType == PaymentDefault {
 
 				if len(payment.DueDate) == 0 {
-					validator.SetError("DueDate", this.getMessage("Asaas.rquired"))
+					validator.SetError("DueDate", this.getMessage("Asaas.required"))
 				}
 
 			} else {
 
 				if len(payment.NextDueDate) == 0 {
-					validator.SetError("NextDueDate", this.getMessage("Asaas.rquired"))
+					validator.SetError("NextDueDate", this.getMessage("Asaas.required"))
 				}
 
 				if payment.SubscriptionCycle == api.SubscriptionCycleNone {
-					validator.SetError("SubscriptionCycle", this.getMessage("Asaas.rquired"))
+					validator.SetError("SubscriptionCycle", this.getMessage("Asaas.required"))
 				}
 
 			}
@@ -1272,7 +1272,7 @@ func (this *Asaas) onValidPayment(payment *Payment) bool {
 
 				if validCard {
 					if len(payment.RemoteIp) == 0 {
-						validator.SetError("RemoteIp", this.getMessage("Asaas.rquired"))
+						validator.SetError("RemoteIp", this.getMessage("Asaas.required"))
 					}
 				} else {
 					if payment.Card != nil {

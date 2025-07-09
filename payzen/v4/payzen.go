@@ -346,7 +346,7 @@ func (this *PayZen) request(requestData interface{}, action string, result inter
 	if err != nil {
 		return info, errors.New(fmt.Sprintf("ioutil.ReadAll: %v", err.Error()))
 	}
-	
+
 	fmt.Println("***********************************")
 	fmt.Println("***** PAYZEN START RESPONSE ******")
 	fmt.Println("***** STATUS CODE: %v", resp.StatusCode)
@@ -389,7 +389,7 @@ func (this *PayZen) onValidSubscription(subscription *Subscription) bool {
 
 	this.EntityValidatorResult, _ = this.EntityValidator.Valid(subscription, func(validator *validation.Validation) {
 		if len(strings.TrimSpace(subscription.PaymentMethodToken)) == 0 {
-			validator.SetError(this.getMessage("PaymentMethodToken"), this.getMessage("PayZen.rquired"))
+			validator.SetError(this.getMessage("PaymentMethodToken"), this.getMessage("PayZen.required"))
 		}
 	})
 
@@ -430,37 +430,37 @@ func (this *PayZen) validPayment(payment *Payment, checkPaymentId bool, tokenOpe
 
 		if checkPaymentId {
 			if len(strings.TrimSpace(payment.PaymentOrderId)) == 0 {
-				validator.SetError(this.getMessage("PayZen.PaymentOrderId"), this.getMessage("PayZen.rquired"))
+				validator.SetError(this.getMessage("PayZen.PaymentOrderId"), this.getMessage("PayZen.required"))
 			}
 		}
 
 		if !tokenOperation {
 
 			if len(strings.TrimSpace(payment.OrderId)) == 0 {
-				validator.SetError(this.getMessage("PayZen.OrderId"), this.getMessage("PayZen.rquired"))
+				validator.SetError(this.getMessage("PayZen.OrderId"), this.getMessage("PayZen.required"))
 			}
 
 			if payment.Card == nil && !checkPaymentId {
-				validator.SetError(this.getMessage("PayZen.Card"), this.getMessage("PayZen.rquired"))
+				validator.SetError(this.getMessage("PayZen.Card"), this.getMessage("PayZen.required"))
 			}
 
 			if payment.Card != nil {
 				if payment.Card.InstallmentNumber <= 0 {
-					validator.SetError(this.getMessage("PayZen.Installments"), this.getMessage("PayZen.rquired"))
+					validator.SetError(this.getMessage("PayZen.Installments"), this.getMessage("PayZen.required"))
 				}
 			}
 
 			if payment.Amount <= 0 {
-				validator.SetError(this.getMessage("PayZen.Amount"), this.getMessage("PayZen.rquired"))
+				validator.SetError(this.getMessage("PayZen.Amount"), this.getMessage("PayZen.required"))
 			}
 
 			if payment.Customer == nil && !checkPaymentId {
-				validator.SetError(this.getMessage("PayZen.Customer"), this.getMessage("PayZen.rquired"))
+				validator.SetError(this.getMessage("PayZen.Customer"), this.getMessage("PayZen.required"))
 			}
 
 			if payment.Customer != nil {
 				if len(strings.TrimSpace(payment.Customer.BillingDetails.IdentityCode)) == 0 {
-					validator.SetError(this.getMessage("PayZen.IdentityCode"), this.getMessage("PayZen.rquired"))
+					validator.SetError(this.getMessage("PayZen.IdentityCode"), this.getMessage("PayZen.required"))
 				}
 			}
 
@@ -468,7 +468,7 @@ func (this *PayZen) validPayment(payment *Payment, checkPaymentId bool, tokenOpe
 
 		if tokenUpdate {
 			if len(strings.TrimSpace(payment.PaymentMethodToken)) == 0 && len(strings.TrimSpace(payment.Card.PaymentMethodToken)) == 0 {
-				validator.SetError(this.getMessage("PaymentMethodToken"), this.getMessage("PayZen.rquired"))
+				validator.SetError(this.getMessage("PaymentMethodToken"), this.getMessage("PayZen.required"))
 			}
 		}
 

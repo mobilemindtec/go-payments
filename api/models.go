@@ -893,7 +893,7 @@ func (this *PaymentResult) BuildStatus() {
 	this.IsPicPay = this.isPicPay()
 	this.IsPagarme = this.isPagarme()
 	this.IsAsaas = this.isAsaas()
-
+	
 	logs.Info("this.TransactionStatus!! %v", this.TransactionStatus)
 
 	switch this.TransactionStatus {
