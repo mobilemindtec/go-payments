@@ -123,6 +123,8 @@ const (
 	Expired  Status = "expired"
 	Inactive Status = "inactive"
 	Canceled Status = "canceled"
+	Failed Status = "failed" // pagarme
+	Future Status = "future" // pagarme
 )
 
 const (
