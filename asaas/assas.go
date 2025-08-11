@@ -1339,7 +1339,10 @@ func (this *Asaas) urlQuery(filter map[string]string) string {
 			url = fmt.Sprintf("%v%v=%v", url, k, v)
 			url = fmt.Sprintf("%v&", url)
 		}
-	}
 
+		url = url[0 : len(url)-1]
+	}
+	
 	return url
 }
+
