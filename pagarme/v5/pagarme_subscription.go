@@ -125,7 +125,7 @@ func (this *PagarmeSubscription) UpdateCard(updateData *SubscriptionUpdate) *eit
 		return left
 	}
 
-	if (len(updateData.CardId) == 0 && updateData.Card == nil) || (len(updateData.CardId) > 0 && updateData.Card != nil) {
+	if len(updateData.CardId) == 0 && updateData.Card == nil {
 		return either.Left[*ErrorResponse, SuccessBool](
 			NewErrorResponse("card id or card is required"))
 	}

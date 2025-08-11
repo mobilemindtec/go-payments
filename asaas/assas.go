@@ -410,10 +410,12 @@ func (this *Asaas) SubscriptionUpdateCardToken(payment *Payment) (*Response, err
 		}
 
 		data["creditCard"] = payment.Card
-		data["creditCardHolderInfo"] = payment.CardHolderInfo
 	}
 
-	return this.post(data, fmt.Sprintf("payments/%v/payWithCreditCard", payment.Id), nil)
+	data["creditCardHolderInfo"] = payment.CardHolderInfo
+	data["remoteIp"] = payment.RemoteIp
+	
+	return this.put(data, fmt.Sprintf("subscriptions/%v/creditCard", payment.Id), nil)
 }
 
 func (this *Asaas) SubscriptionCancel(subscriptionId string) (*Response, error) {
@@ -879,7 +881,7 @@ func (this *Asaas) request(
 
 	this.Log("URL %v, METHOD = %v", apiUrl, method)
 
-	if method == "POST" && data != nil {
+	if (method == "POST" || method == "PUT") && data != nil {
 
 		if !multiPartFormData {
 			payload, err := json.Marshal(data)

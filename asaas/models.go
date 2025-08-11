@@ -1040,7 +1040,7 @@ func (this *Response) GetPayZenSOAPStatus() api.TransactionStatus {
 	case api.AsaasPending:
 		return api.WaitingPayment
 	case api.AsaasReceived:
-		return api.Captured
+		return api.Other // status de quando o valor fica disponível na conta para saque
 	case api.AsaasConfirmed:
 		return api.Captured
 	case api.AsaasOverdue:
